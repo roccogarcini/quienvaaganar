@@ -24,7 +24,7 @@ import { createClient } from "@supabase/supabase-js";
 // --- CONFIGURA AQUÍ ---
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://TU_PROYECTO.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "TU_ANON_KEY";
-const APP_URL = "https://quienvaaganar.mx";
+const APP_URL = import.meta.env.VITE_APP_URL || "https://quienvaaganar.vercel.app";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ----------------------
 
@@ -643,6 +643,7 @@ export default function App() {
 
   function onUnirse(participante) {
     localStorage.setItem("miId_"+salaId, participante.id);
+    setParticipantes(prev => [...prev, participante]);
     setMiId(participante.id);
   }
 
