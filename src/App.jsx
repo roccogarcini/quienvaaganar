@@ -181,6 +181,7 @@ function CrearSala({ onCreate }) {
 // ── PANTALLA: UNIRSE ──────────────────────────
 function Unirse({ sala, participantes, onJoin }) {
   const [nombre, setNombre] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [equipo, setEquipo] = useState("");
   const [pronCamp, setPronCamp] = useState("");
   const [pronSub, setPronSub] = useState("");
@@ -235,7 +236,7 @@ function Unirse({ sala, participantes, onJoin }) {
     setLoading(true);
     const t = TEAMS.find(x => x.n === equipo);
     const { data, error } = await supabase.from("participantes").insert({
-      sala_id: sala.id, nombre: nombre.trim(), equipo, flag: t.f,
+      sala_id: sala.id, nombre: nombre.trim(), whatsapp: whatsapp.trim() || null, equipo, flag: t.f,
       points: 0, penalties: 0, eliminado: false,
       pron_camp: pronCamp || null, pron_camp_flag: pronCamp ? TEAMS.find(x=>x.n===pronCamp)?.f : null,
       pron_sub: pronSub || null, pron_sub_flag: pronSub ? TEAMS.find(x=>x.n===pronSub)?.f : null,
@@ -272,6 +273,9 @@ function Unirse({ sala, participantes, onJoin }) {
 
         <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu nombre</div>
         <input style={{ ...inp, marginBottom:16 }} placeholder="¿Cómo te llamas?" value={nombre} onChange={e=>setNombre(e.target.value)} />
+
+        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu WhatsApp</div>
+        <input style={{ ...inp, marginBottom:16 }} placeholder="Ej: +52 55 1234 5678" type="tel" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} />
 
         <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu equipo</div>
         <select style={{ ...inp, marginBottom:20 }} value={equipo} onChange={e=>setEquipo(e.target.value)}>
@@ -404,8 +408,18 @@ function Sala({ sala, miId }) {
   }
 
   function compartirWA() {
-    const text = `Únete a la quiniela "${sala.nombre}" 🏆⚽\n\nElige tu equipo, haz tu pronóstico y compite.\n\n👉 ${salaLink}`;
-    window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+    const miEquipo = yo ? `${yo.flag} ${yo.equipo}` : "";
+    const lines = [
+      `⚽ *${yo?.nombre || "Alguien"}* te está invitando a una apuesta del Mundial 2026`,
+      ``,
+      miEquipo ? `Yo voy con ${miEquipo} 🔥` : ``,
+      `¿Con quién vas tú? El que quede último paga un castigo 😈`,
+      ``,
+      `🏆 *${sala.nombre}*`,
+      ``,
+      `👉 Únete aquí: ${salaLink}`,
+    ].filter(l => l !== undefined);
+    window.open("https://wa.me/?text="+encodeURIComponent(lines.join("\n")),"_blank");
   }
 
   const sorted = [...participantes].sort((a,b)=>b.points-a.points);
