@@ -1280,6 +1280,22 @@ export default function App() {
     setMiId(participante.id);
   }
 
+  const Footer = () => (
+    <div style={{
+      textAlign:"center", padding:"16px 20px 24px",
+      borderTop:`1px solid ${C.border}22`,
+      marginTop:8,
+    }}>
+      <span style={{
+        background:"linear-gradient(90deg,#7c3aed,#1d4ed8)",
+        WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+        fontWeight:700, fontSize:12,
+      }}>MarketerIA</span>
+      <span style={{color:C.muted, fontSize:12}}> · Desarrollado por </span>
+      <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
+    </div>
+  );
+
   if (loading) return (
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif" }}>
       <div style={{ color:C.muted,fontSize:16 }}>Cargando...</div>
@@ -1287,12 +1303,12 @@ export default function App() {
   );
 
   // Sin sala en URL → pantalla de crear
-  if (!salaId || !sala) return <CrearSala onCreate={onCrear} />;
+  if (!salaId || !sala) return <><CrearSala onCreate={onCrear} /><Footer /></>;
 
   // Con sala → ¿ya entré?
   if (!miId || !participantes.find(p=>p.id===miId)) {
-    return <Unirse sala={sala} participantes={participantes} onJoin={onUnirse} />;
+    return <><Unirse sala={sala} participantes={participantes} onJoin={onUnirse} /><Footer /></>;
   }
 
-  return <Sala sala={sala} miId={miId} />;
+  return <><Sala sala={sala} miId={miId} /><Footer /></>;
 }
