@@ -85,9 +85,128 @@ const BtnR = Btn({ background:C.red+"22", color:C.red, border:`1px solid ${C.red
 const BtnW = Btn({ background:C.gold+"22", color:C.gold, border:`1px solid ${C.gold}44` });
 
 // ── PANTALLA: CREAR SALA ──────────────────────
+function PreviewModal({ tipo, onClose }) {
+  const previews = {
+    calendario: {
+      title:"📅 Calendario del Mundial",
+      content: (
+        <div>
+          <p style={{color:C.muted,fontSize:12,marginBottom:12}}>Navega por todos los partidos día a día con marcadores en vivo.</p>
+          {[
+            {hora:"TC", local:"México 🇲🇽",    score:"2 - 0", visit:"🇿🇦 Sudáfrica", done:true},
+            {hora:"TC", local:"Corea del Sur 🇰🇷",score:"2 - 1",visit:"🇨🇿 Chequia", done:true},
+            {hora:"19:00",local:"Canadá 🇨🇦",  score:"vs",    visit:"🇧🇦 Bosnia",    done:false},
+            {hora:"21:00",local:"EE.UU. 🇺🇸",  score:"vs",    visit:"🇵🇾 Paraguay",  done:false},
+          ].map((m,i)=>(
+            <div key={i} style={{display:"grid",gridTemplateColumns:"44px 1fr 54px 1fr",alignItems:"center",gap:6,padding:"9px 0",borderBottom:`1px solid ${C.border}20`}}>
+              <span style={{background:m.done?"#ffffff15":"transparent",color:m.done?C.muted:"#60a5fa",fontSize:10,fontWeight:700,textAlign:"center",borderRadius:4,padding:"2px 4px"}}>{m.hora}</span>
+              <span style={{color:C.text,fontSize:12,textAlign:"right"}}>{m.local}</span>
+              <span style={{color:m.done?C.text:C.muted,fontSize:m.done?15:11,fontWeight:m.done?800:400,textAlign:"center"}}>{m.score}</span>
+              <span style={{color:C.text,fontSize:12}}>{m.visit}</span>
+            </div>
+          ))}
+        </div>
+      )
+    },
+    marcadores: {
+      title:"⚽ Marcadores en vivo",
+      content: (
+        <div>
+          <p style={{color:C.muted,fontSize:12,marginBottom:12}}>Partidos en curso con el minuto exacto, actualizados en tiempo real.</p>
+          <div style={{background:"#10b98112",border:"1px solid #10b98133",borderRadius:10,padding:14,marginBottom:8}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+              <span style={{background:"#10b981",color:"#000",fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:4}}>● EN VIVO  67′</span>
+              <span style={{color:C.muted,fontSize:10}}>Grp. A · Jornada 2</span>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 60px 1fr",alignItems:"center",gap:4}}>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:22}}>🇲🇽</div>
+                <div style={{color:C.text,fontSize:12,fontWeight:600}}>México</div>
+              </div>
+              <div style={{textAlign:"center",color:C.text,fontSize:22,fontWeight:800}}>1 - 0</div>
+              <div>
+                <div style={{fontSize:22}}>🇨🇿</div>
+                <div style={{color:C.text,fontSize:12,fontWeight:600}}>Chequia</div>
+              </div>
+            </div>
+          </div>
+          <p style={{color:C.muted,fontSize:11,textAlign:"center"}}>La app se actualiza automáticamente cada 60 segundos ⚡</p>
+        </div>
+      )
+    },
+    tips: {
+      title:"🧠 Tips de Football",
+      content: (
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          <p style={{color:C.muted,fontSize:12,marginBottom:4}}>No sabes nada de football? No importa, con estos tips serás el centro de la plática. 😎</p>
+          {[
+            {emoji:"⚽",tip:"El offside (fuera de juego): si un atacante está más cerca del arco rival que el último defensa cuando le pasan el balón, es falta."},
+            {emoji:"🟨",tip:"Tarjeta amarilla = amonestación. Dos amarillas = roja automática y el jugador es expulsado."},
+            {emoji:"🥅",tip:"El VAR (Video Assistant Referee) revisa goles, penales y tarjetas rojas con videoreplay para evitar errores graves."},
+            {emoji:"📐",tip:"En la fase de grupos, si dos equipos empatan en puntos, se desempata por diferencia de goles (DG)."},
+          ].map((t,i)=>(
+            <div key={i} style={{background:C.card,borderRadius:10,padding:"10px 12px",display:"flex",gap:10,alignItems:"flex-start"}}>
+              <span style={{fontSize:20,flexShrink:0}}>{t.emoji}</span>
+              <span style={{color:C.text,fontSize:12,lineHeight:1.6}}>{t.tip}</span>
+            </div>
+          ))}
+          <p style={{color:"#a78bfa",fontSize:11,textAlign:"center",marginTop:4}}>Próximamente: más tips y datos curiosos cada jornada 🚀</p>
+        </div>
+      )
+    },
+    apuestas: {
+      title:"🏆 Apuestas con amigos",
+      content: (
+        <div>
+          <p style={{color:C.muted,fontSize:12,marginBottom:12}}>Crea tu quiniela, elige el modo y comparte el link. Así se ve la tabla:</p>
+          <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginBottom:10}}>
+            {[
+              {pos:1,nombre:"Rocco",equipo:"🇲🇽",pts:18,modo:"💰$250",adv:true},
+              {pos:2,nombre:"Fer",  equipo:"🇧🇷",pts:15,modo:"💰$250",adv:true},
+              {pos:3,nombre:"Gaby", equipo:"🇦🇷",pts:12,modo:"🎲",adv:false},
+              {pos:4,nombre:"Luis", equipo:"🇫🇷",pts:9, modo:"🎲",adv:false},
+            ].map((p,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",borderBottom:i<3?`1px solid ${C.border}20`:undefined}}>
+                <span style={{color:p.adv?"#f59e0b":C.muted,fontSize:13,fontWeight:700,width:18,textAlign:"center"}}>{p.pos}</span>
+                <span style={{fontSize:20}}>{p.equipo}</span>
+                <span style={{color:C.text,fontSize:13,flex:1}}>{p.nombre}</span>
+                <span style={{color:C.muted,fontSize:11}}>{p.modo}</span>
+                <span style={{color:C.text,fontSize:13,fontWeight:700,minWidth:30,textAlign:"right"}}>{p.pts}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            {[{icon:"🤑",label:"¡Hay Trato!",desc:"Privado, tú decides el monto"},{icon:"🎲",label:"Con Retos",desc:"Castigos divertidos, sin dinero"},{icon:"🔥",label:"Híbrido",desc:"Abierto, todos en $250"}].map(m=>(
+              <div key={m.label} style={{flex:1,background:C.card,borderRadius:8,padding:"8px 6px",textAlign:"center"}}>
+                <div style={{fontSize:18}}>{m.icon}</div>
+                <div style={{color:C.text,fontSize:10,fontWeight:600}}>{m.label}</div>
+                <div style={{color:C.muted,fontSize:9,lineHeight:1.4,marginTop:2}}>{m.desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+  };
+  const p = previews[tipo];
+  if (!p) return null;
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={onClose}>
+      <div style={{background:C.bg,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto",padding:"20px 20px 36px"}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+          <h3 style={{color:C.text,fontSize:16,fontWeight:700,margin:0}}>{p.title}</h3>
+          <button onClick={onClose} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
+        </div>
+        {p.content}
+      </div>
+    </div>
+  );
+}
+
 function CrearSala({ onCreate }) {
   const [nombre] = useState("Quiniela Mundial 2026");
   const [modo, setModo] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
   const [newC, setNewC] = useState("");
@@ -133,16 +252,23 @@ function CrearSala({ onCreate }) {
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
             {[
-              ["📅","Calendario del Mundial","Todos los partidos y horarios"],
-              ["⚽","Marcadores en vivo","Resultados al momento"],
-              ["🧠","Tips de football","Para entender el juego aunque no sepas nada"],
-              ["🏆","Apuestas con amigos","Dinero o retos — tú decides"],
-            ].map(([icon,title,desc])=>(
-              <div key={title} style={{ background:C.card+"88", borderRadius:10, padding:"10px 12px" }}>
+              ["📅","Calendario del Mundial","Todos los partidos y horarios","calendario"],
+              ["⚽","Marcadores en vivo","Resultados al momento","marcadores"],
+              ["🧠","Tips de football","Para entender el juego aunque no sepas nada","tips"],
+              ["🏆","Apuestas con amigos","Dinero o retos — tú decides","apuestas"],
+            ].map(([icon,title,desc,key])=>(
+              <button key={title} onClick={()=>setPreview(key)} style={{
+                background:C.card+"88", borderRadius:10, padding:"10px 12px",
+                border:`1px solid ${C.border}44`, cursor:"pointer", textAlign:"left",
+                fontFamily:"inherit", transition:"border-color .15s",
+              }}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#3b82f688"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor=`${C.border}44`}>
                 <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
                 <div style={{ color:C.text, fontSize:12, fontWeight:600, marginBottom:2 }}>{title}</div>
                 <div style={{ color:C.muted, fontSize:11, lineHeight:1.4 }}>{desc}</div>
-              </div>
+                <div style={{ color:"#60a5fa", fontSize:10, marginTop:4 }}>Ver preview →</div>
+              </button>
             ))}
           </div>
         </div>
@@ -275,6 +401,7 @@ function CrearSala({ onCreate }) {
           </div>
         </>}
       </div>
+      {preview && <PreviewModal tipo={preview} onClose={()=>setPreview(null)} />}
     </div>
   );
 }
