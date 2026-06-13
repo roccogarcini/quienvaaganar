@@ -408,7 +408,7 @@ function CrearSala({ onCreate }) {
 
 // ── PANTALLA: UNIRSE ──────────────────────────
 function Unirse({ sala, participantes, onJoin }) {
-  const [nombre, setNombre] = useState("");
+  const [nombre, setNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
   const [whatsapp, setWhatsapp] = useState(() => localStorage.getItem("quiniela_wa") || "");
   const [equipo, setEquipo] = useState("");
   const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? "dinero" : sala.modo);
@@ -1221,7 +1221,7 @@ function Calendario({ salaLink, yo }) {
                     return [
                       {icon:"🍎",label:"Apple",    url:ics},
                       {icon:"📅",label:"Google",   url:`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(ics)}`},
-                      {icon:"🪟",label:"Outlook",  url:ics.replace("webcal://","https://")},
+                      {icon:"🪟",label:"Outlook / .ics", url:"https://www.fotmob.com/es-419/leagues/77/synccalendar/copa-del-mundo"},
                     ];
                   })().map((c,i,arr)=>(
                     <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
@@ -1261,8 +1261,7 @@ function Calendario({ salaLink, yo }) {
                   <option value="">— Tu equipo favorito —</option>
                   {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
                 </select>
-                <a href={()=>{}} onClick={(e)=>{
-                  e.preventDefault();
+                {(()=>{
                   const t=TEAMS.find(x=>x.n===shareEquipo);
                   const lines=[
                     `⚽ *${shareNombre||"Alguien"}* te invita a seguir el Mundial 2026`,
@@ -1272,15 +1271,16 @@ function Calendario({ salaLink, yo }) {
                     `👉 ${salaLink}`,
                     ``,
                     `¡Entra y haz tu quiniela! 🏆`,
-                  ].filter(l=>l!==undefined);
-                  window.location.href=`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
-                }} style={{
-                  display:"block",background:"#25d366",color:"#fff",textAlign:"center",
-                  padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,
-                  textDecoration:"none",cursor:"pointer",
-                }}>
-                  Enviar por WhatsApp 💬
-                </a>
+                  ].filter(Boolean);
+                  return (
+                    <a href={`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`}
+                      target="_blank" rel="noreferrer"
+                      style={{display:"block",background:"#25d366",color:"#fff",textAlign:"center",
+                        padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,textDecoration:"none"}}>
+                      Enviar por WhatsApp 💬
+                    </a>
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -1338,12 +1338,12 @@ export default function App() {
       .then(({ data }) => {
         if (!data) return;
         setParticipantes(data);
-        // Auto-login por WhatsApp: si no tengo miId guardado,
-        // busco si mi número WA ya está en la sala
+        // Auto-login por WhatsApp: normalizar y buscar coincidencia
         if (!localStorage.getItem("miId_"+salaId)) {
-          const miWA = localStorage.getItem("quiniela_wa");
+          const normaliza = v => (v||"").replace(/\D/g,"").slice(-10);
+          const miWA = normaliza(localStorage.getItem("quiniela_wa"));
           if (miWA) {
-            const yaEstoy = data.find(p => p.whatsapp === miWA);
+            const yaEstoy = data.find(p => normaliza(p.whatsapp) === miWA);
             if (yaEstoy) {
               localStorage.setItem("miId_"+salaId, yaEstoy.id);
               setMiId(yaEstoy.id);
@@ -1359,8 +1359,9 @@ export default function App() {
 
   function onUnirse(participante) {
     localStorage.setItem("miId_"+salaId, participante.id);
-    // Guardar WA globalmente para auto-login en otras salas
+    // Guardar WA y nombre globalmente para auto-login y pre-llenado
     if (participante.whatsapp) localStorage.setItem("quiniela_wa", participante.whatsapp);
+    if (participante.nombre)   localStorage.setItem("quiniela_nombre", participante.nombre);
     setParticipantes(prev => [...prev, participante]);
     setMiId(participante.id);
   }
