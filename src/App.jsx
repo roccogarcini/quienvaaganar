@@ -209,13 +209,36 @@ function CrearSala({ onCreate }) {
   const [preview, setPreview] = useState(null);
   const [creadorNombre, setCreadorNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
   const [creadorWA, setCreadorWA] = useState(() => localStorage.getItem("quiniela_wa") || "");
+  const [buscando, setBuscando] = useState(false);
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
   const [newC, setNewC] = useState("");
-  // step 0 = entra al juego (nombre+WA); si ya están guardados, empieza en paso 1
-  const [step, setStep] = useState(() =>
-    (localStorage.getItem("quiniela_nombre")?.trim() && localStorage.getItem("quiniela_wa")?.trim()) ? 1 : 0
-  );
+  // Siempre empieza en paso 0 (Entra al juego)
+  const [step, setStep] = useState(0);
+
+  async function verificarWA() {
+    const normaliza = v => (v||"").replace(/\D/g,"").slice(-10);
+    const wa = normaliza(creadorWA);
+    if (!wa) return;
+    localStorage.setItem("quiniela_nombre", creadorNombre.trim());
+    localStorage.setItem("quiniela_wa", creadorWA.trim());
+    setBuscando(true);
+    // Buscar si este WA ya tiene una sala
+    const { data } = await supabase.from("participantes")
+      .select("sala_id, whatsapp")
+      .ilike("whatsapp", `%${wa}`)
+      .order("created_at", { ascending: false })
+      .limit(1);
+    setBuscando(false);
+    if (data && data.length > 0) {
+      // Ya existe → ir directo a su sala
+      localStorage.setItem("quiniela_lastSala", data[0].sala_id);
+      window.location.href = `/sala/${data[0].sala_id}`;
+    } else {
+      // No existe → siguiente paso: Modo de juego
+      setStep(1);
+    }
+  }
   const [loading, setLoading] = useState(false);
   const [salaId, setSalaId] = useState(null);
   const [invitados, setInvitados] = useState([]); // [{nombre, wa}]
@@ -278,23 +301,24 @@ function CrearSala({ onCreate }) {
           </div>
         </div>
 
-        {/* ── PASO 0: Entra al juego (primera vez) ── */}
+        {/* ── PASO 0: Entra al juego ── */}
         {step === 0 && <>
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Entra al juego</div>
           <input
-            value={creadorNombre} onChange={e=>{ setCreadorNombre(e.target.value); localStorage.setItem("quiniela_nombre",e.target.value); }}
+            value={creadorNombre} onChange={e=>setCreadorNombre(e.target.value)}
             placeholder="Tu nombre"
             style={{ ...inp, marginBottom:10 }}
           />
           <input
-            value={creadorWA} onChange={e=>{ setCreadorWA(e.target.value); localStorage.setItem("quiniela_wa",e.target.value); }}
+            value={creadorWA} onChange={e=>setCreadorWA(e.target.value)}
             placeholder="Tu WhatsApp (ej: 5512345678)" type="tel"
             style={{ ...inp, marginBottom:20 }}
+            onKeyDown={e=>e.key==="Enter"&&creadorNombre.trim()&&creadorWA.trim()&&verificarWA()}
           />
-          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!creadorNombre.trim()||!creadorWA.trim())?0.4:1 }}
-            disabled={!creadorNombre.trim()||!creadorWA.trim()}
-            onClick={() => setStep(1)}>
-            Siguiente →
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!creadorNombre.trim()||!creadorWA.trim()||buscando)?0.4:1 }}
+            disabled={!creadorNombre.trim()||!creadorWA.trim()||buscando}
+            onClick={verificarWA}>
+            {buscando ? "Buscando tu cuenta…" : "Siguiente →"}
           </button>
         </>}
 
@@ -1410,17 +1434,6 @@ export default function App() {
     </div>
   );
 
-  // Si no hay sala en URL pero ya tenemos datos → redirigir a la última sala
-  useEffect(() => {
-    if (!salaId) {
-      const lastSala = localStorage.getItem("quiniela_lastSala");
-      const tieneNombre = localStorage.getItem("quiniela_nombre")?.trim();
-      const tieneWA = localStorage.getItem("quiniela_wa")?.trim();
-      if (lastSala && tieneNombre && tieneWA) {
-        window.location.href = `/sala/${lastSala}`;
-      }
-    }
-  }, []);
 
   if (loading) return (
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif" }}>
