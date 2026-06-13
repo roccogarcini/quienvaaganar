@@ -150,7 +150,7 @@ function CrearSala({ onCreate }) {
             {[
               { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"Sala privada: tú decides con quién y de cuánto. Solo la ven los que invites." },
               { k:"retos",   icon:"🎲", title:"Con retos",   desc:"Sin dinero. El perdedor sortea 3 castigos del grupo y elige uno." },
-              { k:"hibrido", icon:"🔥", title:"Híbrido $250", desc:"Quiniela grande. Cada quien elige: apuesta $250 fijos o acepta un reto. Todos ven a todos." },
+              { k:"hibrido", icon:"🔥", title:"Híbrido $250", desc:"Quiniela abierta. Todos entran en $250. Se cobra conforme se eliminan equipos — el admin indica cuándo y a quién pagar." },
             ].map(o => (
               <div key={o.k} onClick={() => setModo(o.k)} style={{ ...cardStyle, cursor:"pointer", marginBottom:0, border:`${modo===o.k?"2px":"0.5px"} solid ${modo===o.k?"#3b82f6":C.border}` }}>
                 <div style={{ fontSize:24, marginBottom:6 }}>{o.icon}</div>
@@ -210,7 +210,7 @@ function Unirse({ sala, participantes, onJoin }) {
   const [nombre, setNombre] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [equipo, setEquipo] = useState("");
-  const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? null : sala.modo);
+  const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? "dinero" : sala.modo);
   const [apuesta, setApuesta] = useState(sala.cuota > 0 ? sala.cuota : 100);
   const [pronCamp, setPronCamp] = useState("");
   const [pronSub, setPronSub] = useState("");
@@ -367,51 +367,35 @@ function Unirse({ sala, participantes, onJoin }) {
           </button>
         </>}
 
-        {(sala.modo === "hibrido" || sala.modo === "dinero") && <>
-          {sala.modo === "hibrido" && <>
-            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>¿Cómo quieres jugar?</div>
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
-              {[
-                { k:"dinero", icon:"💰", title:"Con dinero",   desc:"Apuestas lo que quieras (máx $250). Si pierdes, pagas." },
-                { k:"retos",  icon:"🎲", title:"Con retos",    desc:"Si pierdo, sorteo 3 castigos del grupo y elijo uno." },
-              ].map(o => (
-                <div key={o.k} onClick={() => setModoJugador(o.k)}
-                  style={{ ...cardStyle, cursor:"pointer", marginBottom:0,
-                    border:`${modoJugador===o.k?"2px":"0.5px"} solid ${modoJugador===o.k?(o.k==="dinero"?"#fbbf24":"#10b981"):C.border}` }}>
-                  <div style={{ fontSize:22, marginBottom:4 }}>{o.icon}</div>
-                  <div style={{ color:C.text, fontWeight:600, fontSize:13, marginBottom:4 }}>{o.title}</div>
-                  <p style={{ color:C.muted, fontSize:11, lineHeight:1.5 }}>{o.desc}</p>
-                </div>
-              ))}
-            </div>
-          </>}
+        {sala.modo === "hibrido" && (
+          <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
+            <div style={{ color:"#fbbf24", fontSize:16, fontWeight:700, marginBottom:6 }}>🔥 Quiniela Híbrida · $250 pesos</div>
+            <p style={{ color:C.text, fontSize:13, lineHeight:1.6, marginBottom:8 }}>
+              Al unirte te comprometes a pagar <strong style={{color:"#fbbf24"}}>$250 pesos</strong> si quedas último o tu equipo es eliminado.
+            </p>
+            <p style={{ color:C.muted, fontSize:12, lineHeight:1.5 }}>
+              💳 El admin te avisará cuándo y a quién pagarle. El pago se hace conforme los equipos van saliendo del torneo.
+            </p>
+          </div>
+        )}
 
-          {modoJugador === "dinero" && sala.modo === "dinero" && (
-            <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
-              <div style={{ color:"#fbbf24", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>💰 Tu apuesta</div>
-              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <input type="range" min={10} max={500} step={10} value={apuesta}
-                  onChange={e => setApuesta(Number(e.target.value))}
-                  style={{ flex:1, accentColor:"#fbbf24" }} />
-                <div style={{ color:"#fbbf24", fontWeight:700, fontSize:22, minWidth:60, textAlign:"right" }}>${apuesta}</div>
-              </div>
-              <p style={{ color:C.muted, fontSize:11, marginTop:8 }}>
-                Si quedas último, pagas <strong style={{color:"#fbbf24"}}>${apuesta} pesos</strong> cuando el admin lo indique. 🤝
-              </p>
+        {sala.modo === "dinero" && (
+          <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
+            <div style={{ color:"#fbbf24", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>💰 Tu apuesta</div>
+            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <input type="range" min={10} max={500} step={10} value={apuesta}
+                onChange={e => setApuesta(Number(e.target.value))}
+                style={{ flex:1, accentColor:"#fbbf24" }} />
+              <div style={{ color:"#fbbf24", fontWeight:700, fontSize:22, minWidth:60, textAlign:"right" }}>${apuesta}</div>
             </div>
-          )}
-          {modoJugador === "dinero" && sala.modo === "hibrido" && (
-            <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
-              <div style={{ color:"#fbbf24", fontSize:15, fontWeight:700, marginBottom:4 }}>💰 Apuesta: $250 pesos</div>
-              <p style={{ color:C.muted, fontSize:12 }}>
-                Monto fijo de la quiniela grande. Si quedas último, pagas <strong style={{color:"#fbbf24"}}>$250 pesos</strong> cuando el admin lo indique. 🤝
-              </p>
-            </div>
-          )}
-        </>}
+            <p style={{ color:C.muted, fontSize:11, marginTop:8 }}>
+              Si quedas último, pagas <strong style={{color:"#fbbf24"}}>${apuesta} pesos</strong> cuando el admin lo indique. 🤝
+            </p>
+          </div>
+        )}
 
-        <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo||(sala.modo==="hibrido"&&!modoJugador))?0.4:1 }}
-          disabled={!nombre.trim()||!equipo||loading||(sala.modo==="hibrido"&&!modoJugador)} onClick={unirse}>
+        <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo)?0.4:1 }}
+          disabled={!nombre.trim()||!equipo||loading} onClick={unirse}>
           {loading ? "Entrando..." : "Entrar a la quiniela →"}
         </button>
       </div>
