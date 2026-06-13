@@ -963,57 +963,183 @@ function Sala({ sala, miId }) {
 
         {tab==="calendario" && <Calendario salaLink={salaLink} yo={yo} />}
 
-        {tab==="tips" && (
-          <div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:14}}>
-            <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em"}}>Reglas básicas ⚽</div>
-            {[
-              {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
-              {emoji:"🟨",titulo:"Tarjetas",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
-              {emoji:"📺",titulo:"VAR (Video Assistant Referee)",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede ir a revisar la pantalla del VAR antes de decidir."},
-              {emoji:"🥅",titulo:"Penal",texto:"Si un jugador comete una falta dentro del área grande de su propio arco, el árbitro marca penal. El tiro se lanza desde el punto blanco a 11 metros del arco."},
-            ].map((t,i)=>(
-              <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-                <div>
-                  <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-                  <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-                </div>
-              </div>
-            ))}
-            <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>Formato del Mundial 2026 🏆</div>
-            {[
-              {emoji:"🌎",titulo:"48 equipos — el más grande de la historia",texto:"Por primera vez participan 48 selecciones divididas en 12 grupos de 4. Clasifican los 2 primeros de cada grupo + los 8 mejores terceros lugares."},
-              {emoji:"📐",titulo:"¿Cómo se desempata en la tabla?",texto:"1° Puntos → 2° Diferencia de goles → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play (menos tarjetas) → 6° Sorteo FIFA."},
-              {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Partidos en 16 ciudades de 3 países. La final será en el MetLife Stadium de Nueva York/Nueva Jersey. México tiene sede en CDMX (Estadio Azteca), Guadalajara y Monterrey."},
-              {emoji:"🥇",titulo:"Campeones vigentes: Argentina",texto:"La Albiceleste ganó el Mundial Qatar 2022 en penales contra Francia 3-3 (4-2 en penales). Messi levantó por fin el único título que le faltaba."},
-            ].map((t,i)=>(
-              <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-                <div>
-                  <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-                  <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-                </div>
-              </div>
-            ))}
-            <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>Tips para tu quiniela 🎯</div>
-            {[
-              {emoji:"📊",titulo:"Fíjate en la diferencia de goles (DG)",texto:"En la fase de grupos dos equipos pueden empatar en puntos. El que gana más por diferencia de goles avanza. Vale la pena apostar a que tu equipo no solo gane, sino que gane bien."},
-              {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"En Qatar 2022 Arabia Saudita venció a Argentina, Japón a Alemania y Marruecos llegó a semis. En los Mundiales las sorpresas son parte del juego — toma riesgos en tu quiniela."},
-              {emoji:"🔥",titulo:"El factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Históricamente los equipos locales llegan lejos. ¿Le vas a México? Esta es su mejor oportunidad en décadas."},
-            ].map((t,i)=>(
-              <div key={i} style={{background:"linear-gradient(135deg,#7c3aed12,#1d4ed812)",border:"1px solid #7c3aed22",borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-                <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-                <div>
-                  <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-                  <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-                </div>
-              </div>
-            ))}
-            <p style={{color:"#7c3aed",fontSize:11,textAlign:"center",padding:"4px 0 8px"}}>MarketerIA · más tips cada jornada 🚀</p>
-          </div>
-        )}
+        {tab==="tips" && <TipsNoticias />}
 
       </div>
+    </div>
+  );
+}
+
+// ── PESTAÑA: TIPS & NOTICIAS ───────────────────
+function TipsNoticias() {
+  const [noticias, setNoticias] = useState(null);
+  const [loadN, setLoadN]       = useState(true);
+  const [errN, setErrN]         = useState(null);
+  const [filtro, setFiltro]     = useState("all");
+
+  useEffect(() => {
+    fetch("/api/noticias")
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => { setNoticias(d.items || []); setLoadN(false); })
+      .catch(e => { setErrN(String(e)); setLoadN(false); });
+  }, []);
+
+  const fuentes = [
+    { id:"all",        label:"Todas" },
+    { id:"tudn",       label:"TUDN" },
+    { id:"fifa",       label:"FIFA" },
+    { id:"juanfutbol", label:"JuanFútbol" },
+  ];
+
+  const visibles = noticias
+    ? (filtro === "all" ? noticias : noticias.filter(n => n.source === filtro))
+    : [];
+
+  function timeAgo(dateStr) {
+    if (!dateStr) return "";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1)  return "ahora";
+    if (m < 60) return `hace ${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `hace ${h}h`;
+    return `hace ${Math.floor(h/24)}d`;
+  }
+
+  const TIPS_REGLAS = [
+    {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
+    {emoji:"🟨",titulo:"Tarjetas",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
+    {emoji:"📺",titulo:"VAR",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede revisar la pantalla antes de decidir."},
+    {emoji:"🥅",titulo:"Penal",texto:"Falta dentro del área = penal desde el punto blanco a 11 metros del arco."},
+  ];
+
+  const TIPS_MUNDIAL = [
+    {emoji:"🌎",titulo:"48 equipos",texto:"Por primera vez 48 selecciones en 12 grupos de 4. Clasifican los 2 primeros + los 8 mejores terceros."},
+    {emoji:"📐",titulo:"Desempate en tabla",texto:"1° Puntos → 2° DG → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play → 6° Sorteo FIFA."},
+    {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Final en el MetLife Stadium, NY/NJ. México juega en Azteca, Guadalajara y Monterrey."},
+    {emoji:"🥇",titulo:"Campeones: Argentina",texto:"Qatar 2022: Argentina venció a Francia 3-3 (4-2 en penales). Messi levantó el único título que le faltaba."},
+  ];
+
+  const TIPS_QUINIELA = [
+    {emoji:"📊",titulo:"Diferencia de goles importa",texto:"En grupos dos equipos pueden empatar puntos. El que gana por más diferencia avanza. Apuesta a que tu equipo gane bien, no solo que gane."},
+    {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"Arabia Saudita venció a Argentina, Japón a Alemania, Marruecos llegó a semis. Las sorpresas son parte del juego — toma riesgos."},
+    {emoji:"🔥",titulo:"Factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Esta es la mejor oportunidad de México en décadas."},
+  ];
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:14}}>
+
+      {/* ── NOTICIAS EN VIVO ── */}
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em"}}>
+        Noticias del Mundial 📰
+      </div>
+
+      {/* Filtros de fuente */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+        {fuentes.map(f => (
+          <button key={f.id} onClick={() => setFiltro(f.id)}
+            style={{...Btn(), fontSize:11, padding:"5px 11px",
+              background: filtro===f.id ? C.blue : C.card,
+              color: filtro===f.id ? "#fff" : C.muted,
+              border: filtro===f.id ? `1px solid ${C.blue}` : `1px solid ${C.border}`,
+            }}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {loadN && (
+        <div style={{textAlign:"center",color:C.muted,fontSize:13,padding:"24px 0"}}>
+          Cargando noticias…
+        </div>
+      )}
+      {errN && (
+        <div style={{textAlign:"center",color:C.muted,fontSize:12,padding:"16px 0"}}>
+          No se pudieron cargar las noticias. Intenta de nuevo más tarde.
+        </div>
+      )}
+      {!loadN && !errN && visibles.length === 0 && (
+        <div style={{textAlign:"center",color:C.muted,fontSize:12,padding:"16px 0"}}>
+          Sin noticias disponibles en este momento.
+        </div>
+      )}
+
+      {visibles.map((n, i) => (
+        <a key={i} href={n.link} target="_blank" rel="noopener noreferrer"
+          style={{textDecoration:"none",display:"block",
+            background:C.card, borderRadius:12, overflow:"hidden",
+            border:`1px solid ${C.border}`}}>
+          {n.image && (
+            <img src={n.image} alt="" loading="lazy"
+              style={{width:"100%",height:160,objectFit:"cover",display:"block"}}
+              onError={e => { e.target.style.display="none"; }} />
+          )}
+          <div style={{padding:"12px 14px"}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,marginBottom:6}}>
+              <span style={{background:n.sourceColor,color:"#fff",fontSize:9,fontWeight:700,
+                borderRadius:4,padding:"2px 6px",textTransform:"uppercase",letterSpacing:"0.05em",
+                flexShrink:0}}>
+                {n.sourceName}
+              </span>
+              {n.pubDate && (
+                <span style={{color:C.muted,fontSize:10}}>{timeAgo(n.pubDate)}</span>
+              )}
+            </div>
+            <div style={{color:C.text,fontSize:13,fontWeight:600,lineHeight:1.45,marginBottom:4}}>
+              {n.title}
+            </div>
+            {n.description && (
+              <div style={{color:"#9ca3af",fontSize:11,lineHeight:1.6}}>
+                {n.description}{n.description.length >= 200 ? "…" : ""}
+              </div>
+            )}
+          </div>
+        </a>
+      ))}
+
+      {/* ── TIPS ESTÁTICOS ── */}
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:8}}>
+        Reglas básicas ⚽
+      </div>
+      {TIPS_REGLAS.map((t,i)=>(
+        <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+          <div>
+            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+          </div>
+        </div>
+      ))}
+
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>
+        Formato del Mundial 2026 🏆
+      </div>
+      {TIPS_MUNDIAL.map((t,i)=>(
+        <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+          <div>
+            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+          </div>
+        </div>
+      ))}
+
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>
+        Tips para tu quiniela 🎯
+      </div>
+      {TIPS_QUINIELA.map((t,i)=>(
+        <div key={i} style={{background:"linear-gradient(135deg,#7c3aed12,#1d4ed812)",border:"1px solid #7c3aed22",borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+          <div>
+            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+          </div>
+        </div>
+      ))}
+
+      <p style={{color:"#7c3aed",fontSize:11,textAlign:"center",padding:"4px 0 8px"}}>
+        MarketerIA · más tips cada jornada 🚀
+      </p>
     </div>
   );
 }
