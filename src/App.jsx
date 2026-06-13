@@ -122,10 +122,10 @@ function CrearSala({ onCreate }) {
           </div>
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-            {[
-              { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"La app calcula quién le debe cuánto. Ustedes se arreglan." },
-              { k:"retos",   icon:"🎲", title:"Con retos",   desc:"El perdedor sortea 3 castigos del grupo y elige uno." },
-              { k:"hibrido", icon:"🔥", title:"Híbrido",     desc:"Cada quien elige al entrar: apuesta dinero o acepta un reto." },
+            [
+              { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"Sala privada: tú decides con quién y de cuánto. Solo la ven los que invites." },
+              { k:"retos",   icon:"🎲", title:"Con retos",   desc:"Sin dinero. El perdedor sortea 3 castigos del grupo y elige uno." },
+              { k:"hibrido", icon:"🔥", title:"Híbrido $250", desc:"Quiniela grande. Cada quien elige: apuesta $250 fijos o acepta un reto. Todos ven a todos." },
             ].map(o => (
               <div key={o.k} onClick={() => setModo(o.k)} style={{ ...cardStyle, cursor:"pointer", marginBottom:0, border:`${modo===o.k?"2px":"0.5px"} solid ${modo===o.k?"#3b82f6":C.border}` }}>
                 <div style={{ fontSize:24, marginBottom:6 }}>{o.icon}</div>
@@ -242,7 +242,7 @@ function Unirse({ sala, participantes, onJoin }) {
     const { data, error } = await supabase.from("participantes").insert({
       sala_id: sala.id, nombre: nombre.trim(), whatsapp: whatsapp.trim() || null, equipo, flag: t.f,
       modo_jugador: modoJugador || sala.modo,
-      apuesta: (modoJugador === "dinero" || sala.modo === "dinero") ? Math.min(apuesta, 250) : 0,
+      apuesta: modoJugador === "dinero" ? (sala.modo === "hibrido" ? 250 : Math.min(apuesta, 500)) : 0,
       points: 0, penalties: 0, eliminado: false,
       pron_camp: pronCamp || null, pron_camp_flag: pronCamp ? TEAMS.find(x=>x.n===pronCamp)?.f : null,
       pron_sub: pronSub || null, pron_sub_flag: pronSub ? TEAMS.find(x=>x.n===pronSub)?.f : null,
@@ -254,7 +254,14 @@ function Unirse({ sala, participantes, onJoin }) {
   function compartirWA() {
     const canvas = canvasRef.current;
     const tc = TEAMS.find(x=>x.n===pronCamp), ts = TEAMS.find(x=>x.n===pronSub);
-    const text = `${tc?.f||""} *${pronCamp}* campeón del Mundial 2026\n${ts?.f||""} *${pronSub}* subcampeón\n\nEse es mi pronóstico 🏆\n\n¿Cuál es el tuyo? Únete a la quiniela "${sala.nombre}":\n${APP_URL}/sala/${sala.id}`;
+    const tEquipo = TEAMS.find(x=>x.n===equipo);
+    const text = [
+      `🏳️ Mi equipo: *${tEquipo?.f||""} ${equipo}*`,
+      `🏆 Mi apuesta: *${tc?.f||""} ${pronCamp}* campeón · 🥈 *${ts?.f||""} ${pronSub}* subcampeón`,
+      ``,
+      `¿Cuál es tu pronóstico? Únete a "${sala.nombre}":`,
+      `${APP_URL}/sala/${sala.id}`,
+    ].join("\n");
     if (!canvas) { window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank"); return; }
     canvas.toBlob(async blob => {
       if (navigator.share && blob) {
@@ -336,17 +343,25 @@ function Unirse({ sala, participantes, onJoin }) {
             </div>
           </>}
 
-          {(modoJugador === "dinero" || sala.modo === "dinero") && (
+          {modoJugador === "dinero" && sala.modo === "dinero" && (
             <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
               <div style={{ color:"#fbbf24", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>💰 Tu apuesta</div>
               <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                <input type="range" min={10} max={250} step={10} value={apuesta}
+                <input type="range" min={10} max={500} step={10} value={apuesta}
                   onChange={e => setApuesta(Number(e.target.value))}
                   style={{ flex:1, accentColor:"#fbbf24" }} />
                 <div style={{ color:"#fbbf24", fontWeight:700, fontSize:22, minWidth:60, textAlign:"right" }}>${apuesta}</div>
               </div>
               <p style={{ color:C.muted, fontSize:11, marginTop:8 }}>
                 Si quedas último, pagas <strong style={{color:"#fbbf24"}}>${apuesta} pesos</strong> cuando el admin lo indique. 🤝
+              </p>
+            </div>
+          )}
+          {modoJugador === "dinero" && sala.modo === "hibrido" && (
+            <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
+              <div style={{ color:"#fbbf24", fontSize:15, fontWeight:700, marginBottom:4 }}>💰 Apuesta: $250 pesos</div>
+              <p style={{ color:C.muted, fontSize:12 }}>
+                Monto fijo de la quiniela grande. Si quedas último, pagas <strong style={{color:"#fbbf24"}}>$250 pesos</strong> cuando el admin lo indique. 🤝
               </p>
             </div>
           )}
@@ -449,17 +464,22 @@ function Sala({ sala, miId }) {
   }
 
   function compartirWA() {
-    const miEquipo = yo ? `${yo.flag} ${yo.equipo}` : "";
+    const nombre = yo?.nombre || "Alguien";
+    const equipo = yo ? `${yo.flag} ${yo.equipo}` : "";
+    const pronCamp = yo?.pron_camp ? `${yo.pron_camp_flag} ${yo.pron_camp}` : null;
+    const pronSub  = yo?.pron_sub  ? `${yo.pron_sub_flag} ${yo.pron_sub}`   : null;
+    const modoTag  = yo?.modo_jugador==="dinero" ? `💰 $${yo.apuesta||250}` : sala.modo==="dinero" ? `💰 $${yo?.apuesta||sala.cuota}` : `🎲 retos`;
     const lines = [
-      `⚽ *${yo?.nombre || "Alguien"}* te está invitando a una apuesta del Mundial 2026`,
+      `⚽ *${nombre}* te está invitando a una apuesta del Mundial 2026`,
       ``,
-      miEquipo ? `Yo voy con ${miEquipo} 🔥` : ``,
-      `¿Con quién vas tú? El que quede último paga un castigo 😈`,
+      equipo   ? `🏳️ Mi equipo: *${equipo}*` : ``,
+      pronCamp ? `🏆 Mi apuesta: *${pronCamp}* campeón · 🥈 *${pronSub}* subcampeón` : ``,
+      `Modo: ${modoTag}`,
       ``,
-      `🏆 *${sala.nombre}*`,
+      `¿Y tú? El que quede último paga un castigo 😈`,
       ``,
-      `👉 Únete aquí: ${salaLink}`,
-    ].filter(l => l !== undefined);
+      `👉 Únete: ${salaLink}`,
+    ].filter(Boolean);
     window.open("https://wa.me/?text="+encodeURIComponent(lines.join("\n")),"_blank");
   }
 
