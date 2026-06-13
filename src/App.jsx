@@ -802,127 +802,192 @@ function Sala({ sala, miId }) {
 // ── PESTAÑA: CALENDARIO MUNDIAL ───────────────
 function Calendario() {
   const [scoreboard, setScoreboard] = useState(null);
-  const [standings, setStandings]   = useState(null);
-  const [loading, setLoading]       = useState(true);
-  const [tab, setTabCal]            = useState("hoy"); // hoy | grupos
+  const [standings,  setStandings]  = useState(null);
+  const [loading,    setLoading]    = useState(true);
+  const [tab,        setTabCal]     = useState("partidos");
+  const [dateOff,    setDateOff]    = useState(0); // días desde hoy
 
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/fotmob?endpoint=scoreboard").then(r=>r.json()),
-      fetch("/api/fotmob?endpoint=standings").then(r=>r.json()),
-    ]).then(([sb, st]) => {
-      setScoreboard(sb);
-      setStandings(st);
-      setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
-
-  function fmtTime(utc) {
+  function dateStr(offset=0) {
+    const d = new Date(); d.setDate(d.getDate()+offset);
+    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  }
+  function labelDate(offset) {
+    if (offset===0) return "Hoy";
+    if (offset===-1) return "Ayer";
+    if (offset===1) return "Mañana";
+    const d = new Date(); d.setDate(d.getDate()+offset);
+    return d.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});
+  }
+  function fmtHour(utc) {
     if (!utc) return "";
     return new Date(utc).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",timeZone:"America/Mexico_City"});
   }
-  function fmtDate(utc) {
-    if (!utc) return "";
-    const d = new Date(utc), hoy = new Date(), man = new Date();
-    man.setDate(man.getDate()+1);
-    if (d.toDateString()===hoy.toDateString()) return "Hoy";
-    if (d.toDateString()===man.toDateString()) return "Mañana";
-    return d.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});
-  }
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr(dateOff)}`).then(r=>r.json()).catch(()=>({})),
+      standings ? Promise.resolve(standings) : fetch("/api/fotmob?endpoint=standings").then(r=>r.json()).catch(()=>({})),
+    ]).then(([sb, st]) => {
+      setScoreboard(sb);
+      if (!standings) setStandings(st);
+      setLoading(false);
+    });
+  }, [dateOff]);
 
   const events = scoreboard?.events || [];
   const groups = standings?.children || [];
 
-  if (loading) return <div style={{color:C.muted,textAlign:"center",padding:40}}>Cargando partidos…</div>;
+  // Agrupar partidos por ronda
+  const byRound = {};
+  events.forEach(ev => {
+    const rnd = ev.season?.slug?.replace(/-/g," ") || ev.competitions?.[0]?.type?.abbreviation || "Partido";
+    const label = rnd==="group-stage" ? "Fase de Grupos" : rnd==="round-of-16" ? "Octavos" : rnd==="quarterfinals" ? "Cuartos" : rnd==="semifinals" ? "Semifinales" : rnd==="final" ? "Final" : rnd;
+    if (!byRound[label]) byRound[label] = [];
+    byRound[label].push(ev);
+  });
 
   return (
-    <div>
+    <div style={{margin:"0 -4px"}}>
       {/* Sub-tabs */}
-      <div style={{display:"flex",gap:8,marginBottom:16}}>
-        {[["hoy","⚽ Partidos"],["grupos","📊 Grupos"]].map(([k,l])=>(
+      <div style={{display:"flex",gap:0,marginBottom:0,borderBottom:`1px solid ${C.border}`}}>
+        {[["partidos","Partidos"],["grupos","Grupos"]].map(([k,l])=>(
           <button key={k} onClick={()=>setTabCal(k)}
-            style={{...Btn(),fontSize:12,flex:1,padding:"8px 0",
-              background:tab===k?"#1d4ed8":C.card,color:tab===k?"#fff":C.muted,
-              border:`0.5px solid ${tab===k?"#1d4ed8":C.border}`}}>
+            style={{background:"none",border:"none",borderBottom:`2px solid ${tab===k?"#3b82f6":"transparent"}`,
+              color:tab===k?C.text:C.muted,fontSize:13,fontWeight:tab===k?600:400,
+              padding:"8px 16px",cursor:"pointer",fontFamily:"inherit",transition:"all .15s"}}>
             {l}
           </button>
         ))}
       </div>
 
-      {tab==="hoy" && (
-        events.length===0
-          ? <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:24}}>No hay partidos hoy.</p>
-          : events.map((ev,i) => {
-              const comp = ev.competitions?.[0];
-              const home = comp?.competitors?.find(c=>c.homeAway==="home");
-              const away = comp?.competitors?.find(c=>c.homeAway==="away");
-              const status = comp?.status?.type;
-              const live = status?.state==="in";
-              const done = status?.state==="post";
+      {tab==="partidos" && <>
+        {/* Navegación de fechas */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 4px",borderBottom:`1px solid ${C.border}`,marginBottom:12}}>
+          <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 10px",fontSize:18,lineHeight:1}}>‹</button>
+          <span style={{color:C.text,fontSize:13,fontWeight:600}}>{labelDate(dateOff)}</span>
+          <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 10px",fontSize:18,lineHeight:1}}>›</button>
+        </div>
+
+        {loading && <div style={{color:C.muted,textAlign:"center",padding:32,fontSize:13}}>Cargando…</div>}
+
+        {!loading && events.length===0 &&
+          <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>Sin partidos este día.</p>
+        }
+
+        {!loading && Object.entries(byRound).map(([rnd, evs]) => (
+          <div key={rnd} style={{marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:8,padding:"6px 4px",marginBottom:4}}>
+              <span style={{color:C.muted,fontSize:11,textTransform:"uppercase",letterSpacing:"0.06em",fontWeight:600}}>
+                🏆 Copa del Mundo · {rnd}
+              </span>
+            </div>
+            {evs.map((ev,i) => {
+              const comp  = ev.competitions?.[0];
+              const home  = comp?.competitors?.find(c=>c.homeAway==="home");
+              const away  = comp?.competitors?.find(c=>c.homeAway==="away");
+              const st    = comp?.status?.type;
+              const live  = st?.state==="in";
+              const done  = st?.state==="post";
               const clock = comp?.status?.displayClock;
-              const scoreH = home?.score ?? "";
-              const scoreA = away?.score ?? "";
+              const sH    = home?.score ?? "—";
+              const sA    = away?.score ?? "—";
+              const homeName = home?.team?.shortDisplayName || home?.team?.location || "—";
+              const awayName = away?.team?.shortDisplayName || away?.team?.location || "—";
+              const homeLogo = home?.team?.logo;
+              const awayLogo = away?.team?.logo;
               return (
-                <div key={i} style={{...cardStyle,marginBottom:8}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                    <span style={{color:C.muted,fontSize:10}}>{fmtDate(ev.date)}</span>
-                    {live && <span style={{color:C.green,fontSize:10,fontWeight:600}}>● EN VIVO {clock}</span>}
-                    {done && <span style={{color:C.muted,fontSize:10}}>FT</span>}
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8}}>
-                    <div style={{display:"flex",alignItems:"center",gap:8}}>
-                      {home?.team?.flag && <img src={home.team.flag} style={{width:24,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
-                      <span style={{color:C.text,fontSize:14,fontWeight:500}}>{home?.team?.shortDisplayName||home?.team?.displayName||"—"}</span>
+                <div key={i} style={{
+                  background:C.card, borderRadius:10, marginBottom:4,
+                  padding:"12px 14px",
+                  borderLeft: live ? `3px solid ${C.green}` : `3px solid transparent`,
+                }}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 72px 1fr",alignItems:"center",gap:4}}>
+                    {/* Local */}
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                      {homeLogo
+                        ? <img src={homeLogo} style={{width:32,height:32,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />
+                        : <span style={{fontSize:24}}>🏳️</span>}
+                      <span style={{color:C.text,fontSize:12,fontWeight:500,textAlign:"right"}}>{homeName}</span>
                     </div>
-                    <div style={{textAlign:"center",minWidth:56}}>
+                    {/* Marcador / Hora */}
+                    <div style={{textAlign:"center"}}>
+                      {live && <div style={{color:C.green,fontSize:9,fontWeight:700,marginBottom:2}}>● {clock}</div>}
                       {(done||live)
-                        ? <span style={{color:C.text,fontSize:18,fontWeight:700}}>{scoreH} – {scoreA}</span>
-                        : <span style={{color:C.muted,fontSize:13}}>{fmtTime(ev.date)}</span>
+                        ? <div style={{color:C.text,fontSize:20,fontWeight:800,letterSpacing:1}}>{sH}–{sA}</div>
+                        : <div style={{color:C.muted,fontSize:14,fontWeight:500}}>{fmtHour(ev.date)}</div>
                       }
+                      {done && <div style={{color:C.muted,fontSize:9,marginTop:2}}>FT</div>}
                     </div>
-                    <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
-                      <span style={{color:C.text,fontSize:14,fontWeight:500,textAlign:"right"}}>{away?.team?.shortDisplayName||away?.team?.displayName||"—"}</span>
-                      {away?.team?.flag && <img src={away.team.flag} style={{width:24,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
+                    {/* Visitante */}
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"flex-start",gap:4}}>
+                      {awayLogo
+                        ? <img src={awayLogo} style={{width:32,height:32,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />
+                        : <span style={{fontSize:24}}>🏳️</span>}
+                      <span style={{color:C.text,fontSize:12,fontWeight:500}}>{awayName}</span>
                     </div>
                   </div>
                 </div>
               );
-            })
-      )}
+            })}
+          </div>
+        ))}
+      </>}
 
       {tab==="grupos" && (
-        groups.length===0
-          ? <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:24}}>Cargando grupos…</p>
-          : groups.map((g,gi) => {
-              const entries = g.standings?.entries || [];
-              return (
-                <div key={gi} style={{...cardStyle,marginBottom:12}}>
-                  <div style={{color:C.gold,fontWeight:700,fontSize:13,marginBottom:10}}>{g.name}</div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 28px 32px",gap:2,alignItems:"center",marginBottom:6}}>
-                    <span style={{color:C.muted,fontSize:10}}>Equipo</span>
-                    {["J","G","E","P","Pts"].map(h=><span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>)}
-                  </div>
-                  {entries.map((e,ei) => {
-                    const stats = {};
-                    (e.stats||[]).forEach(s=>{ stats[s.name]=s.value; });
-                    const pts = stats["points"]??0, gp=stats["gamesPlayed"]??0, gw=stats["wins"]??0, gl=stats["losses"]??0, gd=stats["ties"]??0;
-                    const advancing = ei < 2;
-                    return (
-                      <div key={ei} style={{display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 28px 32px",gap:2,alignItems:"center",padding:"5px 0",borderBottom:ei<entries.length-1?`1px solid ${C.border}`:undefined}}>
-                        <div style={{display:"flex",alignItems:"center",gap:6}}>
-                          <span style={{width:6,height:6,borderRadius:3,background:advancing?"#10b981":"transparent",flexShrink:0,display:"inline-block"}}/>
-                          {e.team?.logos?.[0]?.href && <img src={e.team.logos[0].href} style={{width:18,height:18,objectFit:"contain"}} onError={ev=>ev.target.style.display="none"} />}
-                          <span style={{color:C.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.team?.shortDisplayName||e.team?.displayName||"—"}</span>
+        <div style={{marginTop:12}}>
+          {groups.length===0
+            ? <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>Cargando…</p>
+            : groups.map((g,gi) => {
+                const entries = g.standings?.entries || [];
+                return (
+                  <div key={gi} style={{background:C.card,borderRadius:10,marginBottom:10,overflow:"hidden"}}>
+                    {/* Header grupo */}
+                    <div style={{background:"#1a2235",padding:"8px 14px",borderBottom:`1px solid ${C.border}`}}>
+                      <span style={{color:C.gold,fontSize:12,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.05em"}}>{g.name}</span>
+                    </div>
+                    {/* Encabezados */}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 34px",gap:0,padding:"5px 14px",borderBottom:`1px solid ${C.border}`}}>
+                      <span style={{color:C.muted,fontSize:10}}>Equipo</span>
+                      {["J","G","E","Pts"].map(h=><span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>)}
+                    </div>
+                    {/* Filas */}
+                    {entries.map((e,ei) => {
+                      const stats = {};
+                      (e.stats||[]).forEach(s=>{ stats[s.name]=s.value; });
+                      const pts=stats["points"]??0, gp=stats["gamesPlayed"]??0, gw=stats["wins"]??0, gd=stats["ties"]??0;
+                      const adv = ei<2;
+                      const logo = e.team?.logos?.[0]?.href;
+                      return (
+                        <div key={ei} style={{
+                          display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 34px",gap:0,
+                          padding:"8px 14px",alignItems:"center",
+                          borderBottom:ei<entries.length-1?`1px solid ${C.border}20`:undefined,
+                          background:adv?"#10b98108":undefined,
+                        }}>
+                          <div style={{display:"flex",alignItems:"center",gap:8}}>
+                            <span style={{width:3,height:20,borderRadius:2,background:adv?"#10b981":"#ffffff10",flexShrink:0}}/>
+                            {logo
+                              ? <img src={logo} style={{width:20,height:20,objectFit:"contain"}} onError={ev=>ev.target.style.display="none"} />
+                              : <span style={{fontSize:18}}>🏳️</span>}
+                            <span style={{color:adv?C.text:C.muted,fontSize:13,fontWeight:adv?600:400}}>{e.team?.shortDisplayName||"—"}</span>
+                          </div>
+                          {[gp,gw,gd,pts].map((v,vi)=>(
+                            <span key={vi} style={{
+                              color:vi===3?C.text:C.muted,fontSize:13,textAlign:"center",
+                              fontWeight:vi===3?700:400,
+                              background:vi===3&&adv?"#10b98122":undefined,
+                              borderRadius:4,
+                            }}>{v}</span>
+                          ))}
                         </div>
-                        {[gp,gw,gd,gl,pts].map((v,vi)=>(
-                          <span key={vi} style={{color:vi===4?C.text:C.muted,fontSize:12,textAlign:"center",fontWeight:vi===4?700:400}}>{v}</span>
-                        ))}
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })
+                      );
+                    })}
+                  </div>
+                );
+              })
+          }
+        </div>
       )}
     </div>
   );
