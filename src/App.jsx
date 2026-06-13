@@ -450,8 +450,7 @@ function Unirse({ sala, participantes, onJoin }) {
   const [loading, setLoading] = useState(false);
   const canvasRef = useRef(null);
 
-  const usados = participantes.map(p => p.equipo);
-  const disponibles = TEAMS.filter(t => !usados.includes(t.n));
+  const disponibles = TEAMS;
 
   useEffect(() => {
     if (pronCamp && pronSub && pronCamp !== pronSub) {
