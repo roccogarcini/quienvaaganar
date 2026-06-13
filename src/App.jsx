@@ -808,7 +808,9 @@ function Calendario() {
   const [tab,        setTabCal]     = useState("resumen");
   const [dateOff,    setDateOff]    = useState(0);
   const [showCal,    setShowCal]    = useState(false);
+  const [nextMap,    setNextMap]    = useState({});   // teamId → {logo, name, date}
   const standingsCache = useRef(null);
+  const nextCache      = useRef(null);
 
   function dateStr(off=0) {
     const d=new Date(); d.setDate(d.getDate()+off);
@@ -834,6 +836,32 @@ function Calendario() {
     if (standingsCache.current) { setStandings(standingsCache.current); setLoadSt(false); return; }
     fetch("/api/fotmob?endpoint=standings").then(r=>r.json())
       .then(d=>{ standingsCache.current=d; setStandings(d); setLoadSt(false); }).catch(()=>setLoadSt(false));
+  }, []);
+
+  // Fetch próximos partidos para columna "Siguiente"
+  useEffect(() => {
+    if (nextCache.current) { setNextMap(nextCache.current); return; }
+    // Pedir los próximos 14 días en un rango de fechas
+    const now=new Date(), end=new Date(); end.setDate(now.getDate()+14);
+    const fmt=d=>`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+    fetch(`/api/fotmob?endpoint=schedule&dates=${fmt(now)}-${fmt(end)}`).then(r=>r.json())
+      .then(data=>{
+        const map={};
+        const evts=(data?.events||[]).filter(ev=>{
+          const st=ev.competitions?.[0]?.status?.type?.state;
+          return st==="pre"; // solo no jugados
+        }).sort((a,b)=>new Date(a.date)-new Date(b.date));
+        evts.forEach(ev=>{
+          const comp=ev.competitions?.[0];
+          const home=comp?.competitors?.find(c=>c.homeAway==="home");
+          const away=comp?.competitors?.find(c=>c.homeAway==="away");
+          if(!home||!away) return;
+          // Para cada equipo, guarda su próximo rival (solo si aún no está en el map)
+          if(!map[home.team.id]) map[home.team.id]={logo:away.team.logo,name:away.team.shortDisplayName||away.team.location,date:ev.date};
+          if(!map[away.team.id]) map[away.team.id]={logo:home.team.logo,name:home.team.shortDisplayName||home.team.location,date:ev.date};
+        });
+        nextCache.current=map; setNextMap(map);
+      }).catch(()=>{});
   }, []);
 
   const events = scoreboard?.events || [];
@@ -915,15 +943,15 @@ function Calendario() {
     if (groups.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin datos aún.</p>;
 
     // Columnas FotMob:
-    //  compact: #bar | team | J | +/- | DG | Pts
-    //  full:    #bar | team | J | G | E | P | +/- | DG | Pts
-    const colsCompact = "20px 1fr 22px 30px 26px 26px";
-    const colsFull    = "20px 1fr 22px 22px 22px 22px 30px 26px 26px";
+    //  compact: #bar | team | J | +/- | DG | Pts | Sig
+    //  full:    #bar | team | J | G | E | P | +/- | DG | Pts | Sig
+    const colsCompact = "20px 1fr 22px 30px 26px 26px 28px";
+    const colsFull    = "20px 1fr 22px 22px 22px 22px 30px 26px 26px 28px";
 
     return <>{groups.map((g,gi)=>{
       const entries=g.standings?.entries||[];
       const cols = compact ? colsCompact : colsFull;
-      const headers = compact ? ["J","+/-","DG","Pts"] : ["J","G","E","P","+/-","DG","Pts"];
+      const headers = compact ? ["J","+/-","DG","Pts","Sig"] : ["J","G","E","P","+/-","DG","Pts","Sig"];
       return (
         <div key={gi} style={{marginBottom:12,background:C.card,borderRadius:10,overflow:"hidden"}}>
           <div style={{padding:"7px 10px",background:"#161d2e",borderBottom:`1px solid ${C.border}`}}>
@@ -941,6 +969,8 @@ function Calendario() {
             const marcador=`${gf}-${ga}`;                        // "+/-" = "2-0"
             const dg=(gf-ga>=0?"+":"")+(gf-ga);                  // "DG"  = "+2"
             const pts=Number(st.points||0);
+            const teamId = e.team?.id;
+            const next = nextMap[teamId];
             const vals = compact
               ? [gp, marcador, dg, pts]
               : [gp, gw, gd, gl, marcador, dg, pts];
@@ -959,6 +989,12 @@ function Calendario() {
                   const col=isLast?C.text:isDG?(Number(String(v).replace("+",""))>0?"#10b981":Number(String(v).replace("+",""))<0?"#f87171":C.muted):C.muted;
                   return <span key={vi} style={{color:col,fontSize:11,textAlign:"center",fontWeight:isLast?700:400}}>{v}</span>;
                 })}
+                {/* Siguiente rival */}
+                <div style={{display:"flex",justifyContent:"center"}}>
+                  {next?.logo
+                    ? <img src={next.logo} title={next.name} style={{width:18,height:18,objectFit:"contain"}} onError={e=>e.target.style.display="none"}/>
+                    : <span style={{color:C.muted,fontSize:10}}>—</span>}
+                </div>
               </div>
             );
           })}
