@@ -506,17 +506,25 @@ function Unirse({ sala, participantes, onJoin }) {
       `¿Cuál es tu pronóstico? Únete a "${sala.nombre}":`,
       `${APP_URL}/sala/${sala.id}`,
     ].join("\n");
-    if (!canvas) { window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank"); return; }
-    canvas.toBlob(async blob => {
-      if (navigator.share && blob) {
+    // Intentar Web Share API nativa (abre sheet de iOS/Android directamente)
+    if (canvas && navigator.share) {
+      canvas.toBlob(async blob => {
         try {
-          const file = new File([blob],"pronostico.png",{type:"image/png"});
-          if (navigator.canShare?.({files:[file]})) { await navigator.share({title:"Mi pronóstico",text,files:[file]}); return; }
-        } catch(e) {}
-      }
-      const a=document.createElement("a");a.href=canvas.toDataURL("image/png");a.download="pronostico-mundial.png";a.click();
-      setTimeout(()=>window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank"),600);
-    },"image/png");
+          const file = new File([blob], "pronostico-mundial.png", {type:"image/png"});
+          await navigator.share({ title:"Mi pronóstico Mundial 2026", text, files:[file] });
+          return;
+        } catch(e) {
+          if (e.name === "AbortError") return; // usuario canceló, no hacer nada más
+          // Si no soporta archivos, intentar sin archivo
+          try { await navigator.share({ title:"Mi pronóstico", text }); return; } catch(_) {}
+        }
+        // Último fallback: solo abrir WA con texto
+        window.location.href = "https://wa.me/?text="+encodeURIComponent(text);
+      }, "image/png");
+      return;
+    }
+    // Sin canvas ni share API → WA con texto
+    window.location.href = "https://wa.me/?text="+encodeURIComponent(text);
   }
 
   return (
