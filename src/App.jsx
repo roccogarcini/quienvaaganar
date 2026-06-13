@@ -1272,7 +1272,6 @@ function Calendario({ salaLink, yo }) {
                     return [
                       {icon:"🍎",label:"Apple",    url:ics},
                       {icon:"📅",label:"Google",   url:`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(ics)}`},
-                      {icon:"🪟",label:"Outlook / .ics", url:"https://www.fotmob.com/es-419/leagues/77/synccalendar/copa-del-mundo"},
                     ];
                   })().map((c,i,arr)=>(
                     <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
