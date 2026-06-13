@@ -311,7 +311,7 @@ function CrearSala({ onCreate }) {
           />
           <input
             value={creadorWA} onChange={e=>setCreadorWA(e.target.value)}
-            placeholder="Tu WhatsApp (ej: 5512345678)" type="tel"
+            placeholder="Tu WhatsApp (ej: 4431234567)" type="tel"
             style={{ ...inp, marginBottom:20 }}
             onKeyDown={e=>e.key==="Enter"&&creadorNombre.trim()&&creadorWA.trim()&&verificarWA()}
           />
@@ -822,7 +822,7 @@ function Sala({ sala, miId }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
-          {[["tabla","Tabla"],["flash","Apuestas"],["castigos","Castigos"],["prons","Pronósticos"],["cuentas","Cuentas"],["calendario","⚽ Mundial"],["tips","Tips 🧠"]].map(([k,l])=>(
+          {[["tabla","Tabla"],["flash","Apuestas"],["castigos","Castigos"],["prons","Pronósticos"],["cuentas","Cuentas"],["calendario","⚽ Mundial"],["tips","Tips - Noticias 🧠"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
@@ -1420,17 +1420,34 @@ export default function App() {
 
   const Footer = () => (
     <div style={{
-      textAlign:"center", padding:"16px 20px 24px",
+      textAlign:"center", padding:"20px 20px 32px",
       borderTop:`1px solid ${C.border}22`,
       marginTop:8,
     }}>
-      <span style={{
-        background:"linear-gradient(90deg,#7c3aed,#1d4ed8)",
-        WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
-        fontWeight:700, fontSize:12,
-      }}>MarketerIA</span>
-      <span style={{color:C.muted, fontSize:12}}> · Desarrollado por </span>
-      <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
+      <div style={{marginBottom:10}}>
+        <span style={{
+          background:"linear-gradient(90deg,#7c3aed,#1d4ed8)",
+          WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent",
+          fontWeight:700, fontSize:12,
+        }}>MarketerIA</span>
+        <span style={{color:C.muted, fontSize:12}}> · Desarrollado por </span>
+        <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
+      </div>
+      <p style={{color:C.muted, fontSize:12, margin:"0 0 10px", lineHeight:1.5}}>
+        ¿Quieres tu propio desarrollo con IA?<br/>
+        <span style={{color:C.text}}>Realizamos tu proyecto a la medida.</span>
+      </p>
+      <a
+        href="https://wa.me/524431406867?text=Hola%20Rocco%2C%20vi%20tu%20app%20del%20Mundial%20y%20me%20interesa%20un%20desarrollo%20con%20IA%20%F0%9F%9A%80"
+        target="_blank" rel="noreferrer"
+        style={{
+          display:"inline-flex", alignItems:"center", gap:8,
+          background:"#25d366", color:"#fff",
+          padding:"10px 20px", borderRadius:24,
+          fontSize:13, fontWeight:700, textDecoration:"none",
+        }}>
+        💬 Contáctanos por WhatsApp
+      </a>
     </div>
   );
 
