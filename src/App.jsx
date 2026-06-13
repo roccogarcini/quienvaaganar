@@ -155,7 +155,7 @@ function CrearSala({ onCreate }) {
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
             {[
-              { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"Sala privada: tú decides con quién y de cuánto. Solo la ven los que invites." },
+              { k:"dinero",  icon:"🤑", title:"¡Hay Trato!",  desc:"Sala privada. Tú decides con quién y de cuánto. Solo la ven los que invites." },
               { k:"retos",   icon:"🎲", title:"Con retos",   desc:"Sin dinero. El perdedor sortea 3 castigos del grupo y elige uno." },
               { k:"hibrido", icon:"🔥", title:"Híbrido $250", desc:"Quiniela abierta. Todos entran en $250. Se cobra conforme se eliminan equipos — el admin indica cuándo y a quién pagar." },
             ].map(o => (
@@ -175,7 +175,7 @@ function CrearSala({ onCreate }) {
         {step === 2 && <>
           <div style={{ ...cardStyle, marginBottom:12 }}>
             <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
-              {modo === "dinero" ? "Monto de la apuesta ($MXN)" : "Cuota por castigo ($MXN)"}
+              {modo === "dinero" ? "🤑 Monto del trato ($MXN)" : "Cuota por castigo ($MXN)"}
             </div>
             <input style={inp} type="number" value={cuota} onChange={e => setCuota(Number(e.target.value))} />
             <p style={{ color:C.muted, fontSize:11, marginTop:6 }}>
@@ -573,7 +573,7 @@ function Sala({ sala, miId }) {
     const equipo = yo ? `${yo.flag} ${yo.equipo}` : "";
     const pronCamp = yo?.pron_camp ? `${yo.pron_camp_flag} ${yo.pron_camp}` : null;
     const pronSub  = yo?.pron_sub  ? `${yo.pron_sub_flag} ${yo.pron_sub}`   : null;
-    const modoTag  = yo?.modo_jugador==="dinero" ? `💰 $${yo.apuesta||250}` : sala.modo==="dinero" ? `💰 $${yo?.apuesta||sala.cuota}` : `🎲 retos`;
+    const modoTag  = yo?.modo_jugador==="dinero" ? `🤑 ¡Hay Trato! $${yo.apuesta||250}` : sala.modo==="dinero" ? `🤑 ¡Hay Trato! $${yo?.apuesta||sala.cuota}` : `🎲 retos`;
     const lines = [
       `⚽ *${nombre}* te está invitando a una apuesta del Mundial 2026`,
       ``,
