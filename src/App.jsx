@@ -1413,6 +1413,9 @@ export default function App() {
         <span style={{color:C.muted, fontSize:12}}> · Desarrollado por </span>
         <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
       </div>
+      <p style={{color:C.muted, fontSize:11, margin:"0 0 14px", lineHeight:1.6, maxWidth:360, marginLeft:"auto", marginRight:"auto"}}>
+        Esta app es un juego entre amigos. No somos una casa de apuestas ni intermediarios de pagos. Los datos que proporcionas (nombre y WhatsApp) se usan únicamente para identificarte dentro de tu quiniela.
+      </p>
       <p style={{color:C.muted, fontSize:12, margin:"0 0 10px", lineHeight:1.5}}>
         ¿Quieres tu propio desarrollo con IA?<br/>
         <span style={{color:C.text}}>Realizamos tu proyecto a la medida.</span>
