@@ -409,7 +409,7 @@ function CrearSala({ onCreate }) {
 // ── PANTALLA: UNIRSE ──────────────────────────
 function Unirse({ sala, participantes, onJoin }) {
   const [nombre, setNombre] = useState("");
-  const [whatsapp, setWhatsapp] = useState("");
+  const [whatsapp, setWhatsapp] = useState(() => localStorage.getItem("quiniela_wa") || "");
   const [equipo, setEquipo] = useState("");
   const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? "dinero" : sala.modo);
   const [apuesta, setApuesta] = useState(sala.cuota > 0 ? sala.cuota : 100);
@@ -1341,7 +1341,22 @@ export default function App() {
         setLoading(false);
       });
     supabase.from("participantes").select("*").eq("sala_id", salaId).order("created_at")
-      .then(({ data }) => { if(data) setParticipantes(data); });
+      .then(({ data }) => {
+        if (!data) return;
+        setParticipantes(data);
+        // Auto-login por WhatsApp: si no tengo miId guardado,
+        // busco si mi número WA ya está en la sala
+        if (!localStorage.getItem("miId_"+salaId)) {
+          const miWA = localStorage.getItem("quiniela_wa");
+          if (miWA) {
+            const yaEstoy = data.find(p => p.whatsapp === miWA);
+            if (yaEstoy) {
+              localStorage.setItem("miId_"+salaId, yaEstoy.id);
+              setMiId(yaEstoy.id);
+            }
+          }
+        }
+      });
   }, [salaId]);
 
   function onCrear(id) {
@@ -1350,6 +1365,8 @@ export default function App() {
 
   function onUnirse(participante) {
     localStorage.setItem("miId_"+salaId, participante.id);
+    // Guardar WA globalmente para auto-login en otras salas
+    if (participante.whatsapp) localStorage.setItem("quiniela_wa", participante.whatsapp);
     setParticipantes(prev => [...prev, participante]);
     setMiId(participante.id);
   }
