@@ -515,7 +515,7 @@ function Sala({ sala, miId }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
-          {[["tabla","Tabla"],["flash","Apuestas"],["castigos","Castigos"],["prons","Pronósticos"],["cuentas","Cuentas"]].map(([k,l])=>(
+          {[["tabla","Tabla"],["flash","Apuestas"],["castigos","Castigos"],["prons","Pronósticos"],["cuentas","Cuentas"],["calendario","⚽ Mundial"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
@@ -671,6 +671,171 @@ function Sala({ sala, miId }) {
           }
         </>}
 
+        {tab==="calendario" && <Calendario />}
+
+      </div>
+    </div>
+  );
+}
+
+// ── PESTAÑA: CALENDARIO MUNDIAL ───────────────
+function Calendario() {
+  const [data, setData]   = useState(null);
+  const [matches, setMatches] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+  const [jornada, setJornada] = useState(0); // índice de ronda seleccionada
+
+  useEffect(() => {
+    Promise.all([
+      fetch("/api/fotmob?path=leagues&id=77&ccode3=MEX&timezone=America%2FMexico_City").then(r=>r.json()),
+      fetch(`/api/fotmob?path=matches&date=${todayStr()}`).then(r=>r.json()),
+    ]).then(([league, todayMatches]) => {
+      setData(league);
+      setMatches(todayMatches);
+      setLoading(false);
+    }).catch(e => { setError(e.message); setLoading(false); });
+  }, []);
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  function fmtTime(utc) {
+    if (!utc) return "";
+    const d = new Date(utc);
+    return d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",timeZone:"America/Mexico_City"});
+  }
+
+  function fmtDate(utc) {
+    if (!utc) return "";
+    const d = new Date(utc);
+    const hoy = new Date();
+    const man = new Date(); man.setDate(man.getDate()+1);
+    if (d.toDateString()===hoy.toDateString()) return "Hoy";
+    if (d.toDateString()===man.toDateString()) return "Mañana";
+    return d.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});
+  }
+
+  if (loading) return <div style={{color:C.muted,textAlign:"center",padding:32}}>Cargando partidos…</div>;
+  if (error)   return <div style={{color:C.red,textAlign:"center",padding:32}}>No se pudo cargar: {error}</div>;
+
+  // Grupos desde league data
+  const groups = data?.standings?.groups || [];
+  // Partidos de la liga del día
+  const wc = matches?.leagues?.find(l=>l.id===77);
+  const todayGames = wc?.matches || [];
+
+  // Rondas/jornadas de la liga
+  const rounds = data?.matches?.allMatches
+    ? (() => {
+        const map = {};
+        data.matches.allMatches.forEach(m => {
+          const r = m.roundName || m.round || "Jornada";
+          if (!map[r]) map[r] = [];
+          map[r].push(m);
+        });
+        return Object.entries(map).map(([name, ms]) => ({ name, matches: ms }));
+      })()
+    : [];
+
+  const activeRound = rounds[jornada] || rounds[0];
+
+  return (
+    <div>
+      {/* Partidos de hoy */}
+      {todayGames.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Hoy</div>
+          {todayGames.map((m,i) => <MatchCard key={i} m={m} fmtTime={fmtTime} />)}
+          <div style={{height:16}}/>
+        </>
+      )}
+
+      {/* Rondas */}
+      {rounds.length > 0 && (
+        <>
+          <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:16,paddingBottom:4}}>
+            {rounds.map((r,i)=>(
+              <button key={i} onClick={()=>setJornada(i)}
+                style={{...Btn(),fontSize:11,whiteSpace:"nowrap",flexShrink:0,
+                  background:jornada===i?"#1d4ed8":C.card,color:jornada===i?"#fff":C.muted,
+                  border:`0.5px solid ${jornada===i?"#1d4ed8":C.border}`}}>
+                {r.name}
+              </button>
+            ))}
+          </div>
+          {activeRound?.matches.map((m,i) => <MatchCard key={i} m={m} fmtTime={fmtTime} fmtDate={fmtDate} showDate />)}
+        </>
+      )}
+
+      {/* Grupos */}
+      {groups.length > 0 && (
+        <>
+          <div style={{color:C.muted,fontSize:11,textTransform:"uppercase",letterSpacing:"0.08em",margin:"20px 0 10px"}}>Grupos</div>
+          {groups.map((g,gi) => (
+            <div key={gi} style={{...cardStyle,marginBottom:12}}>
+              <div style={{color:C.gold,fontWeight:600,fontSize:13,marginBottom:8}}>{g.name}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr repeat(6,28px)",gap:2,alignItems:"center"}}>
+                <span style={{color:C.muted,fontSize:10}}></span>
+                {["J","G","E","P","GD","Pts"].map(h=>(
+                  <span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>
+                ))}
+                {(g.standings||g.rows||[]).map((t,ti) => (
+                  <>
+                    <div key={"n"+ti} style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{color:C.muted,fontSize:11,minWidth:12}}>{ti+1}</span>
+                      {t.flag && <img src={t.flag} style={{width:16,height:12,objectFit:"cover",borderRadius:2}} onError={e=>e.target.style.display="none"} />}
+                      <span style={{color:C.text,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{t.shortName||t.name}</span>
+                    </div>
+                    {[t.played,t.wins,t.draws,t.losses,t.goalDifference,t.pts].map((v,vi) => (
+                      <span key={vi} style={{color:vi===5?C.text:C.muted,fontSize:12,textAlign:"center",fontWeight:vi===5?700:400}}>{v??0}</span>
+                    ))}
+                  </>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {groups.length===0 && rounds.length===0 && todayGames.length===0 &&
+        <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>No hay datos disponibles aún.</p>
+      }
+    </div>
+  );
+}
+
+function MatchCard({ m, fmtTime, fmtDate, showDate }) {
+  const home = m.home || m.homeTeam || {};
+  const away = m.away || m.awayTeam || {};
+  const finished = m.status?.finished || m.status?.started === false ? false : undefined;
+  const started  = m.status?.started;
+  const scoreH   = m.status?.scoreStr?.split("-")[0]?.trim() ?? m.home?.score ?? "";
+  const scoreA   = m.status?.scoreStr?.split("-")[1]?.trim() ?? m.away?.score ?? "";
+  const hasScore = m.status?.scoreStr;
+  const time     = fmtTime(m.status?.utcTime || m.utcTime);
+
+  return (
+    <div style={{...cardStyle,marginBottom:6}}>
+      {showDate && <div style={{color:C.muted,fontSize:10,marginBottom:6}}>{fmtDate(m.status?.utcTime||m.utcTime)}</div>}
+      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center"}}>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          {home.imageUrl && <img src={home.imageUrl} style={{width:20,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
+          <span style={{color:C.text,fontSize:13,fontWeight:500}}>{home.shortName||home.name||"—"}</span>
+        </div>
+        <div style={{textAlign:"center",minWidth:52}}>
+          {hasScore
+            ? <span style={{color:C.text,fontSize:16,fontWeight:700}}>{scoreH} - {scoreA}</span>
+            : <span style={{color:C.muted,fontSize:12}}>{time||"—"}</span>
+          }
+          {m.status?.liveTime?.short && <div style={{color:C.green,fontSize:10}}>{m.status.liveTime.short}′</div>}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
+          <span style={{color:C.text,fontSize:13,fontWeight:500,textAlign:"right"}}>{away.shortName||away.name||"—"}</span>
+          {away.imageUrl && <img src={away.imageUrl} style={{width:20,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
+        </div>
       </div>
     </div>
   );
