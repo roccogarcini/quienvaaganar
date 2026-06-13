@@ -1138,7 +1138,7 @@ function Calendario({ salaLink, yo }) {
     <div style={{margin:"0 -4px"}}>
       {/* Tabs */}
       <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,marginBottom:0,overflowX:"auto"}}>
-        {[["resumen","Resumen"],["tabla","Tabla"],["partidos","Partidos"]].map(([k,l])=>(
+        {[["resumen","Resumen"],["tabla","Tabla"],["partidos","Partidos"],["tips","Tips 🧠"]].map(([k,l])=>(
           <button key={k} style={tabStyle(tab===k)} onClick={()=>setTabCal(k)}>{l}</button>
         ))}
       </div>
@@ -1253,6 +1253,72 @@ function Calendario({ salaLink, yo }) {
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
           <MatchList/>
+        </div>
+      )}
+
+      {/* ── TIPS ── */}
+      {tab==="tips" && (
+        <div style={{marginTop:14,display:"flex",flexDirection:"column",gap:12}}>
+
+          {/* Sección: Reglas básicas */}
+          <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",padding:"0 2px"}}>
+            Reglas básicas ⚽
+          </div>
+          {[
+            {emoji:"🚩", titulo:"Fuera de juego (Offside)", texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
+            {emoji:"🟨", titulo:"Tarjetas", texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
+            {emoji:"📺", titulo:"VAR (Video Assistant Referee)", texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede ir a revisar la pantalla del VAR antes de decidir."},
+            {emoji:"🥅", titulo:"Penal", texto:"Si un jugador comete una falta dentro del área grande de su propio arco, el árbitro marca penal. El tiro se lanza desde el punto blanco a 11 metros del arco."},
+          ].map((t,i)=>(
+            <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+              <div>
+                <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+                <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+              </div>
+            </div>
+          ))}
+
+          {/* Sección: Formato del torneo */}
+          <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",padding:"4px 2px 0"}}>
+            Formato del Mundial 2026 🏆
+          </div>
+          {[
+            {emoji:"🌎", titulo:"48 equipos — el más grande de la historia", texto:"Por primera vez participan 48 selecciones divididas en 12 grupos de 4. Clasifican los 2 primeros de cada grupo + los 8 mejores terceros lugares."},
+            {emoji:"📐", titulo:"¿Cómo se desempata en la tabla?", texto:"1° Puntos → 2° Diferencia de goles → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play (menos tarjetas) → 6° Sorteo FIFA."},
+            {emoji:"🏟️", titulo:"Sedes: USA, México y Canadá", texto:"Partidos en 16 ciudades de 3 países. La final será en el MetLife Stadium de Nueva York/Nueva Jersey. México tiene sede en CDMX (Estadio Azteca), Guadalajara y Monterrey."},
+            {emoji:"🥇", titulo:"Campeones vigentes: Argentina", texto:"La Albiceleste ganó el Mundial Qatar 2022 en penales contra Francia 3-3 (4-2 en penales). Messi levantó por fin el único título que le faltaba."},
+          ].map((t,i)=>(
+            <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+              <div>
+                <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+                <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+              </div>
+            </div>
+          ))}
+
+          {/* Sección: Para la quiniela */}
+          <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",padding:"4px 2px 0"}}>
+            Tips para tu quiniela 🎯
+          </div>
+          {[
+            {emoji:"📊", titulo:"Fíjate en la diferencia de goles (DG)", texto:"En la fase de grupos dos equipos pueden empatar en puntos. El que gana más por diferencia de goles avanza. Vale la pena apostar a que tu equipo no solo gane, sino que gane bien."},
+            {emoji:"🌡️", titulo:"Los favoritos no siempre ganan", texto:"En Qatar 2022 Arabia Saudita venció a Argentina, Japón a Alemania y Marruecos llegó a semis. En los Mundiales las sorpresas son parte del juego — toma riesgos en tu quiniela."},
+            {emoji:"🔥", titulo:"El factor local es real", texto:"Con sede en México, la presión de la afición puede ser decisiva. Históricamente los equipos locales llegan lejos. ¿Le vas a México? Esta es su mejor oportunidad en décadas."},
+          ].map((t,i)=>(
+            <div key={i} style={{background:"linear-gradient(135deg,#7c3aed12,#1d4ed812)",border:"1px solid #7c3aed22",borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
+              <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
+              <div>
+                <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
+                <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
+              </div>
+            </div>
+          ))}
+
+          <p style={{color:"#7c3aed",fontSize:11,textAlign:"center",padding:"4px 0 8px"}}>
+            MarketerIA · más tips cada jornada 🚀
+          </p>
         </div>
       )}
     </div>
