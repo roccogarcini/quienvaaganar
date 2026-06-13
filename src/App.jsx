@@ -91,8 +91,12 @@ function CrearSala({ onCreate }) {
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
   const [newC, setNewC] = useState("");
-  const [step, setStep] = useState(1); // 1=modo, 2=config, 3=castigos
+  const [step, setStep] = useState(1); // 1=modo, 2=config, 3=castigos, 4=invitar
   const [loading, setLoading] = useState(false);
+  const [salaId, setSalaId] = useState(null);
+  const [invitados, setInvitados] = useState([]); // [{nombre, wa}]
+  const [newInvNombre, setNewInvNombre] = useState("");
+  const [newInvWa, setNewInvWa] = useState("");
 
   async function crear() {
     if (!nombre.trim() || !modo) return;
@@ -102,8 +106,11 @@ function CrearSala({ onCreate }) {
       id, nombre, modo, cuota: (modo === "dinero" || modo === "hibrido") ? cuota : 0,
       castigos, flash: [], stage: "Grupos"
     });
-    if (!error) onCreate(id);
-    else { alert("Error al crear sala: " + error.message); setLoading(false); }
+    if (!error) {
+      setSalaId(id);
+      if (modo === "dinero") { setStep(4); setLoading(false); }
+      else onCreate(id);
+    } else { alert("Error al crear sala: " + error.message); setLoading(false); }
   }
 
   return (
@@ -166,15 +173,86 @@ function CrearSala({ onCreate }) {
         </>}
 
         {step === 2 && <>
-          <div style={{ ...cardStyle }}>
-            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Cuota por castigo ($MXN)</div>
+          <div style={{ ...cardStyle, marginBottom:12 }}>
+            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+              {modo === "dinero" ? "Monto de la apuesta ($MXN)" : "Cuota por castigo ($MXN)"}
+            </div>
             <input style={inp} type="number" value={cuota} onChange={e => setCuota(Number(e.target.value))} />
-            <p style={{ color:C.muted, fontSize:11, marginTop:6 }}>Los jugadores que elijan "con dinero" se comprometen a meter esta cantidad cuando se les indique.</p>
+            <p style={{ color:C.muted, fontSize:11, marginTop:6 }}>
+              {modo === "dinero"
+                ? "El que pierda pagará este monto. Solo lo ven los que tú invites."
+                : "Los jugadores que elijan dinero se comprometen a meter esta cantidad cuando se les indique."}
+            </p>
           </div>
+
+          {modo === "dinero" && <>
+            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10, marginTop:4 }}>
+              💰 Con quién apuestas
+            </div>
+            <p style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Agrega a las personas con las que harás la apuesta. Les mandarás el link por WhatsApp al finalizar.</p>
+            <div style={{ display:"flex", gap:6, marginBottom:6 }}>
+              <input style={{ ...inp, flex:2 }} placeholder="Nombre" value={newInvNombre}
+                onChange={e => setNewInvNombre(e.target.value)}
+                onKeyDown={e => { if(e.key==="Enter" && newInvNombre.trim()) { setInvitados(v=>[...v,{nombre:newInvNombre.trim(),wa:newInvWa.trim()}]); setNewInvNombre(""); setNewInvWa(""); } }} />
+              <input style={{ ...inp, flex:2 }} placeholder="WhatsApp (opcional)" type="tel" value={newInvWa}
+                onChange={e => setNewInvWa(e.target.value)} />
+              <button style={{...BtnP, flexShrink:0}} onClick={() => { if(newInvNombre.trim()){ setInvitados(v=>[...v,{nombre:newInvNombre.trim(),wa:newInvWa.trim()}]); setNewInvNombre(""); setNewInvWa(""); } }}>+</button>
+            </div>
+            {invitados.map((inv,i) => (
+              <div key={i} style={{ ...cardStyle, display:"flex", justifyContent:"space-between", alignItems:"center", padding:"8px 14px", marginBottom:6 }}>
+                <div>
+                  <span style={{ color:C.text, fontSize:13, fontWeight:500 }}>👤 {inv.nombre}</span>
+                  {inv.wa && <span style={{ color:C.muted, fontSize:11, marginLeft:8 }}>📱 {inv.wa}</span>}
+                </div>
+                <button onClick={() => setInvitados(v=>v.filter((_,j)=>j!==i))} style={{ background:"none", border:"none", color:C.red, cursor:"pointer", fontSize:16 }}>×</button>
+              </div>
+            ))}
+          </>}
+
           <div style={{ display:"flex", gap:8, marginTop:16 }}>
             <button style={Btn()} onClick={() => setStep(1)}>← Volver</button>
             <button style={{ ...BtnP, flex:1, padding:12 }} onClick={() => setStep(3)}>Siguiente →</button>
           </div>
+        </>}
+
+        {step === 4 && salaId && <>
+          <div style={{ textAlign:"center", marginBottom:20 }}>
+            <div style={{ fontSize:40, marginBottom:8 }}>🎉</div>
+            <h2 style={{ color:C.text, fontSize:20, fontWeight:700, marginBottom:6 }}>¡Quiniela creada!</h2>
+            <p style={{ color:C.muted, fontSize:13 }}>Ahora invita a tus apostadores. Solo ellos verán esta sala.</p>
+          </div>
+          {invitados.length > 0 ? <>
+            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Mandar invitación por WhatsApp</div>
+            {invitados.map((inv,i) => {
+              const link = `${APP_URL}/sala/${salaId}`;
+              const texto = `Hey ${inv.nombre} 👋\n\n💰 Te invito a una apuesta del Mundial 2026\n\nEl monto es de *$${cuota} pesos* — el que pierda paga.\n\n👉 Entra aquí: ${link}`;
+              return (
+                <div key={i} style={{ ...cardStyle, display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                  <div>
+                    <div style={{ color:C.text, fontSize:14, fontWeight:500 }}>👤 {inv.nombre}</div>
+                    {inv.wa && <div style={{ color:C.muted, fontSize:11 }}>📱 {inv.wa}</div>}
+                  </div>
+                  <button
+                    style={{ ...Btn({ background:"#25D366", color:"#fff", border:"none", fontSize:12, padding:"8px 12px" }) }}
+                    onClick={() => {
+                      const num = inv.wa ? inv.wa.replace(/\D/g,"") : "";
+                      window.open(`https://wa.me/${num}?text=${encodeURIComponent(texto)}`,"_blank");
+                    }}>
+                    📲 Invitar
+                  </button>
+                </div>
+              );
+            })}
+            <div style={{ height:12 }}/>
+          </> : (
+            <div style={{ ...cardStyle, marginBottom:12 }}>
+              <p style={{ color:C.muted, fontSize:13 }}>Copia el link y compártelo con quien quieras:</p>
+              <div style={{ color:"#60a5fa", fontSize:12, marginTop:6, wordBreak:"break-all" }}>{APP_URL}/sala/{salaId}</div>
+            </div>
+          )}
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15 }} onClick={() => onCreate(salaId)}>
+            Entrar a mi quiniela →
+          </button>
         </>}
 
         {step === 3 && <>
