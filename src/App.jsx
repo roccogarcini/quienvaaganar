@@ -207,6 +207,8 @@ function CrearSala({ onCreate }) {
   const [nombre] = useState("Quiniela Mundial 2026");
   const [modo, setModo] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [creadorNombre, setCreadorNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
+  const [creadorWA, setCreadorWA] = useState(() => localStorage.getItem("quiniela_wa") || "");
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
   const [newC, setNewC] = useState("");
@@ -274,6 +276,21 @@ function CrearSala({ onCreate }) {
         </div>
 
         {step === 1 && <>
+          {/* ── Nombre + WhatsApp ── */}
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>¿Quién organiza?</div>
+          <div style={{ display:"flex", gap:8, marginBottom:20 }}>
+            <input
+              value={creadorNombre} onChange={e=>{ setCreadorNombre(e.target.value); localStorage.setItem("quiniela_nombre",e.target.value); }}
+              placeholder="Tu nombre"
+              style={{ ...inp, flex:1 }}
+            />
+            <input
+              value={creadorWA} onChange={e=>{ setCreadorWA(e.target.value); localStorage.setItem("quiniela_wa",e.target.value); }}
+              placeholder="WhatsApp" type="tel"
+              style={{ ...inp, flex:1 }}
+            />
+          </div>
+
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
             {[
@@ -288,8 +305,9 @@ function CrearSala({ onCreate }) {
               </div>
             ))}
           </div>
-          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:!modo?0.4:1 }}
-            disabled={!modo} onClick={() => setStep(modo==="dinero" ? 2 : 3)}>
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!modo||!creadorNombre.trim()||!creadorWA.trim())?0.4:1 }}
+            disabled={!modo||!creadorNombre.trim()||!creadorWA.trim()}
+            onClick={() => setStep(modo==="dinero" ? 2 : 3)}>
             Siguiente →
           </button>
         </>}
