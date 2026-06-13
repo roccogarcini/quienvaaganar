@@ -792,7 +792,7 @@ function Sala({ sala, miId }) {
           }
         </>}
 
-        {tab==="calendario" && <Calendario />}
+        {tab==="calendario" && <Calendario salaLink={salaLink} yo={yo} />}
 
       </div>
     </div>
@@ -800,7 +800,7 @@ function Sala({ sala, miId }) {
 }
 
 // ── PESTAÑA: CALENDARIO MUNDIAL ───────────────
-function Calendario() {
+function Calendario({ salaLink, yo }) {
   const [scoreboard, setScoreboard] = useState(null);
   const [standings,  setStandings]  = useState(null);
   const [loadSb,     setLoadSb]     = useState(true);
@@ -808,7 +808,11 @@ function Calendario() {
   const [tab,        setTabCal]     = useState("resumen");
   const [dateOff,    setDateOff]    = useState(0);
   const [showCal,    setShowCal]    = useState(false);
-  const [nextMap,    setNextMap]    = useState({});   // teamId → {logo, name, date}
+  const [showShare,  setShowShare]  = useState(false);
+  const [shareNombre,setShareNombre]= useState(yo?.nombre||"");
+  const [shareWA,    setShareWA]    = useState(yo?.whatsapp||"");
+  const [shareEquipo,setShareEquipo]= useState(yo?.equipo||"");
+  const [nextMap,    setNextMap]    = useState({});
   const standingsCache = useRef(null);
   const nextCache      = useRef(null);
 
@@ -1012,52 +1016,93 @@ function Calendario() {
         ))}
       </div>
 
-      {/* ── RESUMEN: Jornada + Grupos apilados (estilo FotMob mobile) ── */}
+      {/* ── RESUMEN ── */}
       {tab==="resumen" && (
         <div style={{marginTop:10}}>
+
+          {/* ── Botones superiores: Calendario + Compartir ── */}
+          <div style={{display:"flex",gap:8,marginBottom:12}}>
+            {/* 📅 Agregar al calendario */}
+            <div style={{flex:1}}>
+              <button onClick={()=>{ setShowCal(v=>!v); setShowShare(false); }} style={{
+                width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
+                background:C.card,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",
+                fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+              }}>📅 Agregar al Calendario</button>
+              {showCal && (
+                <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginTop:4,border:`1px solid ${C.border}`}}>
+                  {(()=>{
+                    const ics="webcal://ics.fotmob.com/api/calendar/matches?leagueId=77&teamId=-1&timeZone=America%2FMexico_City";
+                    return [
+                      {icon:"🍎",label:"Apple",    url:ics},
+                      {icon:"📅",label:"Google",   url:`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(ics)}`},
+                      {icon:"🪟",label:"Outlook",  url:ics.replace("webcal://","https://")},
+                    ];
+                  })().map((c,i,arr)=>(
+                    <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
+                      display:"flex",alignItems:"center",gap:10,padding:"12px 14px",
+                      color:C.text,textDecoration:"none",fontSize:13,
+                      borderBottom:i<arr.length-1?`1px solid ${C.border}20`:undefined,
+                    }}>
+                      <span style={{fontSize:20}}>{c.icon}</span>
+                      <span>{c.label}</span>
+                      <span style={{marginLeft:"auto",color:C.muted}}>›</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+            {/* 📤 Compartir */}
+            <div style={{flex:1}}>
+              <button onClick={()=>{ setShowShare(v=>!v); setShowCal(false); }} style={{
+                width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
+                background:C.card,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",
+                fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
+              }}>📤 Compartir Mundial</button>
+            </div>
+          </div>
+
+          {/* ── Form de compartir ── */}
+          {showShare && (
+            <div style={{background:C.card,borderRadius:10,padding:16,marginBottom:12,border:`1px solid ${C.border}`}}>
+              <p style={{color:C.text,fontSize:13,fontWeight:600,margin:"0 0 12px"}}>¿Quién comparte?</p>
+              <input value={shareNombre} onChange={e=>setShareNombre(e.target.value)}
+                placeholder="Tu nombre" style={{...Input(),marginBottom:8}} />
+              <input value={shareWA} onChange={e=>setShareWA(e.target.value)}
+                placeholder="WhatsApp (ej: 5512345678)" type="tel" style={{...Input(),marginBottom:8}} />
+              <select value={shareEquipo} onChange={e=>setShareEquipo(e.target.value)} style={{...Input(),marginBottom:12}}>
+                <option value="">— Tu equipo favorito —</option>
+                {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
+              </select>
+              <button onClick={()=>{
+                const t=TEAMS.find(x=>x.n===shareEquipo);
+                const lines=[
+                  `⚽ *${shareNombre||"Alguien"}* te invita a seguir el Mundial 2026`,
+                  t ? `🏳️ Le voy al: *${t.f} ${t.n}*` : "",
+                  ``,
+                  `📊 Mira la tabla de grupos, marcadores en vivo y el calendario completo:`,
+                  `👉 ${salaLink}`,
+                  ``,
+                  `¡Entra y haz tu quiniela! 🏆`,
+                ].filter(l=>l!==undefined);
+                window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
+              }} style={{...Btn("primary"),width:"100%",padding:"11px",fontSize:13}}>
+                Enviar por WhatsApp 💬
+              </button>
+            </div>
+          )}
+
           {/* Jornada nav */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 2px",marginBottom:6}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 2px",marginBottom:6}}>
             <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
             <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
           <MatchList/>
+
           {/* Grupos */}
           <div style={{color:C.muted,fontSize:11,fontWeight:700,padding:"8px 2px 4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>Grupos</div>
           <GroupTable compact/>
-          {/* Sincronizar calendario */}
-          <div style={{marginTop:8,marginBottom:16}}>
-            <button onClick={()=>setShowCal(v=>!v)} style={{
-              width:"100%",padding:"11px",borderRadius:10,border:`1px solid ${C.border}`,
-              background:C.card,color:C.text,fontSize:13,fontWeight:600,cursor:"pointer",
-              fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,
-            }}>
-              📅 Agregar al Calendario {showCal?"▲":"▼"}
-            </button>
-            {showCal && (
-              <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginTop:4,border:`1px solid ${C.border}`}}>
-                {(() => {
-                  const ics = "webcal://ics.fotmob.com/api/calendar/matches?leagueId=77&teamId=-1&timeZone=America%2FMexico_City";
-                  const icsHttp = ics.replace("webcal://","https://");
-                  return [
-                    {icon:"🍎", label:"Apple Calendar",  url: ics},
-                    {icon:"📅", label:"Google Calendar",  url:`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(ics)}`},
-                    {icon:"🪟", label:"Outlook / .ics",   url: icsHttp},
-                  ];
-                })().map((c,i,arr)=>(
-                  <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
-                    display:"flex",alignItems:"center",gap:12,padding:"13px 16px",
-                    color:C.text,textDecoration:"none",fontSize:13,
-                    borderBottom:i<arr.length-1?`1px solid ${C.border}20`:undefined,
-                  }}>
-                    <span style={{fontSize:22}}>{c.icon}</span>
-                    <span>{c.label}</span>
-                    <span style={{marginLeft:"auto",color:C.muted,fontSize:16}}>›</span>
-                  </a>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
