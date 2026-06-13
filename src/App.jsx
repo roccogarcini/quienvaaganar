@@ -801,163 +801,129 @@ function Sala({ sala, miId }) {
 
 // ── PESTAÑA: CALENDARIO MUNDIAL ───────────────
 function Calendario() {
-  const [data, setData]   = useState(null);
-  const [matches, setMatches] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError]   = useState(null);
-  const [jornada, setJornada] = useState(0); // índice de ronda seleccionada
+  const [scoreboard, setScoreboard] = useState(null);
+  const [standings, setStandings]   = useState(null);
+  const [loading, setLoading]       = useState(true);
+  const [tab, setTabCal]            = useState("hoy"); // hoy | grupos
 
   useEffect(() => {
     Promise.all([
-      fetch("/api/fotmob?path=leagues&id=77&ccode3=MEX&timezone=America%2FMexico_City").then(r=>r.json()),
-      fetch(`/api/fotmob?path=matches&date=${todayStr()}`).then(r=>r.json()),
-    ]).then(([league, todayMatches]) => {
-      setData(league);
-      setMatches(todayMatches);
+      fetch("/api/fotmob?endpoint=scoreboard").then(r=>r.json()),
+      fetch("/api/fotmob?endpoint=standings").then(r=>r.json()),
+    ]).then(([sb, st]) => {
+      setScoreboard(sb);
+      setStandings(st);
       setLoading(false);
-    }).catch(e => { setError(e.message); setLoading(false); });
+    }).catch(() => setLoading(false));
   }, []);
-
-  function todayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
-  }
 
   function fmtTime(utc) {
     if (!utc) return "";
-    const d = new Date(utc);
-    return d.toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",timeZone:"America/Mexico_City"});
+    return new Date(utc).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",timeZone:"America/Mexico_City"});
   }
-
   function fmtDate(utc) {
     if (!utc) return "";
-    const d = new Date(utc);
-    const hoy = new Date();
-    const man = new Date(); man.setDate(man.getDate()+1);
+    const d = new Date(utc), hoy = new Date(), man = new Date();
+    man.setDate(man.getDate()+1);
     if (d.toDateString()===hoy.toDateString()) return "Hoy";
     if (d.toDateString()===man.toDateString()) return "Mañana";
     return d.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});
   }
 
-  if (loading) return <div style={{color:C.muted,textAlign:"center",padding:32}}>Cargando partidos…</div>;
-  if (error)   return <div style={{color:C.red,textAlign:"center",padding:32}}>No se pudo cargar: {error}</div>;
+  const events = scoreboard?.events || [];
+  const groups = standings?.children || [];
 
-  // Grupos desde league data
-  const groups = data?.standings?.groups || [];
-  // Partidos de la liga del día
-  const wc = matches?.leagues?.find(l=>l.id===77);
-  const todayGames = wc?.matches || [];
-
-  // Rondas/jornadas de la liga
-  const rounds = data?.matches?.allMatches
-    ? (() => {
-        const map = {};
-        data.matches.allMatches.forEach(m => {
-          const r = m.roundName || m.round || "Jornada";
-          if (!map[r]) map[r] = [];
-          map[r].push(m);
-        });
-        return Object.entries(map).map(([name, ms]) => ({ name, matches: ms }));
-      })()
-    : [];
-
-  const activeRound = rounds[jornada] || rounds[0];
+  if (loading) return <div style={{color:C.muted,textAlign:"center",padding:40}}>Cargando partidos…</div>;
 
   return (
     <div>
-      {/* Partidos de hoy */}
-      {todayGames.length > 0 && (
-        <>
-          <div style={{color:C.muted,fontSize:11,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:10}}>Hoy</div>
-          {todayGames.map((m,i) => <MatchCard key={i} m={m} fmtTime={fmtTime} />)}
-          <div style={{height:16}}/>
-        </>
-      )}
-
-      {/* Rondas */}
-      {rounds.length > 0 && (
-        <>
-          <div style={{display:"flex",gap:6,overflowX:"auto",marginBottom:16,paddingBottom:4}}>
-            {rounds.map((r,i)=>(
-              <button key={i} onClick={()=>setJornada(i)}
-                style={{...Btn(),fontSize:11,whiteSpace:"nowrap",flexShrink:0,
-                  background:jornada===i?"#1d4ed8":C.card,color:jornada===i?"#fff":C.muted,
-                  border:`0.5px solid ${jornada===i?"#1d4ed8":C.border}`}}>
-                {r.name}
-              </button>
-            ))}
-          </div>
-          {activeRound?.matches.map((m,i) => <MatchCard key={i} m={m} fmtTime={fmtTime} fmtDate={fmtDate} showDate />)}
-        </>
-      )}
-
-      {/* Grupos */}
-      {groups.length > 0 && (
-        <>
-          <div style={{color:C.muted,fontSize:11,textTransform:"uppercase",letterSpacing:"0.08em",margin:"20px 0 10px"}}>Grupos</div>
-          {groups.map((g,gi) => (
-            <div key={gi} style={{...cardStyle,marginBottom:12}}>
-              <div style={{color:C.gold,fontWeight:600,fontSize:13,marginBottom:8}}>{g.name}</div>
-              <div style={{display:"grid",gridTemplateColumns:"1fr repeat(6,28px)",gap:2,alignItems:"center"}}>
-                <span style={{color:C.muted,fontSize:10}}></span>
-                {["J","G","E","P","GD","Pts"].map(h=>(
-                  <span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>
-                ))}
-                {(g.standings||g.rows||[]).map((t,ti) => (
-                  <>
-                    <div key={"n"+ti} style={{display:"flex",alignItems:"center",gap:6}}>
-                      <span style={{color:C.muted,fontSize:11,minWidth:12}}>{ti+1}</span>
-                      {t.flag && <img src={t.flag} style={{width:16,height:12,objectFit:"cover",borderRadius:2}} onError={e=>e.target.style.display="none"} />}
-                      <span style={{color:C.text,fontSize:12,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis",maxWidth:90}}>{t.shortName||t.name}</span>
-                    </div>
-                    {[t.played,t.wins,t.draws,t.losses,t.goalDifference,t.pts].map((v,vi) => (
-                      <span key={vi} style={{color:vi===5?C.text:C.muted,fontSize:12,textAlign:"center",fontWeight:vi===5?700:400}}>{v??0}</span>
-                    ))}
-                  </>
-                ))}
-              </div>
-            </div>
-          ))}
-        </>
-      )}
-
-      {groups.length===0 && rounds.length===0 && todayGames.length===0 &&
-        <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:32}}>No hay datos disponibles aún.</p>
-      }
-    </div>
-  );
-}
-
-function MatchCard({ m, fmtTime, fmtDate, showDate }) {
-  const home = m.home || m.homeTeam || {};
-  const away = m.away || m.awayTeam || {};
-  const finished = m.status?.finished || m.status?.started === false ? false : undefined;
-  const started  = m.status?.started;
-  const scoreH   = m.status?.scoreStr?.split("-")[0]?.trim() ?? m.home?.score ?? "";
-  const scoreA   = m.status?.scoreStr?.split("-")[1]?.trim() ?? m.away?.score ?? "";
-  const hasScore = m.status?.scoreStr;
-  const time     = fmtTime(m.status?.utcTime || m.utcTime);
-
-  return (
-    <div style={{...cardStyle,marginBottom:6}}>
-      {showDate && <div style={{color:C.muted,fontSize:10,marginBottom:6}}>{fmtDate(m.status?.utcTime||m.utcTime)}</div>}
-      <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",gap:8,alignItems:"center"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          {home.imageUrl && <img src={home.imageUrl} style={{width:20,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
-          <span style={{color:C.text,fontSize:13,fontWeight:500}}>{home.shortName||home.name||"—"}</span>
-        </div>
-        <div style={{textAlign:"center",minWidth:52}}>
-          {hasScore
-            ? <span style={{color:C.text,fontSize:16,fontWeight:700}}>{scoreH} - {scoreA}</span>
-            : <span style={{color:C.muted,fontSize:12}}>{time||"—"}</span>
-          }
-          {m.status?.liveTime?.short && <div style={{color:C.green,fontSize:10}}>{m.status.liveTime.short}′</div>}
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:6,justifyContent:"flex-end"}}>
-          <span style={{color:C.text,fontSize:13,fontWeight:500,textAlign:"right"}}>{away.shortName||away.name||"—"}</span>
-          {away.imageUrl && <img src={away.imageUrl} style={{width:20,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
-        </div>
+      {/* Sub-tabs */}
+      <div style={{display:"flex",gap:8,marginBottom:16}}>
+        {[["hoy","⚽ Partidos"],["grupos","📊 Grupos"]].map(([k,l])=>(
+          <button key={k} onClick={()=>setTabCal(k)}
+            style={{...Btn(),fontSize:12,flex:1,padding:"8px 0",
+              background:tab===k?"#1d4ed8":C.card,color:tab===k?"#fff":C.muted,
+              border:`0.5px solid ${tab===k?"#1d4ed8":C.border}`}}>
+            {l}
+          </button>
+        ))}
       </div>
+
+      {tab==="hoy" && (
+        events.length===0
+          ? <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:24}}>No hay partidos hoy.</p>
+          : events.map((ev,i) => {
+              const comp = ev.competitions?.[0];
+              const home = comp?.competitors?.find(c=>c.homeAway==="home");
+              const away = comp?.competitors?.find(c=>c.homeAway==="away");
+              const status = comp?.status?.type;
+              const live = status?.state==="in";
+              const done = status?.state==="post";
+              const clock = comp?.status?.displayClock;
+              const scoreH = home?.score ?? "";
+              const scoreA = away?.score ?? "";
+              return (
+                <div key={i} style={{...cardStyle,marginBottom:8}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{color:C.muted,fontSize:10}}>{fmtDate(ev.date)}</span>
+                    {live && <span style={{color:C.green,fontSize:10,fontWeight:600}}>● EN VIVO {clock}</span>}
+                    {done && <span style={{color:C.muted,fontSize:10}}>FT</span>}
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr auto 1fr",alignItems:"center",gap:8}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8}}>
+                      {home?.team?.flag && <img src={home.team.flag} style={{width:24,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
+                      <span style={{color:C.text,fontSize:14,fontWeight:500}}>{home?.team?.shortDisplayName||home?.team?.displayName||"—"}</span>
+                    </div>
+                    <div style={{textAlign:"center",minWidth:56}}>
+                      {(done||live)
+                        ? <span style={{color:C.text,fontSize:18,fontWeight:700}}>{scoreH} – {scoreA}</span>
+                        : <span style={{color:C.muted,fontSize:13}}>{fmtTime(ev.date)}</span>
+                      }
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,justifyContent:"flex-end"}}>
+                      <span style={{color:C.text,fontSize:14,fontWeight:500,textAlign:"right"}}>{away?.team?.shortDisplayName||away?.team?.displayName||"—"}</span>
+                      {away?.team?.flag && <img src={away.team.flag} style={{width:24,height:16,objectFit:"contain"}} onError={e=>e.target.style.display="none"} />}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+      )}
+
+      {tab==="grupos" && (
+        groups.length===0
+          ? <p style={{color:C.muted,fontSize:13,textAlign:"center",padding:24}}>Cargando grupos…</p>
+          : groups.map((g,gi) => {
+              const entries = g.standings?.entries || [];
+              return (
+                <div key={gi} style={{...cardStyle,marginBottom:12}}>
+                  <div style={{color:C.gold,fontWeight:700,fontSize:13,marginBottom:10}}>{g.name}</div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 28px 32px",gap:2,alignItems:"center",marginBottom:6}}>
+                    <span style={{color:C.muted,fontSize:10}}>Equipo</span>
+                    {["J","G","E","P","Pts"].map(h=><span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>)}
+                  </div>
+                  {entries.map((e,ei) => {
+                    const stats = {};
+                    (e.stats||[]).forEach(s=>{ stats[s.name]=s.value; });
+                    const pts = stats["points"]??0, gp=stats["gamesPlayed"]??0, gw=stats["wins"]??0, gl=stats["losses"]??0, gd=stats["ties"]??0;
+                    const advancing = ei < 2;
+                    return (
+                      <div key={ei} style={{display:"grid",gridTemplateColumns:"1fr 28px 28px 28px 28px 32px",gap:2,alignItems:"center",padding:"5px 0",borderBottom:ei<entries.length-1?`1px solid ${C.border}`:undefined}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6}}>
+                          <span style={{width:6,height:6,borderRadius:3,background:advancing?"#10b981":"transparent",flexShrink:0,display:"inline-block"}}/>
+                          {e.team?.logos?.[0]?.href && <img src={e.team.logos[0].href} style={{width:18,height:18,objectFit:"contain"}} onError={ev=>ev.target.style.display="none"} />}
+                          <span style={{color:C.text,fontSize:12,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{e.team?.shortDisplayName||e.team?.displayName||"—"}</span>
+                        </div>
+                        {[gp,gw,gd,gl,pts].map((v,vi)=>(
+                          <span key={vi} style={{color:vi===4?C.text:C.muted,fontSize:12,textAlign:"center",fontWeight:vi===4?700:400}}>{v}</span>
+                        ))}
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })
+      )}
     </div>
   );
 }
