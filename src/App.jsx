@@ -98,7 +98,7 @@ function CrearSala({ onCreate }) {
     setLoading(true);
     const id = Math.random().toString(36).substr(2, 8);
     const { error } = await supabase.from("salas").insert({
-      id, nombre, modo, cuota: modo === "dinero" ? cuota : 0,
+      id, nombre, modo, cuota: (modo === "dinero" || modo === "hibrido") ? cuota : 0,
       castigos, flash: [], stage: "Grupos"
     });
     if (!error) onCreate(id);
@@ -120,20 +120,21 @@ function CrearSala({ onCreate }) {
             <input style={inp} value={nombre} onChange={e => setNombre(e.target.value)} />
           </div>
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
             {[
-              { k:"dinero", icon:"💰", title:"Con dinero", desc:"La app calcula quién le debe cuánto. Ustedes se arreglan." },
-              { k:"retos", icon:"🎲", title:"Con retos", desc:"El perdedor sortea 3 castigos del grupo y elige uno." }
+              { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"La app calcula quién le debe cuánto. Ustedes se arreglan." },
+              { k:"retos",   icon:"🎲", title:"Con retos",   desc:"El perdedor sortea 3 castigos del grupo y elige uno." },
+              { k:"hibrido", icon:"🔥", title:"Híbrido",     desc:"Cada quien elige al entrar: apuesta dinero o acepta un reto." },
             ].map(o => (
               <div key={o.k} onClick={() => setModo(o.k)} style={{ ...cardStyle, cursor:"pointer", marginBottom:0, border:`${modo===o.k?"2px":"0.5px"} solid ${modo===o.k?"#3b82f6":C.border}` }}>
                 <div style={{ fontSize:24, marginBottom:6 }}>{o.icon}</div>
-                <div style={{ color:C.text, fontWeight:600, fontSize:14, marginBottom:4 }}>{o.title}</div>
-                <p style={{ color:C.muted, fontSize:12, lineHeight:1.5 }}>{o.desc}</p>
+                <div style={{ color:C.text, fontWeight:600, fontSize:13, marginBottom:4 }}>{o.title}</div>
+                <p style={{ color:C.muted, fontSize:11, lineHeight:1.5 }}>{o.desc}</p>
               </div>
             ))}
           </div>
           <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!modo||!nombre.trim())?0.4:1 }}
-            disabled={!modo || !nombre.trim()} onClick={() => setStep(modo==="dinero" ? 2 : 3)}>
+            disabled={!modo || !nombre.trim()} onClick={() => setStep((modo==="dinero"||modo==="hibrido") ? 2 : 3)}>
             Siguiente →
           </button>
         </>}
@@ -142,7 +143,7 @@ function CrearSala({ onCreate }) {
           <div style={{ ...cardStyle }}>
             <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>Cuota por castigo ($MXN)</div>
             <input style={inp} type="number" value={cuota} onChange={e => setCuota(Number(e.target.value))} />
-            <p style={{ color:C.muted, fontSize:11, marginTop:6 }}>Solo para calcular quién le debe cuánto al final. El dinero lo mueven ustedes.</p>
+            <p style={{ color:C.muted, fontSize:11, marginTop:6 }}>Los jugadores que elijan "con dinero" se comprometen a meter esta cantidad cuando se les indique.</p>
           </div>
           <div style={{ display:"flex", gap:8, marginTop:16 }}>
             <button style={Btn()} onClick={() => setStep(1)}>← Volver</button>
@@ -167,7 +168,7 @@ function CrearSala({ onCreate }) {
             ))}
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button style={Btn()} onClick={() => setStep(modo==="dinero"?2:1)}>← Volver</button>
+            <button style={Btn()} onClick={() => setStep((modo==="dinero"||modo==="hibrido")?2:1)}>← Volver</button>
             <button style={{ ...BtnP, flex:1, padding:12, fontSize:14 }} disabled={loading} onClick={crear}>
               {loading ? "Creando..." : "Crear quiniela →"}
             </button>
@@ -183,6 +184,7 @@ function Unirse({ sala, participantes, onJoin }) {
   const [nombre, setNombre] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [equipo, setEquipo] = useState("");
+  const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? null : sala.modo);
   const [pronCamp, setPronCamp] = useState("");
   const [pronSub, setPronSub] = useState("");
   const [loading, setLoading] = useState(false);
@@ -237,6 +239,7 @@ function Unirse({ sala, participantes, onJoin }) {
     const t = TEAMS.find(x => x.n === equipo);
     const { data, error } = await supabase.from("participantes").insert({
       sala_id: sala.id, nombre: nombre.trim(), whatsapp: whatsapp.trim() || null, equipo, flag: t.f,
+      modo_jugador: modoJugador || sala.modo,
       points: 0, penalties: 0, eliminado: false,
       pron_camp: pronCamp || null, pron_camp_flag: pronCamp ? TEAMS.find(x=>x.n===pronCamp)?.f : null,
       pron_sub: pronSub || null, pron_sub_flag: pronSub ? TEAMS.find(x=>x.n===pronSub)?.f : null,
@@ -311,8 +314,28 @@ function Unirse({ sala, participantes, onJoin }) {
           </button>
         </>}
 
-        <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo)?0.4:1 }}
-          disabled={!nombre.trim()||!equipo||loading} onClick={unirse}>
+        {sala.modo === "hibrido" && <>
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>¿Cómo quieres jugar?</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
+            {[
+              { k:"dinero", icon:"💰", title:"Con dinero",
+                desc:`Me comprometo a meter $${sala.cuota} pesos cuando se me indique si pierdo.` },
+              { k:"retos",  icon:"🎲", title:"Con retos",
+                desc:"Si pierdo, sorteo 3 castigos del grupo y elijo uno." },
+            ].map(o => (
+              <div key={o.k} onClick={() => setModoJugador(o.k)}
+                style={{ ...cardStyle, cursor:"pointer", marginBottom:0,
+                  border:`${modoJugador===o.k?"2px":"0.5px"} solid ${modoJugador===o.k?(o.k==="dinero"?"#fbbf24":"#10b981"):C.border}` }}>
+                <div style={{ fontSize:22, marginBottom:4 }}>{o.icon}</div>
+                <div style={{ color:C.text, fontWeight:600, fontSize:13, marginBottom:4 }}>{o.title}</div>
+                <p style={{ color:C.muted, fontSize:11, lineHeight:1.5 }}>{o.desc}</p>
+              </div>
+            ))}
+          </div>
+        </>}
+
+        <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo||(sala.modo==="hibrido"&&!modoJugador))?0.4:1 }}
+          disabled={!nombre.trim()||!equipo||loading||(sala.modo==="hibrido"&&!modoJugador)} onClick={unirse}>
           {loading ? "Entrando..." : "Entrar a la quiniela →"}
         </button>
       </div>
@@ -425,7 +448,8 @@ function Sala({ sala, miId }) {
   const sorted = [...participantes].sort((a,b)=>b.points-a.points);
   const medals = ["🥇","🥈","🥉"];
   const curPts = STAGES.find(s=>s.n===stage)?.p||1;
-  const pagos = sala.modo==="dinero" ? calcPagos(participantes, sala.cuota) : [];
+  const jugsDinero = participantes.filter(p => p.modo_jugador==="dinero" || sala.modo==="dinero");
+  const pagos = (sala.modo==="dinero"||sala.modo==="hibrido") ? calcPagos(jugsDinero, sala.cuota) : [];
   const balances = (() => {
     const n=participantes.length; const b={};
     participantes.forEach(p=>{b[p.id]=0;});
@@ -499,6 +523,7 @@ function Sala({ sala, miId }) {
                     <div style={{ color:C.text, fontWeight:500, fontSize:14 }}>
                       {p.nombre}
                       {p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
+                      {sala.modo==="hibrido" && <span style={{ fontSize:12, marginLeft:5 }}>{p.modo_jugador==="dinero"?"💰":"🎲"}</span>}
                       {p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
                       {!p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
                     </div>
@@ -519,7 +544,7 @@ function Sala({ sala, miId }) {
                   <button style={{...BtnG,fontSize:12}} onClick={()=>modPts(p.id,curPts)}>+{curPts}</button>
                   <button style={{...BtnR,fontSize:12}} onClick={()=>modPts(p.id,-curPts)}>−{curPts}</button>
                   {esAdmin && <button style={{...Btn(),fontSize:12}} onClick={()=>toggleElim(p.id)}>{p.eliminado?"Reactivar":"Elim. equipo"}</button>}
-                  {sala.modo==="dinero" && esAdmin && <button style={{...BtnW,fontSize:12}} onClick={()=>addPen(p.id)}>+castigo</button>}
+                  {(sala.modo==="dinero"||(sala.modo==="hibrido"&&p.modo_jugador==="dinero")) && esAdmin && <button style={{...BtnW,fontSize:12}} onClick={()=>addPen(p.id)}>+castigo 💰</button>}
                 </div>
               )}
             </div>
