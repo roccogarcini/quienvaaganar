@@ -926,7 +926,7 @@ function Sala({ sala, miId }) {
         </>}
 
         {tab==="cuentas" && <>
-          {sala.modo!=="dinero"
+          {sala.modo!=="dinero" && sala.modo!=="hibrido"
             ? <p style={{ color:C.muted,fontSize:13 }}>Esta quiniela es de retos, sin dinero.</p>
             : <>
               <p style={{ color:C.muted,fontSize:13,marginBottom:16 }}>Solo referencia. El dinero lo mueven ustedes.</p>
