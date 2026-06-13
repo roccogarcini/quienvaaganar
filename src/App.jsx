@@ -147,7 +147,7 @@ function CrearSala({ onCreate }) {
           </div>
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
-            [
+            {[
               { k:"dinero",  icon:"💰", title:"Con dinero",  desc:"Sala privada: tú decides con quién y de cuánto. Solo la ven los que invites." },
               { k:"retos",   icon:"🎲", title:"Con retos",   desc:"Sin dinero. El perdedor sortea 3 castigos del grupo y elige uno." },
               { k:"hibrido", icon:"🔥", title:"Híbrido $250", desc:"Quiniela grande. Cada quien elige: apuesta $250 fijos o acepta un reto. Todos ven a todos." },
