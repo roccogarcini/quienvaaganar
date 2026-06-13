@@ -1181,7 +1181,7 @@ function Calendario({ salaLink, yo }) {
             </div>
             {/* 📤 Compartir */}
             <div style={{flex:1}}>
-              <button onClick={()=>{ setShowShare(v=>!v); setShowCal(false); }} style={{
+              <button onClick={()=>setShowShare(true)} style={{
                 width:"100%",padding:"10px",borderRadius:10,border:`1px solid ${C.border}`,
                 background:C.card,color:C.text,fontSize:12,fontWeight:600,cursor:"pointer",
                 fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:6,
@@ -1189,33 +1189,41 @@ function Calendario({ salaLink, yo }) {
             </div>
           </div>
 
-          {/* ── Form de compartir ── */}
+          {/* ── Modal compartir ── */}
           {showShare && (
-            <div style={{background:C.card,borderRadius:10,padding:16,marginBottom:12,border:`1px solid ${C.border}`}}>
-              <p style={{color:C.text,fontSize:13,fontWeight:600,margin:"0 0 12px"}}>¿Quién comparte?</p>
-              <input value={shareNombre} onChange={e=>setShareNombre(e.target.value)}
-                placeholder="Tu nombre" style={{...Input(),marginBottom:8}} />
-              <input value={shareWA} onChange={e=>setShareWA(e.target.value)}
-                placeholder="WhatsApp (ej: 5512345678)" type="tel" style={{...Input(),marginBottom:8}} />
-              <select value={shareEquipo} onChange={e=>setShareEquipo(e.target.value)} style={{...Input(),marginBottom:12}}>
-                <option value="">— Tu equipo favorito —</option>
-                {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
-              </select>
-              <button onClick={()=>{
-                const t=TEAMS.find(x=>x.n===shareEquipo);
-                const lines=[
-                  `⚽ *${shareNombre||"Alguien"}* te invita a seguir el Mundial 2026`,
-                  t ? `🏳️ Le voy al: *${t.f} ${t.n}*` : "",
-                  ``,
-                  `📊 Mira la tabla de grupos, marcadores en vivo y el calendario completo:`,
-                  `👉 ${salaLink}`,
-                  ``,
-                  `¡Entra y haz tu quiniela! 🏆`,
-                ].filter(l=>l!==undefined);
-                window.open(`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`, "_blank");
-              }} style={{...Btn("primary"),width:"100%",padding:"11px",fontSize:13}}>
-                Enviar por WhatsApp 💬
-              </button>
+            <div style={{position:"fixed",inset:0,background:"#000000cc",zIndex:1000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={()=>setShowShare(false)}>
+              <div style={{background:C.bg,borderRadius:"16px 16px 0 0",width:"100%",maxWidth:480,padding:"20px 20px 36px"}} onClick={e=>e.stopPropagation()}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+                  <h3 style={{color:C.text,fontSize:15,fontWeight:700,margin:0}}>📤 Compartir por WhatsApp</h3>
+                  <button onClick={()=>setShowShare(false)} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
+                </div>
+                <input value={shareNombre} onChange={e=>setShareNombre(e.target.value)}
+                  placeholder="Tu nombre" style={{...Input(),marginBottom:8}} />
+                <select value={shareEquipo} onChange={e=>setShareEquipo(e.target.value)} style={{...Input(),marginBottom:16}}>
+                  <option value="">— Tu equipo favorito —</option>
+                  {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
+                </select>
+                <a href={()=>{}} onClick={(e)=>{
+                  e.preventDefault();
+                  const t=TEAMS.find(x=>x.n===shareEquipo);
+                  const lines=[
+                    `⚽ *${shareNombre||"Alguien"}* te invita a seguir el Mundial 2026`,
+                    t ? `🏳️ Le voy al: *${t.f} ${t.n}*` : "",
+                    ``,
+                    `📊 Mira la tabla de grupos, marcadores en vivo y el calendario completo:`,
+                    `👉 ${salaLink}`,
+                    ``,
+                    `¡Entra y haz tu quiniela! 🏆`,
+                  ].filter(l=>l!==undefined);
+                  window.location.href=`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`;
+                }} style={{
+                  display:"block",background:"#25d366",color:"#fff",textAlign:"center",
+                  padding:"13px",borderRadius:10,fontSize:14,fontWeight:700,
+                  textDecoration:"none",cursor:"pointer",
+                }}>
+                  Enviar por WhatsApp 💬
+                </a>
+              </div>
             </div>
           )}
 
