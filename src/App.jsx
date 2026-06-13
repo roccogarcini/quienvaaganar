@@ -86,7 +86,7 @@ const BtnW = Btn({ background:C.gold+"22", color:C.gold, border:`1px solid ${C.g
 
 // ── PANTALLA: CREAR SALA ──────────────────────
 function CrearSala({ onCreate }) {
-  const [nombre, setNombre] = useState("Mi Quiniela del Mundial");
+  const [nombre] = useState("Quiniela Mundial 2026");
   const [modo, setModo] = useState(null);
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
@@ -103,7 +103,7 @@ function CrearSala({ onCreate }) {
     setLoading(true);
     const id = Math.random().toString(36).substr(2, 8);
     const { error } = await supabase.from("salas").insert({
-      id, nombre, modo, cuota: (modo === "dinero" || modo === "hibrido") ? cuota : 0,
+      id, nombre, modo, cuota: modo === "dinero" ? cuota : modo === "hibrido" ? 250 : 0,
       castigos, flash: [], stage: "Grupos"
     });
     if (!error) {
@@ -148,10 +148,6 @@ function CrearSala({ onCreate }) {
         </div>
 
         {step === 1 && <>
-          <div style={{ ...cardStyle, marginBottom:12 }}>
-            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Nombre de tu quiniela</div>
-            <input style={inp} value={nombre} onChange={e => setNombre(e.target.value)} />
-          </div>
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Modo de juego</div>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:20 }}>
             {[
@@ -166,8 +162,8 @@ function CrearSala({ onCreate }) {
               </div>
             ))}
           </div>
-          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!modo||!nombre.trim())?0.4:1 }}
-            disabled={!modo || !nombre.trim()} onClick={() => setStep((modo==="dinero"||modo==="hibrido") ? 2 : 3)}>
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:{!modo?0.4:1} }}
+            disabled={!modo} onClick={() => setStep(modo==="dinero" ? 2 : 3)}>
             Siguiente →
           </button>
         </>}
@@ -272,7 +268,7 @@ function CrearSala({ onCreate }) {
             ))}
           </div>
           <div style={{ display:"flex", gap:8 }}>
-            <button style={Btn()} onClick={() => setStep((modo==="dinero"||modo==="hibrido")?2:1)}>← Volver</button>
+            <button style={Btn()} onClick={() => setStep(modo==="dinero"?2:1)}>← Volver</button>
             <button style={{ ...BtnP, flex:1, padding:12, fontSize:14 }} disabled={loading} onClick={crear}>
               {loading ? "Creando..." : "Crear quiniela →"}
             </button>
