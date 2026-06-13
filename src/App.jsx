@@ -39,12 +39,13 @@ function getSalaIdFromURL(){
   return match ? match[1] : null;
 }
 
-function calcPagos(participantes, cuota){
+function calcPagos(participantes, cuotaFallback){
   const n = participantes.length;
   const bal = {};
   participantes.forEach(p => { bal[p.id] = 0; });
   participantes.forEach(p => {
     if ((p.penalties || 0) > 0) {
+      const cuota = (p.apuesta && p.apuesta > 0) ? p.apuesta : (cuotaFallback || 0);
       const deuda = p.penalties * cuota;
       bal[p.id] -= deuda;
       participantes.forEach(o => { if (o.id !== p.id) bal[o.id] += deuda / (n - 1); });
@@ -185,6 +186,7 @@ function Unirse({ sala, participantes, onJoin }) {
   const [whatsapp, setWhatsapp] = useState("");
   const [equipo, setEquipo] = useState("");
   const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? null : sala.modo);
+  const [apuesta, setApuesta] = useState(sala.cuota > 0 ? sala.cuota : 100);
   const [pronCamp, setPronCamp] = useState("");
   const [pronSub, setPronSub] = useState("");
   const [loading, setLoading] = useState(false);
@@ -240,6 +242,7 @@ function Unirse({ sala, participantes, onJoin }) {
     const { data, error } = await supabase.from("participantes").insert({
       sala_id: sala.id, nombre: nombre.trim(), whatsapp: whatsapp.trim() || null, equipo, flag: t.f,
       modo_jugador: modoJugador || sala.modo,
+      apuesta: (modoJugador === "dinero" || sala.modo === "dinero") ? Math.min(apuesta, 250) : 0,
       points: 0, penalties: 0, eliminado: false,
       pron_camp: pronCamp || null, pron_camp_flag: pronCamp ? TEAMS.find(x=>x.n===pronCamp)?.f : null,
       pron_sub: pronSub || null, pron_sub_flag: pronSub ? TEAMS.find(x=>x.n===pronSub)?.f : null,
@@ -314,24 +317,39 @@ function Unirse({ sala, participantes, onJoin }) {
           </button>
         </>}
 
-        {sala.modo === "hibrido" && <>
-          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>¿Cómo quieres jugar?</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:20 }}>
-            {[
-              { k:"dinero", icon:"💰", title:"Con dinero",
-                desc:`Me comprometo a meter $${sala.cuota} pesos cuando se me indique si pierdo.` },
-              { k:"retos",  icon:"🎲", title:"Con retos",
-                desc:"Si pierdo, sorteo 3 castigos del grupo y elijo uno." },
-            ].map(o => (
-              <div key={o.k} onClick={() => setModoJugador(o.k)}
-                style={{ ...cardStyle, cursor:"pointer", marginBottom:0,
-                  border:`${modoJugador===o.k?"2px":"0.5px"} solid ${modoJugador===o.k?(o.k==="dinero"?"#fbbf24":"#10b981"):C.border}` }}>
-                <div style={{ fontSize:22, marginBottom:4 }}>{o.icon}</div>
-                <div style={{ color:C.text, fontWeight:600, fontSize:13, marginBottom:4 }}>{o.title}</div>
-                <p style={{ color:C.muted, fontSize:11, lineHeight:1.5 }}>{o.desc}</p>
+        {(sala.modo === "hibrido" || sala.modo === "dinero") && <>
+          {sala.modo === "hibrido" && <>
+            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>¿Cómo quieres jugar?</div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:16 }}>
+              {[
+                { k:"dinero", icon:"💰", title:"Con dinero",   desc:"Apuestas lo que quieras (máx $250). Si pierdes, pagas." },
+                { k:"retos",  icon:"🎲", title:"Con retos",    desc:"Si pierdo, sorteo 3 castigos del grupo y elijo uno." },
+              ].map(o => (
+                <div key={o.k} onClick={() => setModoJugador(o.k)}
+                  style={{ ...cardStyle, cursor:"pointer", marginBottom:0,
+                    border:`${modoJugador===o.k?"2px":"0.5px"} solid ${modoJugador===o.k?(o.k==="dinero"?"#fbbf24":"#10b981"):C.border}` }}>
+                  <div style={{ fontSize:22, marginBottom:4 }}>{o.icon}</div>
+                  <div style={{ color:C.text, fontWeight:600, fontSize:13, marginBottom:4 }}>{o.title}</div>
+                  <p style={{ color:C.muted, fontSize:11, lineHeight:1.5 }}>{o.desc}</p>
+                </div>
+              ))}
+            </div>
+          </>}
+
+          {(modoJugador === "dinero" || sala.modo === "dinero") && (
+            <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
+              <div style={{ color:"#fbbf24", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>💰 Tu apuesta</div>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+                <input type="range" min={10} max={250} step={10} value={apuesta}
+                  onChange={e => setApuesta(Number(e.target.value))}
+                  style={{ flex:1, accentColor:"#fbbf24" }} />
+                <div style={{ color:"#fbbf24", fontWeight:700, fontSize:22, minWidth:60, textAlign:"right" }}>${apuesta}</div>
               </div>
-            ))}
-          </div>
+              <p style={{ color:C.muted, fontSize:11, marginTop:8 }}>
+                Si quedas último, pagas <strong style={{color:"#fbbf24"}}>${apuesta} pesos</strong> cuando el admin lo indique. 🤝
+              </p>
+            </div>
+          )}
         </>}
 
         <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo||(sala.modo==="hibrido"&&!modoJugador))?0.4:1 }}
@@ -523,7 +541,8 @@ function Sala({ sala, miId }) {
                     <div style={{ color:C.text, fontWeight:500, fontSize:14 }}>
                       {p.nombre}
                       {p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
-                      {sala.modo==="hibrido" && <span style={{ fontSize:12, marginLeft:5 }}>{p.modo_jugador==="dinero"?"💰":"🎲"}</span>}
+                      {(sala.modo==="hibrido"||sala.modo==="dinero") && p.modo_jugador==="dinero" && <span style={{ fontSize:11, marginLeft:5, color:"#fbbf24" }}>💰${p.apuesta||0}</span>}
+                      {sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:12, marginLeft:5 }}>🎲</span>}
                       {p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
                       {!p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
                     </div>
