@@ -537,6 +537,8 @@ function Unirse({ sala, participantes, onJoin }) {
       ``,
       `¿Cuál es tu pronóstico? Únete a "${sala.nombre}":`,
       `${APP_URL}/sala/${sala.id}`,
+      ``,
+      `También puedes ver el calendario y resultados para que no te pierdas nada de este Mundial 2026 🏆`,
     ].join("\n");
     // Intentar Web Share API nativa (abre sheet de iOS/Android directamente)
     if (canvas && navigator.share) {
