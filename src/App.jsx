@@ -212,10 +212,8 @@ function CrearSala({ onCreate }) {
   const [cuota, setCuota] = useState(100);
   const [castigos, setCastigos] = useState([...DEF_CASTIGOS]);
   const [newC, setNewC] = useState("");
-  // step 0 = entra al juego (nombre+WA), solo si primera vez
-  const [step, setStep] = useState(() =>
-    (localStorage.getItem("quiniela_nombre") && localStorage.getItem("quiniela_wa")) ? 1 : 0
-  );
+  // step 0 = entra al juego (nombre+WA), siempre primero
+  const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [salaId, setSalaId] = useState(null);
   const [invitados, setInvitados] = useState([]); // [{nombre, wa}]
