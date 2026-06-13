@@ -1,23 +1,4 @@
-// ============================================
-// quienvaaganar.mx
-// Stack: React + Vite + Supabase + Vercel
-//
-// SETUP:
-// 1. npm create vite@latest quienvaaganar -- --template react
-// 2. cd quienvaaganar && npm install @supabase/supabase-js react-router-dom
-// 3. Crea .env con tus keys de Supabase
-// 4. Reemplaza este archivo como src/App.jsx
-// 5. npm run dev
-// ============================================
-
-// ── src/lib/supabase.js ──────────────────────
-// import { createClient } from '@supabase/supabase-js'
-// export const supabase = createClient(
-//   import.meta.env.VITE_SUPABASE_URL,
-//   import.meta.env.VITE_SUPABASE_ANON_KEY
-// )
-
-// ── src/App.jsx ──────────────────────────────
+// quienvaaganar · Stack: React + Vite + Supabase + Vercel
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@supabase/supabase-js";
 
@@ -591,7 +572,7 @@ function Unirse({ sala, participantes, onJoin }) {
         <input style={{ ...inp, marginBottom:16 }} placeholder="¿Cómo te llamas?" value={nombre} onChange={e=>setNombre(e.target.value)} />
 
         <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu WhatsApp</div>
-        <input style={{ ...inp, marginBottom:16 }} placeholder="Ej: +52 55 1234 5678" type="tel" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} />
+        <input style={{ ...inp, marginBottom:16 }} placeholder="Ej: 4431234567" type="tel" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} />
 
         <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu equipo</div>
         <select style={{ ...inp, marginBottom:20 }} value={equipo} onChange={e=>setEquipo(e.target.value)}>
@@ -1046,7 +1027,6 @@ function Calendario({ salaLink, yo }) {
   const [showCal,    setShowCal]    = useState(false);
   const [showShare,  setShowShare]  = useState(false);
   const [shareNombre,setShareNombre]= useState(yo?.nombre||"");
-  const [shareWA,    setShareWA]    = useState(yo?.whatsapp||"");
   const [shareEquipo,setShareEquipo]= useState(yo?.equipo||"");
   const [nextMap,    setNextMap]    = useState({});
   const standingsCache = useRef(null);
@@ -1306,8 +1286,8 @@ function Calendario({ salaLink, yo }) {
                   <button onClick={()=>setShowShare(false)} style={{background:"none",border:"none",color:C.muted,fontSize:22,cursor:"pointer",lineHeight:1}}>✕</button>
                 </div>
                 <input value={shareNombre} onChange={e=>setShareNombre(e.target.value)}
-                  placeholder="Tu nombre" style={{...Input(),marginBottom:8}} />
-                <select value={shareEquipo} onChange={e=>setShareEquipo(e.target.value)} style={{...Input(),marginBottom:16}}>
+                  placeholder="Tu nombre" style={{...inp,marginBottom:8}} />
+                <select value={shareEquipo} onChange={e=>setShareEquipo(e.target.value)} style={{...inp,marginBottom:16}}>
                   <option value="">— Tu equipo favorito —</option>
                   {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
                 </select>
@@ -1364,7 +1344,6 @@ function Calendario({ salaLink, yo }) {
         </div>
       )}
 
-      {/* ── TIPS ── */}
     </div>
   );
 }
