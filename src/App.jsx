@@ -1381,14 +1381,15 @@ export default function App() {
   }, [salaId]);
 
   function onCrear(id) {
+    localStorage.setItem("quiniela_lastSala", id);
     window.location.href = `/sala/${id}`;
   }
 
   function onUnirse(participante) {
     localStorage.setItem("miId_"+salaId, participante.id);
-    // Guardar WA y nombre globalmente para auto-login y pre-llenado
     if (participante.whatsapp) localStorage.setItem("quiniela_wa", participante.whatsapp);
     if (participante.nombre)   localStorage.setItem("quiniela_nombre", participante.nombre);
+    localStorage.setItem("quiniela_lastSala", salaId);
     setParticipantes(prev => [...prev, participante]);
     setMiId(participante.id);
   }
@@ -1408,6 +1409,18 @@ export default function App() {
       <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
     </div>
   );
+
+  // Si no hay sala en URL pero ya tenemos datos → redirigir a la última sala
+  useEffect(() => {
+    if (!salaId) {
+      const lastSala = localStorage.getItem("quiniela_lastSala");
+      const tieneNombre = localStorage.getItem("quiniela_nombre")?.trim();
+      const tieneWA = localStorage.getItem("quiniela_wa")?.trim();
+      if (lastSala && tieneNombre && tieneWA) {
+        window.location.href = `/sala/${lastSala}`;
+      }
+    }
+  }, []);
 
   if (loading) return (
     <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif" }}>
