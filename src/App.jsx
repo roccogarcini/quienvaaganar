@@ -115,6 +115,31 @@ function CrearSala({ onCreate }) {
           <p style={{ color:C.muted, fontSize:14 }}>Crea tu quiniela, comparte el link y que cada quien se apunte.</p>
         </div>
 
+        {/* Pitch MarketerIA */}
+        <div style={{ background:"linear-gradient(135deg,#7c3aed18,#1d4ed818)", border:"1px solid #7c3aed33", borderRadius:14, padding:"18px 20px", marginBottom:24 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:10 }}>
+            <span style={{ background:"linear-gradient(90deg,#7c3aed,#1d4ed8)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", fontWeight:700, fontSize:15 }}>MarketerIA</span>
+            <span style={{ color:C.muted, fontSize:12 }}>by RoccoGarcini</span>
+          </div>
+          <p style={{ color:C.text, fontSize:13, lineHeight:1.7, marginBottom:12 }}>
+            Un juego hecho para tenerte al día con el Mundial 2026 de una manera divertida. <strong style={{color:"#a78bfa"}}>Tú decides</strong> si le entras a la apuesta o solo entras a divertirte.
+          </p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+            {[
+              ["📅","Calendario del Mundial","Todos los partidos y horarios"],
+              ["⚽","Marcadores en vivo","Resultados al momento"],
+              ["🧠","Tips de football","Para entender el juego aunque no sepas nada"],
+              ["🏆","Apuestas con amigos","Dinero o retos — tú decides"],
+            ].map(([icon,title,desc])=>(
+              <div key={title} style={{ background:C.card+"88", borderRadius:10, padding:"10px 12px" }}>
+                <div style={{ fontSize:18, marginBottom:3 }}>{icon}</div>
+                <div style={{ color:C.text, fontSize:12, fontWeight:600, marginBottom:2 }}>{title}</div>
+                <div style={{ color:C.muted, fontSize:11, lineHeight:1.4 }}>{desc}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {step === 1 && <>
           <div style={{ ...cardStyle, marginBottom:12 }}>
             <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:12 }}>Nombre de tu quiniela</div>
@@ -206,7 +231,7 @@ function Unirse({ sala, participantes, onJoin }) {
     const tc = TEAMS.find(x => x.n === pronCamp);
     const ts = TEAMS.find(x => x.n === pronSub);
     if (!tc || !ts) return;
-    const W=640,H=340; canvas.width=W; canvas.height=H;
+    const W=640,H=420; canvas.width=W; canvas.height=H;
     const ctx = canvas.getContext("2d");
     ctx.fillStyle="#0a0e1a"; ctx.fillRect(0,0,W,H);
     const g=ctx.createLinearGradient(0,0,W,0);
@@ -233,6 +258,24 @@ function Unirse({ sala, participantes, onJoin }) {
     ctx.beginPath();ctx.roundRect(W/2-100,280,200,34,17);ctx.fill();
     ctx.fillStyle="#9ca3af";ctx.font="12px sans-serif";
     ctx.fillText(`${sala.nombre}`,W/2,302);
+    // ── Franja MarketerIA ──
+    ctx.fillStyle="#0d1117"; ctx.fillRect(0,332,W,H-332);
+    ctx.strokeStyle="#1f2937";ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,332);ctx.lineTo(W,332);ctx.stroke();
+    // Badge MarketerIA (izquierda)
+    const mg=ctx.createLinearGradient(0,0,180,0);
+    mg.addColorStop(0,"#7c3aed"); mg.addColorStop(1,"#1d4ed8");
+    ctx.fillStyle=mg; ctx.font="bold 13px sans-serif"; ctx.textAlign="left";
+    ctx.fillText("MarketerIA",20,358);
+    ctx.fillStyle="#4b5563"; ctx.font="10px sans-serif";
+    ctx.fillText("by RoccoGarcini",20,374);
+    // Descripción (centro-derecha)
+    ctx.textAlign="center";
+    ctx.fillStyle="#6b7280"; ctx.font="11px sans-serif";
+    ctx.fillText("Calendario · Marcadores · Tips de football · Apuestas con amigos",W/2+60,354);
+    ctx.fillStyle="#4b5563"; ctx.font="10px sans-serif";
+    ctx.fillText("Únete solo a divertirte o entra a la apuesta — tú decides 🏆",W/2+60,371);
+    ctx.fillStyle="#374151"; ctx.font="9px sans-serif";
+    ctx.fillText("quienvaaganar.vercel.app",W/2+60,390);
   }
 
   async function unirse() {
