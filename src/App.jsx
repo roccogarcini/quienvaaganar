@@ -909,15 +909,21 @@ function Calendario() {
   }
 
   // ── Bloque reutilizable: tabla de grupos ────────────────────────────────
+  // compact = vista resumida (Resumen tab)  |  full = Tabla tab (más columnas)
   function GroupTable({compact=false}) {
     if (loadSt) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
     if (groups.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin datos aún.</p>;
-    const cols = compact
-      ? "20px 1fr 22px 22px 22px 26px"
-      : "20px 1fr 24px 24px 24px 24px 32px 28px";
-    const headers = compact ? ["J","G","E","Pts"] : ["J","G","E","P","+/-","Pts"];
+
+    // Columnas FotMob:
+    //  compact: #bar | team | J | +/- | DG | Pts
+    //  full:    #bar | team | J | G | E | P | +/- | DG | Pts
+    const colsCompact = "20px 1fr 22px 30px 26px 26px";
+    const colsFull    = "20px 1fr 22px 22px 22px 22px 30px 26px 26px";
+
     return <>{groups.map((g,gi)=>{
       const entries=g.standings?.entries||[];
+      const cols = compact ? colsCompact : colsFull;
+      const headers = compact ? ["J","+/-","DG","Pts"] : ["J","G","E","P","+/-","DG","Pts"];
       return (
         <div key={gi} style={{marginBottom:12,background:C.card,borderRadius:10,overflow:"hidden"}}>
           <div style={{padding:"7px 10px",background:"#161d2e",borderBottom:`1px solid ${C.border}`}}>
@@ -931,9 +937,13 @@ function Calendario() {
             const st={}; (e.stats||[]).forEach(s=>{ st[s.name]=s.displayValue??s.value??0; });
             const adv=ei<2, logo=e.team?.logos?.[0]?.href;
             const gp=Number(st.gamesPlayed||0), gw=Number(st.wins||0), gd=Number(st.ties||0), gl=Number(st.losses||0);
-            const diff=(Number(st.pointsFor||0)-Number(st.pointsAgainst||0));
-            const diffStr=(diff>=0?"+":"")+diff, pts=Number(st.points||0);
-            const vals = compact ? [gp,gw,gd,pts] : [gp,gw,gd,gl,diffStr,pts];
+            const gf=Number(st.pointsFor||0), ga=Number(st.pointsAgainst||0);
+            const marcador=`${gf}-${ga}`;                        // "+/-" = "2-0"
+            const dg=(gf-ga>=0?"+":"")+(gf-ga);                  // "DG"  = "+2"
+            const pts=Number(st.points||0);
+            const vals = compact
+              ? [gp, marcador, dg, pts]
+              : [gp, gw, gd, gl, marcador, dg, pts];
             return (
               <div key={ei} style={{display:"grid",gridTemplateColumns:cols,padding:"6px 10px",alignItems:"center",borderBottom:ei<entries.length-1?`1px solid ${C.border}20`:undefined,background:adv?"#10b98108":undefined}}>
                 <span style={{width:3,height:16,borderRadius:2,background:adv?"#10b981":"#ffffff15",display:"inline-block",margin:"auto"}}/>
@@ -943,9 +953,12 @@ function Calendario() {
                     {e.team?.abbreviation||e.team?.shortDisplayName||"—"}
                   </span>
                 </div>
-                {vals.map((v,vi)=>(
-                  <span key={vi} style={{color:vi===vals.length-1?C.text:C.muted,fontSize:11,textAlign:"center",fontWeight:vi===vals.length-1?700:400}}>{v}</span>
-                ))}
+                {vals.map((v,vi)=>{
+                  const isLast=vi===vals.length-1;
+                  const isDG=vi===vals.length-2;
+                  const col=isLast?C.text:isDG?(Number(String(v).replace("+",""))>0?"#10b981":Number(String(v).replace("+",""))<0?"#f87171":C.muted):C.muted;
+                  return <span key={vi} style={{color:col,fontSize:11,textAlign:"center",fontWeight:isLast?700:400}}>{v}</span>;
+                })}
               </div>
             );
           })}
