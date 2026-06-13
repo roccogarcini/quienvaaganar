@@ -162,7 +162,7 @@ function CrearSala({ onCreate }) {
               </div>
             ))}
           </div>
-          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:{!modo?0.4:1} }}
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:!modo?0.4:1 }}
             disabled={!modo} onClick={() => setStep(modo==="dinero" ? 2 : 3)}>
             Siguiente →
           </button>
