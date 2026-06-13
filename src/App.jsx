@@ -805,8 +805,9 @@ function Calendario() {
   const [standings,  setStandings]  = useState(null);
   const [loadSb,     setLoadSb]     = useState(true);
   const [loadSt,     setLoadSt]     = useState(true);
-  const [tab,        setTabCal]     = useState("tabla");
+  const [tab,        setTabCal]     = useState("resumen");
   const [dateOff,    setDateOff]    = useState(0);
+  const [showCal,    setShowCal]    = useState(false);
   const standingsCache = useRef(null);
 
   function dateStr(off=0) {
@@ -841,150 +842,186 @@ function Calendario() {
   const tabStyle = (active) => ({
     background:"none", border:"none", cursor:"pointer", fontFamily:"inherit",
     fontSize:13, fontWeight:active?600:400, color:active?C.text:C.muted,
-    padding:"10px 16px", borderBottom:`2px solid ${active?"#3b82f6":"transparent"}`,
-    transition:"all .15s",
+    padding:"10px 14px", borderBottom:`2px solid ${active?"#3b82f6":"transparent"}`,
+    transition:"all .15s", whiteSpace:"nowrap",
   });
+
+  // ── Bloque reutilizable: lista de partidos ──────────────────────────────
+  function MatchList() {
+    if (loadSb) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
+    if (events.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>;
+    // Agrupar por Ayer/Hoy/Mañana
+    const byDay={};
+    events.forEach(ev=>{
+      const d=new Date(ev.date),hoy=new Date(),ayer=new Date(),man=new Date();
+      ayer.setDate(hoy.getDate()-1); man.setDate(hoy.getDate()+1);
+      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===ayer.toDateString()?"Ayer":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
+      if(!byDay[lbl])byDay[lbl]=[];byDay[lbl].push(ev);
+    });
+    return <>{Object.entries(byDay).map(([lbl,evs])=>(
+      <div key={lbl}>
+        <div style={{color:C.muted,fontSize:11,fontWeight:700,padding:"8px 2px 4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>{lbl}</div>
+        <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginBottom:10}}>
+          {evs.map((ev,i)=>{
+            const comp=ev.competitions?.[0];
+            const home=comp?.competitors?.find(c=>c.homeAway==="home");
+            const away=comp?.competitors?.find(c=>c.homeAway==="away");
+            const st=comp?.status?.type;
+            const live=st?.state==="in", done=st?.state==="post";
+            const clock=comp?.status?.displayClock;
+            const sH=home?.score??"–", sA=away?.score??"–";
+            const homeName=home?.team?.shortDisplayName||home?.team?.location||"—";
+            const awayName=away?.team?.shortDisplayName||away?.team?.location||"—";
+            const homeLogo=home?.team?.logo, awayLogo=away?.team?.logo;
+            return (
+              <div key={i} style={{
+                display:"grid",gridTemplateColumns:"44px 1fr auto 1fr",
+                alignItems:"center",gap:6,padding:"10px 10px",
+                borderBottom:i<evs.length-1?`1px solid ${C.border}20`:undefined,
+                borderLeft:`3px solid ${live?"#10b981":"transparent"}`,
+              }}>
+                <div style={{textAlign:"center"}}>
+                  {live
+                    ? <span style={{background:"#10b98122",color:"#10b981",fontSize:9,fontWeight:700,padding:"3px 4px",borderRadius:4}}>{clock?.replace("'","′")||"●"}</span>
+                    : done
+                      ? <span style={{color:C.muted,fontSize:10,fontWeight:600,background:C.border+"55",padding:"3px 4px",borderRadius:4}}>TC</span>
+                      : <span style={{color:C.muted,fontSize:11}}>{fmtHour(ev.date)}</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,overflow:"hidden"}}>
+                  <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{homeName}</span>
+                  {homeLogo?<img src={homeLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
+                </div>
+                <div style={{textAlign:"center",minWidth:36}}>
+                  {done||live
+                    ? <span style={{color:C.text,fontSize:14,fontWeight:800,letterSpacing:"1px"}}>{sH}-{sA}</span>
+                    : <span style={{color:C.muted,fontSize:11}}>vs</span>}
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:5,overflow:"hidden"}}>
+                  {awayLogo?<img src={awayLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
+                  <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{awayName}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    ))}</>;
+  }
+
+  // ── Bloque reutilizable: tabla de grupos ────────────────────────────────
+  function GroupTable({compact=false}) {
+    if (loadSt) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
+    if (groups.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin datos aún.</p>;
+    const cols = compact
+      ? "20px 1fr 22px 22px 22px 26px"
+      : "20px 1fr 24px 24px 24px 24px 32px 28px";
+    const headers = compact ? ["J","G","E","Pts"] : ["J","G","E","P","+/-","Pts"];
+    return <>{groups.map((g,gi)=>{
+      const entries=g.standings?.entries||[];
+      return (
+        <div key={gi} style={{marginBottom:12,background:C.card,borderRadius:10,overflow:"hidden"}}>
+          <div style={{padding:"7px 10px",background:"#161d2e",borderBottom:`1px solid ${C.border}`}}>
+            <span style={{color:C.text,fontSize:11,fontWeight:700}}>{(g.name||"").replace("Group","Grp.")}</span>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:cols,padding:"3px 10px",borderBottom:`1px solid ${C.border}20`}}>
+            <span/><span style={{color:C.muted,fontSize:9}}>Equipo</span>
+            {headers.map(h=><span key={h} style={{color:C.muted,fontSize:9,textAlign:"center"}}>{h}</span>)}
+          </div>
+          {entries.map((e,ei)=>{
+            const st={}; (e.stats||[]).forEach(s=>{ st[s.name]=s.displayValue??s.value??0; });
+            const adv=ei<2, logo=e.team?.logos?.[0]?.href;
+            const gp=Number(st.gamesPlayed||0), gw=Number(st.wins||0), gd=Number(st.ties||0), gl=Number(st.losses||0);
+            const diff=(Number(st.pointsFor||0)-Number(st.pointsAgainst||0));
+            const diffStr=(diff>=0?"+":"")+diff, pts=Number(st.points||0);
+            const vals = compact ? [gp,gw,gd,pts] : [gp,gw,gd,gl,diffStr,pts];
+            return (
+              <div key={ei} style={{display:"grid",gridTemplateColumns:cols,padding:"6px 10px",alignItems:"center",borderBottom:ei<entries.length-1?`1px solid ${C.border}20`:undefined,background:adv?"#10b98108":undefined}}>
+                <span style={{width:3,height:16,borderRadius:2,background:adv?"#10b981":"#ffffff15",display:"inline-block",margin:"auto"}}/>
+                <div style={{display:"flex",alignItems:"center",gap:6,overflow:"hidden"}}>
+                  {logo?<img src={logo} style={{width:18,height:18,objectFit:"contain",flexShrink:0}} onError={ev=>ev.target.style.display="none"}/>:<span style={{fontSize:14}}>🏳️</span>}
+                  <span style={{color:adv?C.text:"#9ca3af",fontSize:12,fontWeight:adv?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                    {e.team?.abbreviation||e.team?.shortDisplayName||"—"}
+                  </span>
+                </div>
+                {vals.map((v,vi)=>(
+                  <span key={vi} style={{color:vi===vals.length-1?C.text:C.muted,fontSize:11,textAlign:"center",fontWeight:vi===vals.length-1?700:400}}>{v}</span>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      );
+    })}</>;
+  }
 
   return (
     <div style={{margin:"0 -4px"}}>
       {/* Tabs */}
-      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,marginBottom:0}}>
-        <button style={tabStyle(tab==="tabla")}    onClick={()=>setTabCal("tabla")}>Tabla</button>
-        <button style={tabStyle(tab==="partidos")} onClick={()=>setTabCal("partidos")}>Partidos</button>
+      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,marginBottom:0,overflowX:"auto"}}>
+        {[["resumen","Resumen"],["tabla","Tabla"],["partidos","Partidos"]].map(([k,l])=>(
+          <button key={k} style={tabStyle(tab===k)} onClick={()=>setTabCal(k)}>{l}</button>
+        ))}
       </div>
 
-      {/* ── TABLA (Grupos) ── */}
-      {tab==="tabla" && (
-        <div style={{marginTop:12}}>
-          {loadSt
-            ? <p style={{color:C.muted,textAlign:"center",padding:32}}>Cargando…</p>
-            : groups.length===0
-              ? <p style={{color:C.muted,textAlign:"center",padding:32,fontSize:13}}>Sin datos de grupos aún.</p>
-              : groups.map((g,gi) => {
-                  const entries = g.standings?.entries || [];
-                  return (
-                    <div key={gi} style={{marginBottom:14,background:C.card,borderRadius:10,overflow:"hidden"}}>
-                      {/* Header */}
-                      <div style={{padding:"8px 12px",background:"#161d2e",borderBottom:`1px solid ${C.border}`}}>
-                        <span style={{color:C.text,fontSize:12,fontWeight:700}}>{(g.name||"").replace("Group","Grp.")}</span>
-                      </div>
-                      {/* Col headers */}
-                      <div style={{display:"grid",gridTemplateColumns:"24px 1fr 26px 26px 26px 26px 36px 32px",padding:"4px 10px",borderBottom:`1px solid ${C.border}20`}}>
-                        <span/><span style={{color:C.muted,fontSize:10}}>Equipo</span>
-                        {["J","G","E","P","+/-","Pts"].map(h=>(
-                          <span key={h} style={{color:C.muted,fontSize:10,textAlign:"center"}}>{h}</span>
-                        ))}
-                      </div>
-                      {entries.map((e,ei) => {
-                        const st={}; (e.stats||[]).forEach(s=>{ st[s.name]=s.displayValue??s.value??0; });
-                        const adv=ei<2;
-                        const logo=e.team?.logos?.[0]?.href;
-                        const gp=Number(st.gamesPlayed||0), gw=Number(st.wins||0), gd=Number(st.ties||0), gl=Number(st.losses||0);
-                        const gf=Number(st.pointsFor||0), ga=Number(st.pointsAgainst||0);
-                        const diff=(gf-ga>=0?"+":"")+(gf-ga);
-                        const pts=Number(st.points||0);
-                        return (
-                          <div key={ei} style={{
-                            display:"grid",gridTemplateColumns:"24px 1fr 26px 26px 26px 26px 36px 32px",
-                            padding:"7px 10px",alignItems:"center",
-                            borderBottom:ei<entries.length-1?`1px solid ${C.border}20`:undefined,
-                            background:adv?"#10b98108":undefined,
-                          }}>
-                            <div style={{display:"flex",justifyContent:"center"}}>
-                              <span style={{width:3,height:18,borderRadius:2,background:adv?"#10b981":"#ffffff15",display:"inline-block"}}/>
-                            </div>
-                            <div style={{display:"flex",alignItems:"center",gap:7,overflow:"hidden",paddingRight:4}}>
-                              {logo
-                                ? <img src={logo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={ev=>ev.target.style.display="none"} />
-                                : <span style={{fontSize:16,flexShrink:0}}>🏳️</span>}
-                              <span style={{color:adv?C.text:"#9ca3af",fontSize:13,fontWeight:adv?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
-                                {e.team?.abbreviation||e.team?.shortDisplayName||"—"}
-                              </span>
-                            </div>
-                            {[gp,gw,gd,gl,diff,pts].map((v,vi)=>(
-                              <span key={vi} style={{
-                                color:vi===5?C.text:C.muted, fontSize:12, textAlign:"center",
-                                fontWeight:vi===5?700:400,
-                              }}>{v}</span>
-                            ))}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })
-          }
+      {/* ── RESUMEN: Jornada + Grupos apilados (estilo FotMob mobile) ── */}
+      {tab==="resumen" && (
+        <div style={{marginTop:10}}>
+          {/* Jornada nav */}
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 2px",marginBottom:6}}>
+            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
+            <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
+            <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
+          </div>
+          <MatchList/>
+          {/* Grupos */}
+          <div style={{color:C.muted,fontSize:11,fontWeight:700,padding:"8px 2px 4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>Grupos</div>
+          <GroupTable compact/>
+          {/* Sincronizar calendario */}
+          <div style={{marginTop:8,marginBottom:16}}>
+            <button onClick={()=>setShowCal(v=>!v)} style={{
+              width:"100%",padding:"11px",borderRadius:10,border:`1px solid ${C.border}`,
+              background:C.card,color:C.text,fontSize:13,fontWeight:600,cursor:"pointer",
+              fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,
+            }}>
+              📅 Agregar al Calendario {showCal?"▲":"▼"}
+            </button>
+            {showCal && (
+              <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginTop:4,border:`1px solid ${C.border}`}}>
+                {[
+                  {icon:"🍎",label:"Apple Calendar",url:"webcal://p48-caldav.icloud.com/published/2/copa-del-mundo-2026"},
+                  {icon:"📅",label:"Google Calendar",url:"https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2Fwww.google.com%2Fcalendar%2Fical%2Fen.mx%2523sports%2540group.v.calendar.google.com%2Fpublic%2Fbasic.ics"},
+                  {icon:"🗓️",label:"Outlook / .ics",url:"https://www.espn.com/soccer/fixtures"},
+                ].map((c,i,arr)=>(
+                  <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
+                    display:"flex",alignItems:"center",gap:12,padding:"13px 16px",
+                    color:C.text,textDecoration:"none",fontSize:13,
+                    borderBottom:i<arr.length-1?`1px solid ${C.border}20`:undefined,
+                  }}>
+                    <span style={{fontSize:22}}>{c.icon}</span>
+                    <span>{c.label}</span>
+                    <span style={{marginLeft:"auto",color:C.muted,fontSize:16}}>›</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
+      {/* ── TABLA completa ── */}
+      {tab==="tabla" && <div style={{marginTop:12}}><GroupTable/></div>}
+
       {/* ── PARTIDOS ── */}
-      {tab==="partidos" && <>
-        {/* Navegación días */}
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 4px",borderBottom:`1px solid ${C.border}`,marginBottom:8}}>
-          <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
-          <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
-          <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
-        </div>
-
-        {loadSb && <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>}
-        {!loadSb && events.length===0 && <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>}
-
-        {!loadSb && events.length>0 && (
-          <div style={{background:C.card,borderRadius:10,overflow:"hidden"}}>
-            {events.map((ev,i)=>{
-              const comp=ev.competitions?.[0];
-              const home=comp?.competitors?.find(c=>c.homeAway==="home");
-              const away=comp?.competitors?.find(c=>c.homeAway==="away");
-              const st=comp?.status?.type;
-              const live=st?.state==="in", done=st?.state==="post";
-              const clock=comp?.status?.displayClock;
-              const sH=home?.score??"–", sA=away?.score??"–";
-              const homeName=home?.team?.shortDisplayName||home?.team?.location||"—";
-              const awayName=away?.team?.shortDisplayName||away?.team?.location||"—";
-              const homeLogo=home?.team?.logo, awayLogo=away?.team?.logo;
-              return (
-                <div key={i} style={{
-                  display:"grid",gridTemplateColumns:"46px 1fr auto 1fr",
-                  alignItems:"center",gap:8,padding:"11px 12px",
-                  borderBottom:i<events.length-1?`1px solid ${C.border}20`:undefined,
-                  borderLeft:`3px solid ${live?"#10b981":"transparent"}`,
-                }}>
-                  {/* Estado */}
-                  <div style={{textAlign:"center"}}>
-                    {live
-                      ? <span style={{background:"#10b98122",color:"#10b981",fontSize:10,fontWeight:700,padding:"3px 5px",borderRadius:4}}>{clock?.replace("'","′")||"●"}</span>
-                      : done
-                        ? <span style={{color:C.muted,fontSize:10,fontWeight:600,background:C.border+"44",padding:"3px 5px",borderRadius:4}}>TC</span>
-                        : <span style={{color:C.muted,fontSize:11}}>{fmtHour(ev.date)}</span>
-                    }
-                  </div>
-                  {/* Local */}
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:6}}>
-                    <span style={{color:done||live?C.text:"#9ca3af",fontSize:13,fontWeight:done||live?500:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{homeName}</span>
-                    {homeLogo
-                      ? <img src={homeLogo} style={{width:22,height:22,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>
-                      : <span style={{fontSize:16,flexShrink:0}}>🏳️</span>}
-                  </div>
-                  {/* Marcador */}
-                  <div style={{textAlign:"center",minWidth:40}}>
-                    {done||live
-                      ? <span style={{color:C.text,fontSize:16,fontWeight:800,letterSpacing:"1px"}}>{sH} - {sA}</span>
-                      : <span style={{color:C.muted,fontSize:12,padding:"0 4px"}}>vs</span>
-                    }
-                  </div>
-                  {/* Visitante */}
-                  <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    {awayLogo
-                      ? <img src={awayLogo} style={{width:22,height:22,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>
-                      : <span style={{fontSize:16,flexShrink:0}}>🏳️</span>}
-                    <span style={{color:done||live?C.text:"#9ca3af",fontSize:13,fontWeight:done||live?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{awayName}</span>
-                  </div>
-                </div>
-              );
-            })}
+      {tab==="partidos" && (
+        <div style={{marginTop:10}}>
+          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 2px",marginBottom:6}}>
+            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
+            <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
+            <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
-        )}
-      </>}
+          <MatchList/>
+        </div>
+      )}
     </div>
   );
 }
