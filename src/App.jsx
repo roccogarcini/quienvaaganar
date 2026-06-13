@@ -1036,11 +1036,15 @@ function Calendario() {
             </button>
             {showCal && (
               <div style={{background:C.card,borderRadius:10,overflow:"hidden",marginTop:4,border:`1px solid ${C.border}`}}>
-                {[
-                  {icon:"🍎",label:"Apple Calendar",url:"webcal://p48-caldav.icloud.com/published/2/copa-del-mundo-2026"},
-                  {icon:"📅",label:"Google Calendar",url:"https://calendar.google.com/calendar/r?cid=webcal%3A%2F%2Fwww.google.com%2Fcalendar%2Fical%2Fen.mx%2523sports%2540group.v.calendar.google.com%2Fpublic%2Fbasic.ics"},
-                  {icon:"🗓️",label:"Outlook / .ics",url:"https://www.espn.com/soccer/fixtures"},
-                ].map((c,i,arr)=>(
+                {(() => {
+                  const ics = "webcal://ics.fotmob.com/api/calendar/matches?leagueId=77&teamId=-1&timeZone=America%2FMexico_City";
+                  const icsHttp = ics.replace("webcal://","https://");
+                  return [
+                    {icon:"🍎", label:"Apple Calendar",  url: ics},
+                    {icon:"📅", label:"Google Calendar",  url:`https://calendar.google.com/calendar/r?cid=${encodeURIComponent(ics)}`},
+                    {icon:"🪟", label:"Outlook / .ics",   url: icsHttp},
+                  ];
+                })().map((c,i,arr)=>(
                   <a key={c.label} href={c.url} target="_blank" rel="noreferrer" style={{
                     display:"flex",alignItems:"center",gap:12,padding:"13px 16px",
                     color:C.text,textDecoration:"none",fontSize:13,
