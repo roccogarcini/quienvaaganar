@@ -985,8 +985,8 @@ function TipsNoticias() {
 
   const fuentes = [
     { id:"all",        label:"Todas" },
-    { id:"tudn",       label:"TUDN" },
-    { id:"fifa",       label:"FIFA" },
+    { id:"tudn",       label:"Mediotiempo" },
+    { id:"fifa",       label:"ESPN" },
     { id:"juanfutbol", label:"JuanFútbol" },
   ];
 

@@ -6,23 +6,20 @@ export default async function handler(req, res) {
   const feeds = [
     {
       id: "tudn",
-      name: "TUDN",
+      name: "Mediotiempo",
       color: "#e10600",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/42/TUDN_logo.svg/120px-TUDN_logo.svg.png",
-      url: "https://www.tudn.com/rss/news.xml",
+      url: "https://www.mediotiempo.com/feed",
     },
     {
       id: "fifa",
-      name: "FIFA",
+      name: "ESPN Fútbol",
       color: "#1a6bb5",
-      logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/FIFA_logo_without_slogan.svg/80px-FIFA_logo_without_slogan.svg.png",
-      url: "https://www.fifa.com/rss-feed/2026-fifa-world-cup/news/en",
+      url: "https://www.espn.com/espn/rss/soccer/news",
     },
     {
       id: "juanfutbol",
       name: "JuanFútbol",
       color: "#f97316",
-      logo: null,
       url: "https://juanfutbol.com/rss",
     },
   ];

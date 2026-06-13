@@ -2,16 +2,12 @@
   "rewrites": [{ "source": "/((?!api/).*)", "destination": "/index.html" }],
   "crons": [
     {
-      "path": "/api/wa-broadcast?secret=qvag_cron_2026",
+      "path": "/api/wa-broadcast?secret=qvag_cron_2026&turno=manana",
       "schedule": "0 14 * * *"
     },
     {
-      "path": "/api/wa-broadcast?secret=qvag_cron_2026",
-      "schedule": "0 2 * * *"
-    },
-    {
       "path": "/api/wa-prematch?secret=qvag_cron_2026",
-      "schedule": "0 * * * *"
+      "schedule": "0 20 * * *"
     }
   ]
 }
