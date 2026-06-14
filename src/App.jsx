@@ -229,7 +229,7 @@ function CrearSala({ onCreate }) {
     setLoading(true);
     const id = Math.random().toString(36).substr(2, 8);
     const { error } = await supabase.from("salas").insert({
-      id, nombre, modo: "libre", cuota: 0, castigos: [], flash: [], stage: "Grupos"
+      id, nombre, modo: "retos", cuota: 0, castigos: [], flash: [], stage: "Grupos"
     });
     if (!error) {
       setSalaId(id);
