@@ -185,7 +185,7 @@ function PreviewModal({ tipo, onClose }) {
 }
 
 function CrearSala({ onCreate }) {
-  const [nombre] = useState("Quiniela Mundial 2026");
+  const [nombre] = useState("Mundial 2026");
   const [modo, setModo] = useState(null);
   const [preview, setPreview] = useState(null);
   const [creadorNombre, setCreadorNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
@@ -762,11 +762,37 @@ function Sala({ sala, miId }) {
           <div>
             <div style={{ color:C.text, fontSize:17, fontWeight:600 }}>{sala.nombre}</div>
             <div style={{ display:"flex", gap:8, marginTop:4, flexWrap:"wrap" }}>
-              <span style={{ background:"#1d4ed833", color:"#60a5fa", fontSize:11, padding:"2px 8px", borderRadius:20 }}>
-                {sala.modo==="dinero"?"💰 Con dinero":"🎲 Con retos"}
-              </span>
-              {sala.modo==="dinero" && <span style={{ background:C.gold+"22", color:C.gold, fontSize:11, padding:"2px 8px", borderRadius:20 }}>${sala.cuota} por castigo</span>}
-              <span style={{ background:C.green+"22", color:C.green, fontSize:11, padding:"2px 8px", borderRadius:20 }}>{participantes.length} jugadores</span>
+              {(() => {
+                // Partidos restantes: Mundial 2026 tiene 104 juegos (Jun 11 – Jul 19)
+                const FASES = [
+                  { hasta: new Date("2026-06-28T23:59:59-06:00"), jugados: 0,  total: 72  }, // Grupos
+                  { hasta: new Date("2026-07-04T23:59:59-06:00"), jugados: 72, total: 16  }, // R32
+                  { hasta: new Date("2026-07-10T23:59:59-06:00"), jugados: 88, total: 8   }, // R16
+                  { hasta: new Date("2026-07-13T23:59:59-06:00"), jugados: 96, total: 4   }, // QF
+                  { hasta: new Date("2026-07-16T23:59:59-06:00"), jugados: 100, total: 2  }, // SF
+                  { hasta: new Date("2026-07-19T23:59:59-06:00"), jugados: 102, total: 2  }, // 3er+Final
+                ];
+                const hoy = new Date();
+                const fase = FASES.find(f => hoy <= f.hasta) || FASES[FASES.length-1];
+                // Estima los jugados dentro de la fase actual (proporcional a los días transcurridos)
+                const prev = FASES[FASES.indexOf(fase)-1];
+                const inicioFase = prev ? prev.hasta : new Date("2026-06-11");
+                const diasFase = (fase.hasta - inicioFase) / 86400000;
+                const diasTransc = Math.max(0, (hoy - inicioFase) / 86400000);
+                const jugadosFase = Math.min(fase.total, Math.floor(fase.total * diasTransc / diasFase));
+                const restantes = 104 - (fase.jugados + jugadosFase);
+                // Días para la final
+                const final = new Date("2026-07-19T18:00:00-05:00");
+                const diasFinal = Math.max(0, Math.ceil((final - hoy) / 86400000));
+                return <>
+                  <span style={{ background:"#1d4ed833", color:"#60a5fa", fontSize:11, padding:"2px 8px", borderRadius:20 }}>
+                    ⚽ ~{restantes} partidos por jugar
+                  </span>
+                  <span style={{ background:C.green+"22", color:C.green, fontSize:11, padding:"2px 8px", borderRadius:20 }}>
+                    🏆 {diasFinal > 0 ? `Final en ${diasFinal} días` : "¡Hoy es la Final!"}
+                  </span>
+                </>;
+              })()}
             </div>
           </div>
           <div style={{ display:"flex", gap:6 }}>
@@ -1573,7 +1599,7 @@ export default function App() {
         <span style={{color:C.muted, fontSize:12, fontWeight:600}}>Rocco Garcini</span>
       </div>
       <p style={{color:C.muted, fontSize:11, margin:"0 0 14px", lineHeight:1.6, maxWidth:360, marginLeft:"auto", marginRight:"auto"}}>
-        Esta app es un juego entre amigos. No somos una casa de apuestas ni intermediarios de pagos. Los datos que proporcionas (nombre y WhatsApp) se usan únicamente para identificarte dentro de tu quiniela.
+        Esta app es un juego entre amigos. No somos una casa de apuestas ni intermediarios de pagos. Los datos que proporcionas (nombre y WhatsApp) se usan únicamente para identificarte dentro de la app.
       </p>
       <p style={{color:C.muted, fontSize:12, margin:"0 0 10px", lineHeight:1.5}}>
         ¿Quieres tu propio desarrollo con IA?<br/>
