@@ -869,7 +869,7 @@ function Sala({ sala, miId }) {
               if (!ultimo.whatsapp) { alert("Este participante no tiene WhatsApp registrado 😅"); return; }
               setCastigoLoading(true);
               try {
-                const r = await fetch(`/api/wa-castigo?secret=qvag_cron_2026&phone=${encodeURIComponent(ultimo.whatsapp)}&nombre=${encodeURIComponent(ultimo.nombre)}&sala=${encodeURIComponent(sala.nombre)}`);
+                const r = await fetch(`/api/wa-castigo?sala_id=${encodeURIComponent(sala.id)}&participante_id=${encodeURIComponent(ultimo.id)}`);
                 const data = await r.json();
                 if (data.ok) { setCastigoSent(true); alert(`✅ Castigo enviado a ${ultimo.nombre} por WhatsApp 😈`); }
                 else { alert("Hubo un error al enviar el mensaje 😅"); }
