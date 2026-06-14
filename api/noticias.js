@@ -47,10 +47,24 @@ export default async function handler(req, res) {
       const link = get("link") || getAttr("link", "href");
       const pubDate = get("pubDate") || get("dc:date") || get("published");
       const description = get("description").replace(/<[^>]+>/g, "").slice(0, 200);
+      // 1. Etiquetas estándar de medios en RSS
       const imageMatch = /<media:content[^>]*url="([^"]*)"/.exec(block)
         || /<enclosure[^>]*url="([^"]*)"/.exec(block)
         || /<media:thumbnail[^>]*url="([^"]*)"/.exec(block);
-      const image = imageMatch ? imageMatch[1] : null;
+      let image = imageMatch ? imageMatch[1] : null;
+
+      // 2. Fallback: primera <img src="..."> dentro del CDATA de description
+      if (!image) {
+        const descRaw = (() => {
+          const r = /<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i.exec(block);
+          return r ? r[1] : "";
+        })();
+        const imgMatch = /<img[^>]+src=["']([^"']+)["']/i.exec(descRaw);
+        if (imgMatch) {
+          // Quita sufijo WordPress -150x150, -300x200, etc. para obtener tamaño original
+          image = imgMatch[1].replace(/-\d+x\d+(\.\w+)$/, "$1");
+        }
+      }
 
       if (title && link) {
         items.push({
