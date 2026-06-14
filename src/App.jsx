@@ -620,7 +620,7 @@ function Unirse({ sala, participantes, onJoin }) {
 // ── PANTALLA: TABLA PRINCIPAL ─────────────────
 function Sala({ sala, miId }) {
   const [participantes, setParticipantes] = useState([]);
-  const [tab, setTab] = useState("tabla");
+  const [tab, setTab] = useState("calendario");
   const [sorteoP, setSorteoP] = useState(null);
   const [sorteoOpts, setSorteoOpts] = useState([]);
   const [sorteoChosen, setSorteoChosen] = useState(null);
@@ -775,7 +775,7 @@ function Sala({ sala, miId }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
-          {[["tabla","Tabla"],["prons","Pronósticos"],["calendario","⚽ Mundial"],["tips","Tips - Noticias 🧠"]].map(([k,l])=>(
+          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["prons","Pronósticos"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
@@ -969,7 +969,9 @@ function Sala({ sala, miId }) {
 
         {tab==="calendario" && <Calendario salaLink={salaLink} yo={yo} />}
 
-        {tab==="tips" && <TipsNoticias />}
+        {tab==="noticias" && <Noticias />}
+
+        {tab==="tips" && <TipsInfo />}
 
       </div>
     </div>
@@ -977,7 +979,8 @@ function Sala({ sala, miId }) {
 }
 
 // ── PESTAÑA: TIPS & NOTICIAS ───────────────────
-function TipsNoticias() {
+// ── TAB: NOTICIAS ──────────────────────────────
+function Noticias() {
   const [noticias, setNoticias] = useState(null);
   const [loadN, setLoadN]       = useState(true);
   const [errN, setErrN]         = useState(null);
@@ -1012,35 +1015,12 @@ function TipsNoticias() {
     return `hace ${Math.floor(h/24)}d`;
   }
 
-  const TIPS_REGLAS = [
-    {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
-    {emoji:"🟨",titulo:"Tarjetas",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
-    {emoji:"📺",titulo:"VAR",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede revisar la pantalla antes de decidir."},
-    {emoji:"🥅",titulo:"Penal",texto:"Falta dentro del área = penal desde el punto blanco a 11 metros del arco."},
-  ];
-
-  const TIPS_MUNDIAL = [
-    {emoji:"🌎",titulo:"48 equipos",texto:"Por primera vez 48 selecciones en 12 grupos de 4. Clasifican los 2 primeros + los 8 mejores terceros."},
-    {emoji:"📐",titulo:"Desempate en tabla",texto:"1° Puntos → 2° DG → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play → 6° Sorteo FIFA."},
-    {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Final en el MetLife Stadium, NY/NJ. México juega en Azteca, Guadalajara y Monterrey."},
-    {emoji:"🥇",titulo:"Campeones: Argentina",texto:"Qatar 2022: Argentina venció a Francia 3-3 (4-2 en penales). Messi levantó el único título que le faltaba."},
-  ];
-
-  const TIPS_QUINIELA = [
-    {emoji:"📊",titulo:"Diferencia de goles importa",texto:"En grupos dos equipos pueden empatar puntos. El que gana por más diferencia avanza. Apuesta a que tu equipo gane bien, no solo que gane."},
-    {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"Arabia Saudita venció a Argentina, Japón a Alemania, Marruecos llegó a semis. Las sorpresas son parte del juego — toma riesgos."},
-    {emoji:"🔥",titulo:"Factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Esta es la mejor oportunidad de México en décadas."},
-  ];
-
   return (
     <div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:14}}>
-
-      {/* ── NOTICIAS EN VIVO ── */}
       <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em"}}>
         Noticias del Mundial 📰
       </div>
 
-      {/* Filtros de fuente */}
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {fuentes.map(f => (
           <button key={f.id} onClick={() => setFiltro(f.id)}
@@ -1102,9 +1082,35 @@ function TipsNoticias() {
           </div>
         </a>
       ))}
+    </div>
+  );
+}
 
-      {/* ── TIPS ESTÁTICOS ── */}
-      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:8}}>
+// ── TAB: TIPS ──────────────────────────────────
+function TipsInfo() {
+  const TIPS_REGLAS = [
+    {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
+    {emoji:"🟨",titulo:"Tarjetas",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
+    {emoji:"📺",titulo:"VAR",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede revisar la pantalla antes de decidir."},
+    {emoji:"🥅",titulo:"Penal",texto:"Falta dentro del área = penal desde el punto blanco a 11 metros del arco."},
+  ];
+
+  const TIPS_MUNDIAL = [
+    {emoji:"🌎",titulo:"48 equipos",texto:"Por primera vez 48 selecciones en 12 grupos de 4. Clasifican los 2 primeros + los 8 mejores terceros."},
+    {emoji:"📐",titulo:"Desempate en tabla",texto:"1° Puntos → 2° DG → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play → 6° Sorteo FIFA."},
+    {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Final en el MetLife Stadium, NY/NJ. México juega en Azteca, Guadalajara y Monterrey."},
+    {emoji:"🥇",titulo:"Campeones: Argentina",texto:"Qatar 2022: Argentina venció a Francia 3-3 (4-2 en penales). Messi levantó el único título que le faltaba."},
+  ];
+
+  const TIPS_QUINIELA = [
+    {emoji:"📊",titulo:"Diferencia de goles importa",texto:"En grupos dos equipos pueden empatar puntos. El que gana por más diferencia avanza. Apuesta a que tu equipo gane bien, no solo que gane."},
+    {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"Arabia Saudita venció a Argentina, Japón a Alemania, Marruecos llegó a semis. Las sorpresas son parte del juego — toma riesgos."},
+    {emoji:"🔥",titulo:"Factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Esta es la mejor oportunidad de México en décadas."},
+  ];
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:12,paddingTop:14}}>
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em"}}>
         Reglas básicas ⚽
       </div>
       {TIPS_REGLAS.map((t,i)=>(
