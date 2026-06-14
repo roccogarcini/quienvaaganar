@@ -6,7 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://TU_PROYECTO.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "TU_ANON_KEY";
 const APP_URL = import.meta.env.VITE_APP_URL || "https://quienvaaganar.vercel.app";
-const SALA_GLOBAL_ID = "4hxgcuvw"; // Sala única — todos los usuarios entran aquí
+const SALA_GLOBAL_ID = "mundial2026"; // Sala única — todos los usuarios entran aquí
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ----------------------
 
@@ -1561,11 +1561,17 @@ export default function App() {
   useEffect(() => {
     // Cargar sala global
     supabase.from("salas").select("*").eq("id", SALA_GLOBAL_ID).single()
-      .then(({ data }) => { if (data) setSala(data); setLoading(false); });
+      .then(({ data, error }) => {
+        if (error) console.error("Error cargando sala:", error);
+        if (data) setSala(data);
+        setLoading(false);
+      })
+      .catch(e => { console.error("Catch sala:", e); setLoading(false); });
 
     // Cargar participantes + auto-login por WA
     supabase.from("participantes").select("*").eq("sala_id", SALA_GLOBAL_ID).order("created_at")
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) console.error("Error cargando participantes:", error);
         if (!data) return;
         setParticipantes(data);
         if (!localStorage.getItem("miId_"+SALA_GLOBAL_ID)) {
@@ -1576,7 +1582,8 @@ export default function App() {
             if (ya) { localStorage.setItem("miId_"+SALA_GLOBAL_ID, ya.id); setMiId(ya.id); }
           }
         }
-      });
+      })
+      .catch(e => console.error("Catch participantes:", e));
   }, []);
 
   function onUnirse(participante) {

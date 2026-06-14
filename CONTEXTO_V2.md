@@ -2,7 +2,7 @@
 
 ## App en producción
 **URL:** https://quienvaaganar.vercel.app  
-**Sala global única:** `4hxgcuvw` (hardcodeada en `SALA_GLOBAL_ID`)  
+**Sala global única:** `mundial2026` (hardcodeada en `SALA_GLOBAL_ID`)  
 **Stack:** React + Vite (single file `/src/App.jsx`) · Supabase PostgreSQL · Vercel serverless functions
 
 ---
@@ -30,8 +30,8 @@
 
 ### Frontend `/src/App.jsx` (~1700 líneas, todo en un archivo)
 - **Componentes principales:** `Unirse`, `Sala`, `Calendario`, `Noticias`, `TipsInfo`, `TipCard`
-- **Sala global:** `SALA_GLOBAL_ID = "4hxgcuvw"` — constante en el archivo
-- **Estado de sesión:** `localStorage` guarda `miId_4hxgcuvw`, `quiniela_nombre`, `quiniela_wa`
+- **Sala global:** `SALA_GLOBAL_ID = "mundial2026"` — constante en el archivo
+- **Estado de sesión:** `localStorage` guarda `miId_mundial2026`, `quiniela_nombre`, `quiniela_wa`
 - **Auto-login:** al cargar, busca el WA guardado entre los participantes existentes
 - **Realtime:** Supabase subscription en tabla `participantes` para updates en vivo
 - **Admin:** El primer participante en registrarse es admin (`participantes[0].id === miId`)
@@ -58,7 +58,7 @@ CRON_SECRET=qvag_cron_2026
 
 ### Base de datos Supabase
 **Tablas:**
-- `salas`: id, nombre, modo (siempre "retos"), cuota, castigos, flash, stage — **solo existe la fila `4hxgcuvw`**
+- `salas`: id, nombre, modo (siempre "retos"), cuota, castigos, flash, stage — **solo existe la fila `mundial2026`**
 - `participantes`: id, sala_id, nombre, whatsapp, equipo, flag, pron_camp, pron_sub, points, penalties, eliminado, modo_jugador, apuesta
 
 ---
@@ -81,7 +81,7 @@ CRON_SECRET=qvag_cron_2026
 ## Decisiones de diseño importantes
 
 ### Sala única global (v2)
-- No hay multi-sala. `SALA_GLOBAL_ID = "4hxgcuvw"` es la única sala en Supabase.
+- No hay multi-sala. `SALA_GLOBAL_ID = "mundial2026"` es la única sala en Supabase.
 - Todos los links de invitación apuntan a `quienvaaganar.vercel.app` (sin `/sala/:id`)
 - Si alguien quiere compartir, el botón "Invitar" en la sala genera un mensaje WA con el link raíz
 
