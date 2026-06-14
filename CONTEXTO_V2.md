@@ -1,27 +1,27 @@
-# QuiénVaAGanar — Contexto para Testing
+# QuiénVaAGanar — Contexto v2.0
 
 ## App en producción
 **URL:** https://quienvaaganar.vercel.app  
-**Sala de prueba:** https://quienvaaganar.vercel.app/sala/[pide el id a Rocco]  
+**Sala global única:** `4hxgcuvw` (hardcodeada en `SALA_GLOBAL_ID`)  
 **Stack:** React + Vite (single file `/src/App.jsx`) · Supabase PostgreSQL · Vercel serverless functions
 
 ---
 
-## Versión actual: v2
+## Versión actual: v2 — Sala global
 
 ### Flujo principal
-1. Usuario entra a la URL → ve landing con botón **"Entrar al Mundial 🏆"**
-2. Escribe nombre + WhatsApp → se crea o une a una sala
-3. Elige su equipo + pronóstico de campeón y subcampeón
-4. Entra a la sala con 5 tabs: **Mundial · Noticias · Tips · Tabla · Pronósticos**
+1. Usuario entra a `quienvaaganar.vercel.app` → formulario de registro directo
+2. Escribe nombre + WhatsApp → elige equipo + pronóstico de campeón y subcampeón
+3. Entra a la sala global con 5 tabs: **Mundial · Noticias · Tips · Tabla · Pronósticos**
+4. **No hay creación de salas, no hay `/sala/:id`, no hay rutas.** Todo el mundo está en la misma tabla.
 
 ### Tabs de la sala
 | Tab | Contenido |
 |-----|-----------|
-| ⚽ Mundial | Marcadores del día (hoy/ayer/mañana navegable), tabla de grupos |
+| ⚽ Mundial | Marcadores del día (hoy/ayer/mañana navegable con ‹ ›), tabla de grupos |
 | Noticias 📰 | Feed RSS en vivo: Marca Fútbol, ESPN, JuanFútbol. Con imágenes. Filtrable por fuente |
-| Tips 🧠 | Cards estáticas: reglas básicas (offside, tarjetas, VAR, penal), formato Mundial 2026, tips de quiniela. Con imágenes ilustrativas |
-| Tabla | Ranking de participantes por puntos. Card roja "Último lugar" con botón 😈 Mandar castigo (solo admin) |
+| Tips 🧠 | Cards con imagen ilustrativa: reglas básicas (offside, tarjetas, VAR, penal), formato Mundial 2026, tips de quiniela |
+| Tabla | Ranking por puntos. Card roja "💀 Último lugar" con botón 😈 Mandar castigo (solo admin) |
 | Pronósticos | Lista de pronósticos de cada participante |
 
 ---
@@ -29,8 +29,10 @@
 ## Arquitectura
 
 ### Frontend `/src/App.jsx` (~1700 líneas, todo en un archivo)
-- **Componentes principales:** `Landing`, `CrearSala`, `Unirse`, `Sala`, `Calendario`, `Noticias`, `TipsInfo`, `TipCard`
-- **Estado de sesión:** `localStorage` guarda `miId_[salaId]`, `quiniela_nombre`, `quiniela_wa`
+- **Componentes principales:** `Unirse`, `Sala`, `Calendario`, `Noticias`, `TipsInfo`, `TipCard`
+- **Sala global:** `SALA_GLOBAL_ID = "4hxgcuvw"` — constante en el archivo
+- **Estado de sesión:** `localStorage` guarda `miId_4hxgcuvw`, `quiniela_nombre`, `quiniela_wa`
+- **Auto-login:** al cargar, busca el WA guardado entre los participantes existentes
 - **Realtime:** Supabase subscription en tabla `participantes` para updates en vivo
 - **Admin:** El primer participante en registrarse es admin (`participantes[0].id === miId`)
 
@@ -56,7 +58,7 @@ CRON_SECRET=qvag_cron_2026
 
 ### Base de datos Supabase
 **Tablas:**
-- `salas`: id, nombre, modo (siempre "retos"), cuota, castigos, flash, stage
+- `salas`: id, nombre, modo (siempre "retos"), cuota, castigos, flash, stage — **solo existe la fila `4hxgcuvw`**
 - `participantes`: id, sala_id, nombre, whatsapp, equipo, flag, pron_camp, pron_sub, points, penalties, eliminado, modo_jugador, apuesta
 
 ---
@@ -78,9 +80,14 @@ CRON_SECRET=qvag_cron_2026
 
 ## Decisiones de diseño importantes
 
+### Sala única global (v2)
+- No hay multi-sala. `SALA_GLOBAL_ID = "4hxgcuvw"` es la única sala en Supabase.
+- Todos los links de invitación apuntan a `quienvaaganar.vercel.app` (sin `/sala/:id`)
+- Si alguien quiere compartir, el botón "Invitar" en la sala genera un mensaje WA con el link raíz
+
 ### Sin sistema de apuestas
 Versión 1 removió todo el flujo de dinero/retos/híbrido. Ahora:
-- Sala se crea con `modo: "retos"` (para satisfacer constraint de Supabase) pero nunca se muestra al usuario
+- Sala tiene `modo: "retos"` (satisface constraint de Supabase) pero nunca se muestra al usuario
 - No hay cuotas, no hay modos, no hay flujo de apuesta
 - La app es: calendario + noticias + tabla de posiciones entre amigos
 
