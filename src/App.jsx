@@ -295,7 +295,7 @@ function CrearSala({ onCreate }) {
           <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!creadorNombre.trim()||!creadorWA.trim()||buscando||loading)?0.4:1 }}
             disabled={!creadorNombre.trim()||!creadorWA.trim()||buscando||loading}
             onClick={verificarWA}>
-            {buscando||loading ? "Un momento…" : "Crear mi quiniela →"}
+            {buscando||loading ? "Un momento…" : "Entrar al Mundial 🏆"}
           </button>
         </>}
 
