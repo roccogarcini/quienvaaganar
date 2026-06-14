@@ -204,7 +204,6 @@ function CrearSala({ onCreate }) {
     localStorage.setItem("quiniela_nombre", creadorNombre.trim());
     localStorage.setItem("quiniela_wa", creadorWA.trim());
     setBuscando(true);
-    // Buscar si este WA ya tiene una sala
     const { data } = await supabase.from("participantes")
       .select("sala_id, whatsapp")
       .ilike("whatsapp", `%${wa}`)
@@ -212,12 +211,11 @@ function CrearSala({ onCreate }) {
       .limit(1);
     setBuscando(false);
     if (data && data.length > 0) {
-      // Ya existe → ir directo a su sala
       localStorage.setItem("quiniela_lastSala", data[0].sala_id);
       window.location.href = `/sala/${data[0].sala_id}`;
     } else {
-      // No existe → siguiente paso: Modo de juego
-      setStep(1);
+      // No existe → crear sala directamente
+      await crear();
     }
   }
   const [loading, setLoading] = useState(false);
@@ -227,17 +225,15 @@ function CrearSala({ onCreate }) {
   const [newInvWa, setNewInvWa] = useState("");
 
   async function crear() {
-    if (!nombre.trim() || !modo) return;
+    if (!nombre.trim()) return;
     setLoading(true);
     const id = Math.random().toString(36).substr(2, 8);
     const { error } = await supabase.from("salas").insert({
-      id, nombre, modo, cuota: modo === "dinero" ? cuota : modo === "hibrido" ? 250 : 0,
-      castigos, flash: [], stage: "Grupos"
+      id, nombre, modo: "libre", cuota: 0, castigos: [], flash: [], stage: "Grupos"
     });
     if (!error) {
       setSalaId(id);
-      if (modo === "dinero") { setStep(4); setLoading(false); }
-      else onCreate(id);
+      onCreate(id);
     } else { alert("Error al crear sala: " + error.message); setLoading(false); }
   }
 
@@ -257,14 +253,14 @@ function CrearSala({ onCreate }) {
             <span style={{ color:C.muted, fontSize:12 }}>by RoccoGarcini</span>
           </div>
           <p style={{ color:C.text, fontSize:13, lineHeight:1.7, marginBottom:12 }}>
-            Un juego hecho para tenerte al día con el Mundial 2026 de una manera divertida. <strong style={{color:"#a78bfa"}}>Tú decides</strong> si le entras a la apuesta o solo entras a divertirte.
+            Un juego hecho para tenerte al día con el Mundial 2026 de una manera divertida. <strong style={{color:"#a78bfa"}}>Predice</strong> quién va a ganar, sigue los partidos y compite con tus amigos.
           </p>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
             {[
               ["📅","Calendario del Mundial","Todos los partidos y horarios","calendario"],
               ["⚽","Marcadores en vivo","Resultados al momento","marcadores"],
-              ["🧠","Tips de football","Para entender el juego aunque no sepas nada","tips"],
-              ["🏆","Apuestas con amigos","Dinero o retos — tú decides","apuestas"],
+              ["🧠","Tips y noticias","Para entender el juego y estar al día","tips"],
+              ["🏆","Tabla de posiciones","¿Quién lleva la delantera?","tabla"],
             ].map(([icon,title,desc,key])=>(
               <button key={title} onClick={()=>setPreview(key)} style={{
                 background:C.card+"88", borderRadius:10, padding:"10px 12px",
@@ -296,10 +292,10 @@ function CrearSala({ onCreate }) {
             style={{ ...inp, marginBottom:20 }}
             onKeyDown={e=>e.key==="Enter"&&creadorNombre.trim()&&creadorWA.trim()&&verificarWA()}
           />
-          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!creadorNombre.trim()||!creadorWA.trim()||buscando)?0.4:1 }}
-            disabled={!creadorNombre.trim()||!creadorWA.trim()||buscando}
+          <button style={{ ...BtnP, width:"100%", padding:12, fontSize:14, opacity:(!creadorNombre.trim()||!creadorWA.trim()||buscando||loading)?0.4:1 }}
+            disabled={!creadorNombre.trim()||!creadorWA.trim()||buscando||loading}
             onClick={verificarWA}>
-            {buscando ? "Buscando tu cuenta…" : "Siguiente →"}
+            {buscando||loading ? "Un momento…" : "Crear mi quiniela →"}
           </button>
         </>}
 
@@ -503,9 +499,9 @@ function Unirse({ sala, participantes, onJoin }) {
     // Descripción (centro-derecha)
     ctx.textAlign="center";
     ctx.fillStyle="#6b7280"; ctx.font="11px sans-serif";
-    ctx.fillText("Calendario · Marcadores · Tips de football · Apuestas con amigos",W/2+60,354);
+    ctx.fillText("Calendario · Marcadores · Tips de football · Noticias",W/2+60,354);
     ctx.fillStyle="#4b5563"; ctx.font="10px sans-serif";
-    ctx.fillText("Únete solo a divertirte o entra a la apuesta — tú decides 🏆",W/2+60,371);
+    ctx.fillText("¿Cuál es tu pronóstico? Únete y compite 🏆",W/2+60,371);
     ctx.fillStyle="#374151"; ctx.font="9px sans-serif";
     ctx.fillText("quienvaaganar.vercel.app",W/2+60,390);
   }
@@ -609,32 +605,6 @@ function Unirse({ sala, participantes, onJoin }) {
           </button>
         </>}
 
-        {sala.modo === "hibrido" && (
-          <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
-            <div style={{ color:"#fbbf24", fontSize:16, fontWeight:700, marginBottom:6 }}>🔥 Quiniela Híbrida · $250 pesos</div>
-            <p style={{ color:C.text, fontSize:13, lineHeight:1.6, marginBottom:8 }}>
-              Al unirte te comprometes a pagar <strong style={{color:"#fbbf24"}}>$250 pesos</strong> si quedas último o tu equipo es eliminado.
-            </p>
-            <p style={{ color:C.muted, fontSize:12, lineHeight:1.5 }}>
-              💳 El admin te avisará cuándo y a quién pagarle. El pago se hace conforme los equipos van saliendo del torneo.
-            </p>
-          </div>
-        )}
-
-        {sala.modo === "dinero" && (
-          <div style={{ ...cardStyle, marginBottom:16, background:"#fbbf2411", border:"1px solid #fbbf2444" }}>
-            <div style={{ color:"#fbbf24", fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>💰 Tu apuesta</div>
-            <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-              <input type="range" min={10} max={500} step={10} value={apuesta}
-                onChange={e => setApuesta(Number(e.target.value))}
-                style={{ flex:1, accentColor:"#fbbf24" }} />
-              <div style={{ color:"#fbbf24", fontWeight:700, fontSize:22, minWidth:60, textAlign:"right" }}>${apuesta}</div>
-            </div>
-            <p style={{ color:C.muted, fontSize:11, marginTop:8 }}>
-              Si quedas último, pagas <strong style={{color:"#fbbf24"}}>${apuesta} pesos</strong> cuando el admin lo indique. 🤝
-            </p>
-          </div>
-        )}
 
         <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo)?0.4:1 }}
           disabled={!nombre.trim()||!equipo||loading} onClick={unirse}>
@@ -804,7 +774,7 @@ function Sala({ sala, miId }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
-          {[["tabla","Tabla"],["flash","Apuestas"],["castigos","Castigos"],["prons","Pronósticos"],["cuentas","Cuentas"],["calendario","⚽ Mundial"],["tips","Tips - Noticias 🧠"]].map(([k,l])=>(
+          {[["tabla","Tabla"],["prons","Pronósticos"],["calendario","⚽ Mundial"],["tips","Tips - Noticias 🧠"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>setTab(k)}>{l}</button>
           ))}
         </div>
