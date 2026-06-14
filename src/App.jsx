@@ -374,8 +374,7 @@ function CrearSala({ onCreate }) {
           {invitados.length > 0 ? <>
             <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Mandar invitación por WhatsApp</div>
             {invitados.map((inv,i) => {
-              const link = `${APP_URL}/sala/${salaId}`;
-              const texto = `Hey ${inv.nombre} 👋\n\n💰 Te invito a una apuesta del Mundial 2026\n\nEl monto es de *$${cuota} pesos* — el que pierda paga.\n\n👉 Entra aquí: ${link}`;
+              const texto = `Hey ${inv.nombre} 👋\n\n⚽ Te invito a seguir el Mundial 2026 juntos en *${sala?.nombre||"Mundial 2026"}*\n\nCalendario · Resultados · Noticias en vivo 🏆\n\n👉 ${APP_URL}`;
               return (
                 <div key={i} style={{ ...cardStyle, display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
                   <div>
@@ -481,7 +480,7 @@ function Unirse({ sala, participantes, onJoin }) {
     ctx.fillStyle="#6b7280";ctx.font="12px sans-serif";
     ctx.fillText("¿Cuál es tu pronóstico? Únete:",W/2,244);
     ctx.fillStyle="#60a5fa";ctx.font="bold 13px sans-serif";
-    ctx.fillText(`${APP_URL}/sala/${sala.id}`,W/2,264);
+    ctx.fillText(APP_URL,W/2,264);
     ctx.fillStyle="#1f2937";
     ctx.beginPath();ctx.roundRect(W/2-100,280,200,34,17);ctx.fill();
     ctx.fillStyle="#9ca3af";ctx.font="12px sans-serif";
@@ -533,7 +532,7 @@ function Unirse({ sala, participantes, onJoin }) {
       pronCamp ? `🏆 Mi pronóstico: *${tc?.f||""} ${pronCamp}* campeón · 🥈 *${ts?.f||""} ${pronSub}* subcampeón` : ``,
       ``,
       `¿Cuál es el tuyo? Únete y compite en la tabla 👇`,
-      `${APP_URL}/sala/${sala.id}`,
+      APP_URL,
       ``,
       `Calendario · Resultados · Noticias del Mundial 2026 🌍🏆`,
     ].filter(Boolean).join("\n");
@@ -718,7 +717,7 @@ function Sala({ sala, miId }) {
       pronCamp ? `🔮 Mi pronóstico: *${pronCamp}* campeón · 🥈 *${pronSub}* subcampeón` : ``,
       ``,
       `¿Cuál es el tuyo? Únete, compite en la tabla y no te pierdas nada del Mundial 👇`,
-      `👉 ${salaLink}`,
+      `👉 ${APP_URL}`,
     ].filter(Boolean);
     window.open("https://wa.me/?text="+encodeURIComponent(lines.join("\n")),"_blank");
   }
@@ -1500,10 +1499,10 @@ function Calendario({ salaLink, yo }) {
                     `⚽ *${shareNombre||"Alguien"}* te invita a seguir el Mundial 2026`,
                     t ? `🏳️ Le voy al: *${t.f} ${t.n}*` : "",
                     ``,
-                    `📊 Mira la tabla de grupos, marcadores en vivo y el calendario completo:`,
-                    `👉 ${salaLink}`,
+                    `📊 Calendario · Marcadores en vivo · Noticias del Mundial 2026:`,
+                    `👉 ${APP_URL}`,
                     ``,
-                    `¡Entra y haz tu quiniela! 🏆`,
+                    `¡Entra y haz tu pronóstico! 🏆`,
                   ].filter(Boolean);
                   return (
                     <a href={`https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`}
