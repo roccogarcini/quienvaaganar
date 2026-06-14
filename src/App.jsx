@@ -1281,16 +1281,16 @@ function Calendario({ salaLink, yo }) {
   // ── Bloque reutilizable: lista de partidos ──────────────────────────────
   function MatchList() {
     if (loadSb) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
-    // Filtrar eventos de ayer o antes — solo mostrar desde hoy
+    // Si es "Hoy" (dateOff===0), filtrar cualquier partido de días anteriores que venga mezclado en la API
     const hoyInicio = new Date(); hoyInicio.setHours(0,0,0,0);
-    const eventsHoy = events.filter(ev => new Date(ev.date) >= hoyInicio);
-    if (eventsHoy.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos hoy. ¡Vuelve mañana! ⚽</p>;
-    // Agrupar por Hoy/Mañana/fecha
+    const eventsFiltered = dateOff === 0 ? events.filter(ev => new Date(ev.date) >= hoyInicio) : events;
+    if (eventsFiltered.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>;
+    // Agrupar por Ayer/Hoy/Mañana/fecha
     const byDay={};
-    eventsHoy.forEach(ev=>{
-      const d=new Date(ev.date),hoy=new Date(),man=new Date();
-      man.setDate(hoy.getDate()+1);
-      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
+    eventsFiltered.forEach(ev=>{
+      const d=new Date(ev.date),hoy=new Date(),ayer=new Date(),man=new Date();
+      ayer.setDate(hoy.getDate()-1); man.setDate(hoy.getDate()+1);
+      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===ayer.toDateString()?"Ayer":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
       if(!byDay[lbl])byDay[lbl]=[];byDay[lbl].push(ev);
     });
     return <>{Object.entries(byDay).map(([lbl,evs])=>(
@@ -1504,7 +1504,7 @@ function Calendario({ salaLink, yo }) {
 
           {/* Jornada nav */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 2px",marginBottom:6}}>
-            <button onClick={()=>setDateOff(d=>Math.max(0,d-1))} disabled={dateOff===0} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1,opacity:dateOff===0?0.3:1}}>‹</button>
+            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
             <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
@@ -1523,7 +1523,7 @@ function Calendario({ salaLink, yo }) {
       {tab==="partidos" && (
         <div style={{marginTop:10}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 2px",marginBottom:6}}>
-            <button onClick={()=>setDateOff(d=>Math.max(0,d-1))} disabled={dateOff===0} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1,opacity:dateOff===0?0.3:1}}>‹</button>
+            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
             <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
