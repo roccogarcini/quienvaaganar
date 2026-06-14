@@ -53,15 +53,16 @@ export default async function handler(req, res) {
         || /<media:thumbnail[^>]*url="([^"]*)"/.exec(block);
       let image = imageMatch ? imageMatch[1] : null;
 
-      // 2. Fallback: primera <img src="..."> dentro del CDATA de description
+      // 2. Fallback: primera <img src="..."> dentro de content:encoded o description
       if (!image) {
-        const descRaw = (() => {
-          const r = /<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i.exec(block);
+        const contentRaw = (() => {
+          const r = /<content:encoded[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/content:encoded>/i.exec(block)
+            || /<description[^>]*>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/i.exec(block);
           return r ? r[1] : "";
         })();
-        const imgMatch = /<img[^>]+src=["']([^"']+)["']/i.exec(descRaw);
+        const imgMatch = /<img[^>]+src=["']([^"']+)["']/i.exec(contentRaw);
         if (imgMatch) {
-          // Quita sufijo WordPress -150x150, -300x200, etc. para obtener tamaño original
+          // Quita sufijo WordPress (-150x150, -300x200, etc.) para obtener tamaño original
           image = imgMatch[1].replace(/-\d+x\d+(\.\w+)$/, "$1");
         }
       }
