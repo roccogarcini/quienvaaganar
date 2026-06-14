@@ -1220,6 +1220,16 @@ function Calendario({ salaLink, yo }) {
     const d=new Date(); d.setDate(d.getDate()+off);
     return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
   }
+  // Fecha de un evento en zona horaria México (para agrupar correctamente)
+  function fechaMX(utcStr) {
+    return new Date(utcStr).toLocaleDateString("en-CA", { timeZone:"America/Mexico_City" }); // "YYYY-MM-DD"
+  }
+  // Fecha objetivo en zona horaria México para el offset dado
+  function targetDateMX(off=0) {
+    const d = new Date();
+    d.setDate(d.getDate() + off);
+    return d.toLocaleDateString("en-CA", { timeZone:"America/Mexico_City" });
+  }
   function fmtHour(utc) {
     if (!utc) return "";
     return new Date(utc).toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit",timeZone:"America/Mexico_City"});
@@ -1232,8 +1242,21 @@ function Calendario({ salaLink, yo }) {
 
   useEffect(() => {
     setLoadSb(true);
-    fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr(dateOff)}`).then(r=>r.json())
-      .then(d=>{ setScoreboard(d); setLoadSb(false); }).catch(()=>setLoadSb(false));
+    // Pedir también el día siguiente en UTC para capturar partidos nocturnos (ej. 10pm MX = 4am UTC siguiente)
+    Promise.all([
+      fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr(dateOff)}`).then(r=>r.json()).catch(()=>({events:[]})),
+      fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr(dateOff+1)}`).then(r=>r.json()).catch(()=>({events:[]})),
+    ]).then(([d1, d2]) => {
+      const target = targetDateMX(dateOff);
+      // Combinar y filtrar: solo los eventos cuya hora en México corresponde al día pedido
+      const allEvents = [...(d1?.events||[]), ...(d2?.events||[])];
+      const filtered = allEvents.filter(ev => ev.date && fechaMX(ev.date) === target);
+      // Deduplicar por id
+      const seen = new Set();
+      const unique = filtered.filter(ev => { if(seen.has(ev.id)) return false; seen.add(ev.id); return true; });
+      setScoreboard({ ...(d1||{}), events: unique });
+      setLoadSb(false);
+    });
   }, [dateOff]);
 
   useEffect(() => {
@@ -1281,18 +1304,11 @@ function Calendario({ salaLink, yo }) {
   // ── Bloque reutilizable: lista de partidos ──────────────────────────────
   function MatchList() {
     if (loadSb) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
-    // Si es "Hoy" (dateOff===0), filtrar cualquier partido de días anteriores que venga mezclado en la API
-    const hoyInicio = new Date(); hoyInicio.setHours(0,0,0,0);
-    const eventsFiltered = dateOff === 0 ? events.filter(ev => new Date(ev.date) >= hoyInicio) : events;
-    if (eventsFiltered.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>;
-    // Agrupar por Ayer/Hoy/Mañana/fecha
-    const byDay={};
-    eventsFiltered.forEach(ev=>{
-      const d=new Date(ev.date),hoy=new Date(),ayer=new Date(),man=new Date();
-      ayer.setDate(hoy.getDate()-1); man.setDate(hoy.getDate()+1);
-      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===ayer.toDateString()?"Ayer":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
-      if(!byDay[lbl])byDay[lbl]=[];byDay[lbl].push(ev);
-    });
+    // Los eventos ya vienen filtrados por fecha en hora México desde el useEffect
+    if (events.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>;
+    // Agrupar bajo una sola etiqueta (todos son del mismo día)
+    const lbl = dayLabel(dateOff);
+    const byDay = { [lbl]: events };
     return <>{Object.entries(byDay).map(([lbl,evs])=>(
       <div key={lbl}>
         <div style={{color:C.muted,fontSize:11,fontWeight:700,padding:"8px 2px 4px",textTransform:"uppercase",letterSpacing:"0.05em"}}>{lbl}</div>
