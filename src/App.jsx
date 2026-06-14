@@ -6,6 +6,7 @@ import { createClient } from "@supabase/supabase-js";
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://TU_PROYECTO.supabase.co";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "TU_ANON_KEY";
 const APP_URL = import.meta.env.VITE_APP_URL || "https://quienvaaganar.vercel.app";
+const SALA_GLOBAL_ID = "4hxgcuvw"; // Sala única — todos los usuarios entran aquí
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ----------------------
 
@@ -1554,46 +1555,34 @@ function Calendario({ salaLink, yo }) {
 export default function App() {
   const [sala, setSala] = useState(null);
   const [participantes, setParticipantes] = useState([]);
-  const [miId, setMiId] = useState(() => localStorage.getItem("miId_"+getSalaIdFromURL()) || null);
+  const [miId, setMiId] = useState(() => localStorage.getItem("miId_"+SALA_GLOBAL_ID) || null);
   const [loading, setLoading] = useState(true);
-  const salaId = getSalaIdFromURL();
 
   useEffect(() => {
-    if (!salaId) { setLoading(false); return; }
-    supabase.from("salas").select("*").eq("id", salaId).single()
-      .then(({ data }) => {
-        if (data) setSala(data);
-        setLoading(false);
-      });
-    supabase.from("participantes").select("*").eq("sala_id", salaId).order("created_at")
+    // Cargar sala global
+    supabase.from("salas").select("*").eq("id", SALA_GLOBAL_ID).single()
+      .then(({ data }) => { if (data) setSala(data); setLoading(false); });
+
+    // Cargar participantes + auto-login por WA
+    supabase.from("participantes").select("*").eq("sala_id", SALA_GLOBAL_ID).order("created_at")
       .then(({ data }) => {
         if (!data) return;
         setParticipantes(data);
-        // Auto-login por WhatsApp: normalizar y buscar coincidencia
-        if (!localStorage.getItem("miId_"+salaId)) {
-          const normaliza = v => (v||"").replace(/\D/g,"").slice(-10);
-          const miWA = normaliza(localStorage.getItem("quiniela_wa"));
+        if (!localStorage.getItem("miId_"+SALA_GLOBAL_ID)) {
+          const norm = v => (v||"").replace(/\D/g,"").slice(-10);
+          const miWA = norm(localStorage.getItem("quiniela_wa"));
           if (miWA) {
-            const yaEstoy = data.find(p => normaliza(p.whatsapp) === miWA);
-            if (yaEstoy) {
-              localStorage.setItem("miId_"+salaId, yaEstoy.id);
-              setMiId(yaEstoy.id);
-            }
+            const ya = data.find(p => norm(p.whatsapp) === miWA);
+            if (ya) { localStorage.setItem("miId_"+SALA_GLOBAL_ID, ya.id); setMiId(ya.id); }
           }
         }
       });
-  }, [salaId]);
-
-  function onCrear(id) {
-    localStorage.setItem("quiniela_lastSala", id);
-    window.location.href = `/sala/${id}`;
-  }
+  }, []);
 
   function onUnirse(participante) {
-    localStorage.setItem("miId_"+salaId, participante.id);
+    localStorage.setItem("miId_"+SALA_GLOBAL_ID, participante.id);
     if (participante.whatsapp) localStorage.setItem("quiniela_wa", participante.whatsapp);
     if (participante.nombre)   localStorage.setItem("quiniela_nombre", participante.nombre);
-    localStorage.setItem("quiniela_lastSala", salaId);
     setParticipantes(prev => [...prev, participante]);
     setMiId(participante.id);
   }
@@ -1641,10 +1630,16 @@ export default function App() {
     </div>
   );
 
-  // Sin sala en URL → pantalla de crear
-  if (!salaId || !sala) return <><CrearSala onCreate={onCrear} /><Footer /></>;
+  // Sala global no cargó (error de red)
+  if (!sala) return (
+    <div style={{ minHeight:"100vh",background:C.bg,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Inter,sans-serif",flexDirection:"column",gap:12 }}>
+      <div style={{ fontSize:40 }}>⚽</div>
+      <div style={{ color:C.muted,fontSize:14 }}>Error al cargar. Intenta de nuevo.</div>
+      <button style={Btn()} onClick={()=>window.location.reload()}>Reintentar</button>
+    </div>
+  );
 
-  // Con sala → ¿ya entré?
+  // ¿Ya estoy registrado?
   if (!miId || !participantes.find(p=>p.id===miId)) {
     return <><Unirse sala={sala} participantes={participantes} onJoin={onUnirse} /><Footer /></>;
   }
