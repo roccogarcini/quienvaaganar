@@ -995,7 +995,7 @@ function Noticias() {
 
   const fuentes = [
     { id:"all",        label:"Todas" },
-    { id:"tudn",       label:"Mediotiempo" },
+    { id:"marca",      label:"Marca" },
     { id:"fifa",       label:"ESPN" },
     { id:"juanfutbol", label:"JuanFútbol" },
   ];
@@ -1086,26 +1086,62 @@ function Noticias() {
   );
 }
 
+// ── Componente card de tip con imagen opcional ──
+function TipCard({ t, accent }) {
+  const base = accent
+    ? { background:"linear-gradient(135deg,#7c3aed12,#1d4ed812)", border:"1px solid #7c3aed22" }
+    : { background:C.card };
+  return (
+    <div style={{ ...base, borderRadius:12, overflow:"hidden" }}>
+      {t.img && (
+        <div style={{ background: t.imgBg||"#0a0f1a", display:"flex", justifyContent:"center", alignItems:"center", padding:"14px 0", minHeight:90 }}>
+          <img src={t.img} alt={t.titulo} loading="lazy"
+            style={{ maxHeight:90, maxWidth:"80%", objectFit:"contain" }}
+            onError={e => { e.target.parentElement.style.display="none"; }} />
+        </div>
+      )}
+      <div style={{ padding:"12px 14px", display:"flex", gap:12, alignItems:"flex-start" }}>
+        <span style={{ fontSize:20, flexShrink:0, marginTop:1 }}>{t.emoji}</span>
+        <div>
+          <div style={{ color:C.text, fontSize:13, fontWeight:600, marginBottom:4 }}>{t.titulo}</div>
+          <div style={{ color:"#9ca3af", fontSize:12, lineHeight:1.65 }}>{t.texto}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── TAB: TIPS ──────────────────────────────────
 function TipsInfo() {
   const TIPS_REGLAS = [
-    {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea."},
-    {emoji:"🟨",titulo:"Tarjetas",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido."},
-    {emoji:"📺",titulo:"VAR",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede revisar la pantalla antes de decidir."},
-    {emoji:"🥅",titulo:"Penal",texto:"Falta dentro del área = penal desde el punto blanco a 11 metros del arco."},
+    {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Offsidedrawing.svg/480px-Offsidedrawing.svg.png", imgBg:"#0f2027"},
+    {emoji:"🟨",titulo:"Tarjetas: amarilla y roja",texto:"Amarilla = amonestación. Dos amarillas en el mismo partido = roja automática. Roja directa = expulsión inmediata. El jugador expulsado no juega el siguiente partido.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Yellow_card.svg/120px-Yellow_card.svg.png", imgBg:"#1a1200"},
+    {emoji:"📺",titulo:"VAR",texto:"Un árbitro en una sala de video revisa goles, penales, tarjetas rojas y confusiones de identidad. El árbitro en cancha puede revisar la pantalla antes de decidir.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/VAR_check_sign.svg/240px-VAR_check_sign.svg.png", imgBg:"#001a0f"},
+    {emoji:"🥅",titulo:"Penal",texto:"Falta dentro del área = penal desde el punto blanco a 11 metros del arco. El portero no puede moverse hasta el disparo.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Penalty_kick_soccer.svg/320px-Penalty_kick_soccer.svg.png", imgBg:"#0a0a1a"},
   ];
 
   const TIPS_MUNDIAL = [
-    {emoji:"🌎",titulo:"48 equipos",texto:"Por primera vez 48 selecciones en 12 grupos de 4. Clasifican los 2 primeros + los 8 mejores terceros."},
-    {emoji:"📐",titulo:"Desempate en tabla",texto:"1° Puntos → 2° DG → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play → 6° Sorteo FIFA."},
-    {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Final en el MetLife Stadium, NY/NJ. México juega en Azteca, Guadalajara y Monterrey."},
-    {emoji:"🥇",titulo:"Campeones: Argentina",texto:"Qatar 2022: Argentina venció a Francia 3-3 (4-2 en penales). Messi levantó el único título que le faltaba."},
+    {emoji:"🌎",titulo:"48 equipos, 12 grupos",texto:"Por primera vez 48 selecciones en 12 grupos de 4. Clasifican los 2 primeros + los 8 mejores terceros.",
+     img:"https://upload.wikimedia.org/wikipedia/en/thumb/e/e3/2026_FIFA_World_Cup_logo.svg/320px-2026_FIFA_World_Cup_logo.svg.png", imgBg:"#050510"},
+    {emoji:"📐",titulo:"Desempate en tabla",texto:"1° Puntos → 2° DG → 3° Goles anotados → 4° Resultado entre ellos → 5° Fair play → 6° Sorteo FIFA.",
+     img:null},
+    {emoji:"🏟️",titulo:"Sedes: USA, México y Canadá",texto:"Final en el MetLife Stadium, NY/NJ. México juega en el Azteca, Guadalajara y Monterrey.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/MetLife_Stadium_September_2019.jpg/320px-MetLife_Stadium_September_2019.jpg", imgBg:"#0a1020"},
+    {emoji:"🥇",titulo:"Campeones: Argentina",texto:"Qatar 2022: Argentina venció a Francia 3-3 (4-2 en penales). Messi levantó el único título que le faltaba.",
+     img:"https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/24701-soccer-soccer-ball.svg/240px-24701-soccer-soccer-ball.svg.png", imgBg:"#0a1a0a"},
   ];
 
   const TIPS_QUINIELA = [
-    {emoji:"📊",titulo:"Diferencia de goles importa",texto:"En grupos dos equipos pueden empatar puntos. El que gana por más diferencia avanza. Apuesta a que tu equipo gane bien, no solo que gane."},
-    {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"Arabia Saudita venció a Argentina, Japón a Alemania, Marruecos llegó a semis. Las sorpresas son parte del juego — toma riesgos."},
-    {emoji:"🔥",titulo:"Factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Esta es la mejor oportunidad de México en décadas."},
+    {emoji:"📊",titulo:"Diferencia de goles importa",texto:"En grupos dos equipos pueden empatar puntos. El que gana por más diferencia avanza. Apuesta a que tu equipo gane bien, no solo que gane.",
+     img:null},
+    {emoji:"🌡️",titulo:"Los favoritos no siempre ganan",texto:"Arabia Saudita venció a Argentina, Japón a Alemania, Marruecos llegó a semis. Las sorpresas son parte del juego — toma riesgos.",
+     img:null},
+    {emoji:"🔥",titulo:"Factor local es real",texto:"Con sede en México, la presión de la afición puede ser decisiva. Esta es la mejor oportunidad de México en décadas.",
+     img:null},
   ];
 
   return (
@@ -1114,39 +1150,21 @@ function TipsInfo() {
         Reglas básicas ⚽
       </div>
       {TIPS_REGLAS.map((t,i)=>(
-        <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-          <div>
-            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-          </div>
-        </div>
+        <TipCard key={i} t={t} />
       ))}
 
       <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>
         Formato del Mundial 2026 🏆
       </div>
       {TIPS_MUNDIAL.map((t,i)=>(
-        <div key={i} style={{background:C.card,borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-          <div>
-            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-          </div>
-        </div>
+        <TipCard key={i} t={t} />
       ))}
 
       <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>
         Tips para tu quiniela 🎯
       </div>
       {TIPS_QUINIELA.map((t,i)=>(
-        <div key={i} style={{background:"linear-gradient(135deg,#7c3aed12,#1d4ed812)",border:"1px solid #7c3aed22",borderRadius:12,padding:"13px 14px",display:"flex",gap:12,alignItems:"flex-start"}}>
-          <span style={{fontSize:22,flexShrink:0,marginTop:1}}>{t.emoji}</span>
-          <div>
-            <div style={{color:C.text,fontSize:13,fontWeight:600,marginBottom:4}}>{t.titulo}</div>
-            <div style={{color:"#9ca3af",fontSize:12,lineHeight:1.65}}>{t.texto}</div>
-          </div>
-        </div>
+        <TipCard key={i} t={t} accent />
       ))}
 
       <p style={{color:"#7c3aed",fontSize:11,textAlign:"center",padding:"4px 0 8px"}}>
@@ -1237,13 +1255,16 @@ function Calendario({ salaLink, yo }) {
   // ── Bloque reutilizable: lista de partidos ──────────────────────────────
   function MatchList() {
     if (loadSb) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Cargando…</p>;
-    if (events.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos este día.</p>;
-    // Agrupar por Ayer/Hoy/Mañana
+    // Filtrar eventos de ayer o antes — solo mostrar desde hoy
+    const hoyInicio = new Date(); hoyInicio.setHours(0,0,0,0);
+    const eventsHoy = events.filter(ev => new Date(ev.date) >= hoyInicio);
+    if (eventsHoy.length===0) return <p style={{color:C.muted,textAlign:"center",padding:24,fontSize:13}}>Sin partidos hoy. ¡Vuelve mañana! ⚽</p>;
+    // Agrupar por Hoy/Mañana/fecha
     const byDay={};
-    events.forEach(ev=>{
-      const d=new Date(ev.date),hoy=new Date(),ayer=new Date(),man=new Date();
-      ayer.setDate(hoy.getDate()-1); man.setDate(hoy.getDate()+1);
-      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===ayer.toDateString()?"Ayer":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
+    eventsHoy.forEach(ev=>{
+      const d=new Date(ev.date),hoy=new Date(),man=new Date();
+      man.setDate(hoy.getDate()+1);
+      const lbl=d.toDateString()===hoy.toDateString()?"Hoy":d.toDateString()===man.toDateString()?"Mañana":d.toLocaleDateString("es-MX",{weekday:"long",day:"numeric",month:"long"});
       if(!byDay[lbl])byDay[lbl]=[];byDay[lbl].push(ev);
     });
     return <>{Object.entries(byDay).map(([lbl,evs])=>(
@@ -1457,7 +1478,7 @@ function Calendario({ salaLink, yo }) {
 
           {/* Jornada nav */}
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"4px 2px",marginBottom:6}}>
-            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
+            <button onClick={()=>setDateOff(d=>Math.max(0,d-1))} disabled={dateOff===0} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1,opacity:dateOff===0?0.3:1}}>‹</button>
             <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>
@@ -1476,7 +1497,7 @@ function Calendario({ salaLink, yo }) {
       {tab==="partidos" && (
         <div style={{marginTop:10}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"6px 2px",marginBottom:6}}>
-            <button onClick={()=>setDateOff(d=>d-1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>‹</button>
+            <button onClick={()=>setDateOff(d=>Math.max(0,d-1))} disabled={dateOff===0} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1,opacity:dateOff===0?0.3:1}}>‹</button>
             <span style={{color:C.text,fontSize:13,fontWeight:600}}>{dayLabel(dateOff)}</span>
             <button onClick={()=>setDateOff(d=>d+1)} style={{...Btn(),padding:"4px 12px",fontSize:20,lineHeight:1}}>›</button>
           </div>

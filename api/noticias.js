@@ -5,22 +5,25 @@ export default async function handler(req, res) {
 
   const feeds = [
     {
-      id: "tudn",
-      name: "Mediotiempo",
+      id: "marca",
+      name: "Marca Fútbol",
       color: "#e10600",
-      url: "https://www.mediotiempo.com/feed",
+      url: "https://www.marca.com/rss/futbol.xml",
+      fallbackImage: "https://e00-marca.uecdn.es/assets/v3/images/og-marca.jpg",
     },
     {
       id: "fifa",
       name: "ESPN Fútbol",
       color: "#1a6bb5",
       url: "https://www.espn.com/espn/rss/soccer/news",
+      fallbackImage: "https://a.espncdn.com/combiner/i?img=/i/teamlogos/leagues/500/FIFA.png&h=300&w=300",
     },
     {
       id: "juanfutbol",
       name: "JuanFútbol",
       color: "#f97316",
       url: "https://juanfutbol.com/rss",
+      fallbackImage: null,
     },
   ];
 
@@ -76,7 +79,7 @@ export default async function handler(req, res) {
           link,
           pubDate,
           description,
-          image,
+          image,          // puede ser null — el frontend usa fallbackImage por fuente
         });
       }
       if (items.length >= 6) break;
@@ -95,7 +98,12 @@ export default async function handler(req, res) {
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const xml = await r.text();
-      return parseItems(xml, feed.id, feed.name, feed.color);
+      const items = parseItems(xml, feed.id, feed.name, feed.color);
+      // Aplica fallbackImage a artículos sin imagen
+      if (feed.fallbackImage) {
+        items.forEach(it => { if (!it.image) it.image = feed.fallbackImage; });
+      }
+      return items;
     })
   );
 
