@@ -527,14 +527,16 @@ function Unirse({ sala, participantes, onJoin }) {
     const tc = TEAMS.find(x=>x.n===pronCamp), ts = TEAMS.find(x=>x.n===pronSub);
     const tEquipo = TEAMS.find(x=>x.n===equipo);
     const text = [
-      `🏳️ Mi equipo: *${tEquipo?.f||""} ${equipo}*`,
-      `🏆 Mi apuesta: *${tc?.f||""} ${pronCamp}* campeón · 🥈 *${ts?.f||""} ${pronSub}* subcampeón`,
+      `⚽ ¡Estoy siguiendo el Mundial 2026 en *${sala.nombre}*!`,
       ``,
-      `¿Cuál es tu pronóstico? Únete a "${sala.nombre}":`,
+      `🏳️ Mi equipo: *${tEquipo?.f||""} ${equipo}*`,
+      pronCamp ? `🏆 Mi pronóstico: *${tc?.f||""} ${pronCamp}* campeón · 🥈 *${ts?.f||""} ${pronSub}* subcampeón` : ``,
+      ``,
+      `¿Cuál es el tuyo? Únete y compite en la tabla 👇`,
       `${APP_URL}/sala/${sala.id}`,
       ``,
-      `También puedes ver el calendario y resultados para que no te pierdas nada de este Mundial 2026 🏆`,
-    ].join("\n");
+      `Calendario · Resultados · Noticias del Mundial 2026 🌍🏆`,
+    ].filter(Boolean).join("\n");
     // Intentar Web Share API nativa (abre sheet de iOS/Android directamente)
     if (canvas && navigator.share) {
       canvas.toBlob(async blob => {
@@ -625,6 +627,8 @@ function Sala({ sala, miId }) {
   const [stage, setStage] = useState(sala.stage || "Grupos");
   const [copied, setCopied] = useState(false);
   const [flash, setFlash] = useState(sala.flash || []);
+  const [castigoSent, setCastigoSent] = useState(false);
+  const [castigoLoading, setCastigoLoading] = useState(false);
 
   const salaLink = `${APP_URL}/sala/${sala.id}`;
   const yo = participantes.find(p => p.id === miId);
@@ -707,17 +711,14 @@ function Sala({ sala, miId }) {
     const equipo = yo ? `${yo.flag} ${yo.equipo}` : "";
     const pronCamp = yo?.pron_camp ? `${yo.pron_camp_flag} ${yo.pron_camp}` : null;
     const pronSub  = yo?.pron_sub  ? `${yo.pron_sub_flag} ${yo.pron_sub}`   : null;
-    const modoTag  = yo?.modo_jugador==="dinero" ? `🤑 ¡Hay Trato! $${yo.apuesta||250}` : sala.modo==="dinero" ? `🤑 ¡Hay Trato! $${yo?.apuesta||sala.cuota}` : `🎲 retos`;
     const lines = [
-      `⚽ *${nombre}* te está invitando a una apuesta del Mundial 2026`,
+      `⚽ *${nombre}* te invita a seguir el Mundial 2026 juntos 🏆`,
       ``,
       equipo   ? `🏳️ Mi equipo: *${equipo}*` : ``,
-      pronCamp ? `🏆 Mi apuesta: *${pronCamp}* campeón · 🥈 *${pronSub}* subcampeón` : ``,
-      `Modo: ${modoTag}`,
+      pronCamp ? `🔮 Mi pronóstico: *${pronCamp}* campeón · 🥈 *${pronSub}* subcampeón` : ``,
       ``,
-      `¿Y tú? El que quede último paga un castigo 😈`,
-      ``,
-      `👉 Únete: ${salaLink}`,
+      `¿Cuál es el tuyo? Únete, compite en la tabla y no te pierdas nada del Mundial 👇`,
+      `👉 ${salaLink}`,
     ].filter(Boolean);
     window.open("https://wa.me/?text="+encodeURIComponent(lines.join("\n")),"_blank");
   }
@@ -836,6 +837,42 @@ function Sala({ sala, miId }) {
               </button>
             </div>
           )}
+          {sorted.length >= 2 && (() => {
+            const ultimo = sorted[sorted.length - 1];
+            async function mandarCastigo() {
+              if (!ultimo.whatsapp) { alert("Este participante no tiene WhatsApp registrado 😅"); return; }
+              setCastigoLoading(true);
+              try {
+                const r = await fetch(`/api/wa-castigo?secret=qvag_cron_2026&phone=${encodeURIComponent(ultimo.whatsapp)}&nombre=${encodeURIComponent(ultimo.nombre)}&sala=${encodeURIComponent(sala.nombre)}`);
+                const data = await r.json();
+                if (data.ok) { setCastigoSent(true); alert(`✅ Castigo enviado a ${ultimo.nombre} por WhatsApp 😈`); }
+                else { alert("Hubo un error al enviar el mensaje 😅"); }
+              } catch(e) { alert("Error de conexión"); }
+              setCastigoLoading(false);
+            }
+            return (
+              <div style={{ marginTop:16, background:"#1a0a0a", border:`1px solid ${C.red}44`, borderRadius:12, padding:"12px 16px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div>
+                    <div style={{ color:C.red, fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>💀 Último lugar</div>
+                    <div style={{ color:C.text, fontSize:14, fontWeight:500, marginTop:2 }}>
+                      {ultimo.flag} {ultimo.nombre} · {ultimo.points} pts
+                    </div>
+                    {!ultimo.whatsapp && <div style={{ color:C.muted, fontSize:11, marginTop:2 }}>Sin WhatsApp registrado</div>}
+                  </div>
+                  {esAdmin && (
+                    <button
+                      style={{ ...BtnR, fontSize:12, opacity:castigoSent||castigoLoading?0.6:1 }}
+                      onClick={mandarCastigo}
+                      disabled={castigoSent||castigoLoading}
+                    >
+                      {castigoLoading?"Enviando…":castigoSent?"✓ Enviado":"😈 Mandar castigo"}
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </>}
 
         {tab==="flash" && <>

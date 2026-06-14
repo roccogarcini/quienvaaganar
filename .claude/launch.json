@@ -5,6 +5,7 @@
       "name": "quienvaaganar",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "dev"],
+      "cwd": "/Users/roccogarcini/Documents/Proyectos/quienvaaganar",
       "port": 5174
     }
   ]
