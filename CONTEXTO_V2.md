@@ -1,4 +1,4 @@
-# QuiénVaAGanar — Contexto v2.3
+# QuiénVaAGanar — Contexto v2.4
 
 ## App en producción
 **URL:** https://quienvaaganar.vercel.app  
@@ -108,14 +108,21 @@
 
 ### Proyección siguiente ronda
 - Componente `ProyeccionQuiniela` — calcula standings de grupos desde predicciones
-- Aparece al fondo de la lista de partidos
-- Muestra top 2 clasificados por grupo con puntos proyectados
-- Extrae grupo de `ev.competitions[0].notes[0].headline` (ESPN API)
+- Aparece al fondo de la lista de partidos, antes del botón "Publicar"
+- Requiere mínimo 6 pronósticos de fase de grupos para mostrarse
+- **Detección de grupos por union-find** — conecta equipos que juegan entre sí sin depender de metadata de la API ESPN. Grupos de 4 equipos se detectan automáticamente.
+- Muestra cuadrícula 2 columnas con todos los grupos (A-L), top 2 en verde, 3ro/4to opacos
+- **⚔️ Ronda de 32 cruces proyectados** debajo de los grupos:
+  - Bracket: 1A vs 2B, 1B vs 2A, 1C vs 2D, 1D vs 2C... (ganador grupo par vs segundo impar)
+  - Formato visual: bandera + nombre · vs · bandera + nombre
+  - Nota al pie: "+ 4 partidos con los mejores 3ros de grupo (por definirse)"
 
 ### Publicar quiniela
 - Botón "🔒 Publicar mi quiniela" visible para TODOS (incluyendo admin)
 - Guarda `quiniela_publicada=true` en `participantes`
-- Una vez publicado: badge verde "🔒 Quiniela publicada", todos los partidos se bloquean
+- Confirmación: *"Recuerda que podrás editar tu quiniela hasta 15 minutos antes del inicio de cada partido. ¿Publicar ahora?"*
+- Una vez publicado: badge verde "🔒 Quiniela publicada" + botón **✏️ Editar** a su lado
+- **✏️ Editar**: desbloquea la quiniela (`quiniela_publicada=false`). Los partidos ya iniciados siguen bloqueados por `isLocked()`, solo se pueden editar futuros.
 
 ### Badge "Mi quiniela" en pestaña Mundial
 - Aparece debajo de cada partido donde el usuario tiene pronóstico
