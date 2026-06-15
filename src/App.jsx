@@ -1960,10 +1960,8 @@ function Sala({ sala, miId, onFirstTabChange }) {
         {tab==="marketeria" && <MarketerIA asTab matches={marketeriaMatches} onTabOpen={async () => {
           if (!marketeriaMatches.length) {
             try {
-              const today = new Date();
-              const pad = n => String(n).padStart(2,"0");
-              const dateStr = `${today.getFullYear()}${pad(today.getMonth()+1)}${pad(today.getDate())}`;
-              const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr}`);
+              // Cargar todos los partidos de la fase de grupos (11 Jun – 1 Jul 2026)
+              const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=20260611-20260701`);
               const d = await r.json();
               setMarketeriaMatches(d.events || []);
             } catch {}
