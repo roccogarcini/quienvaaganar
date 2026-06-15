@@ -66,6 +66,27 @@ const BtnG = Btn({ background:C.green+"22", color:C.green, border:`1px solid ${C
 const BtnR = Btn({ background:C.red+"22", color:C.red, border:`1px solid ${C.red}44` });
 const BtnW = Btn({ background:C.gold+"22", color:C.gold, border:`1px solid ${C.gold}44` });
 
+// ── AVATAR ────────────────────────────────────
+const AVATAR_EMOJIS = ["😎","🤩","🥷","🦁","🐯","🦊","🐺","🐸","🐧","🦄","👻","🤖","💀","🎃","🔥","⚡","🌈","🎯","🏆","👑","🍕","🌮","🎸","🚀","💎","🐉","🦅","🐻","🤠","😈"];
+
+function Avatar({ p, size = 40 }) {
+  const bdr = { width: size, height: size, borderRadius: "50%", objectFit: "cover", flexShrink: 0 };
+  if (p?.avatar_url) {
+    return <img src={p.avatar_url} alt={p.nombre} style={bdr} />;
+  }
+  const bg = p?.avatar_emoji
+    ? "linear-gradient(135deg,#7c3aed,#1d4ed8)"
+    : `${C.card}`;
+  const content = p?.avatar_emoji
+    ? <span style={{ fontSize: size * 0.48, lineHeight: 1 }}>{p.avatar_emoji}</span>
+    : <span style={{ fontSize: size * 0.55, lineHeight: 1 }}>{p?.flag || "⚽"}</span>;
+  return (
+    <div style={{ ...bdr, background: bg, border: `1.5px solid ${C.border}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {content}
+    </div>
+  );
+}
+
 // ── PANTALLA: CREAR SALA ──────────────────────
 function PreviewModal({ tipo, onClose }) {
   const previews = {
@@ -434,10 +455,263 @@ function CrearSala({ onCreate }) {
   );
 }
 
+// ── PANTALLA: ONBOARDING (4 ecards antes del registro) ────────────────
+const ONBOARDING_CARDS = [
+  {
+    emoji: "🎉",
+    titulo: "¡El calendario más divertido del Mundial!",
+    desc: "¿Te pierdes los partidos? ¿No sabes nada de fut? jaja ¡No importa! Aquí tendrás todo lo que necesitas para estar siempre informado… y si le atinas, podrás ganar el acumulado o parte de él 🏆",
+    color1: "#7c3aed", color2: "#1d4ed8",
+    detalle: "😄 No depositas nada · confiamos en que lo harás cuando sea el momento",
+    detalle2: null,
+  },
+  {
+    emoji: "❤️",
+    titulo: "PASO 1 · Elige tu equipo",
+    desc: "Selecciona el país con el que está tu corazón, luego el que crees que va a ganar el Mundial (¡puede ser el mismo!) y el subcampeón. Genera tu tarjeta y compártela con todos.",
+    color1: "#e11d48", color2: "#f97316",
+    detalle: "🏳️ Tu equipo · 🏆 Campeón · 🥈 Subcampeón · 📤 Tarjeta para compartir",
+    detalle2: null,
+  },
+  {
+    emoji: "📅",
+    titulo: "PASO 2 · Agrega el calendario",
+    desc: "Tendrás en tu cel los horarios de TODOS los partidos. El admin suma puntos conforme avanza el torneo — sube en el ranking, mira quién va ganando y quién se queda en último lugar 😈",
+    color1: "#0891b2", color2: "#0d9488",
+    detalle: "🔔 Notificación antes de cada partido · 📊 Tabla en vivo · 104 partidos",
+    detalle2: null,
+  },
+  {
+    emoji: "💰",
+    titulo: "El acumulado crece con cada jugador",
+    desc: "Cada participante aporta $250 MXN al acumulado. Conforme se une más gente, ¡el acumulado sube! Y conforme avance el Mundial haremos más quinielas para aumentar tus posibilidades de triunfar 🔥",
+    color1: "#7c3aed", color2: "#db2777",
+    detalle: "💵 $250 por jugador · Entre más jueguen, más crece el acumulado · 🏆 ¡El 1er lugar gana todo!",
+    detalle2: null,
+  },
+];
+
+function Onboarding({ onTerminar }) {
+  const [idx, setIdx] = useState(0);
+  const card = ONBOARDING_CARDS[idx];
+  const esUltima = idx === ONBOARDING_CARDS.length - 1;
+
+  // Soporte para swipe
+  const touchStart = useRef(null);
+  function onTouchStart(e) { touchStart.current = e.touches[0].clientX; }
+  function onTouchEnd(e) {
+    if (touchStart.current === null) return;
+    const dx = e.changedTouches[0].clientX - touchStart.current;
+    if (dx < -40 && !esUltima) setIdx(i => i + 1);
+    if (dx > 40 && idx > 0) setIdx(i => i - 1);
+    touchStart.current = null;
+  }
+
+  const STEP_LABELS = ["Bienvenida","Tu equipo","Calendario","El acumulado"];
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 20px" }}
+      onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+      <div style={{ maxWidth:420, width:"100%" }}>
+
+        {/* Paso label */}
+        <div style={{ textAlign:"center", marginBottom:10, color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.1em" }}>
+          {STEP_LABELS[idx]} · {idx+1} de {ONBOARDING_CARDS.length}
+        </div>
+
+        {/* Card */}
+        <div style={{
+          background:`linear-gradient(145deg, ${card.color1}44, ${card.color2}22, #0a0e1a)`,
+          border:`1.5px solid ${card.color1}77`,
+          borderRadius:24, padding:"32px 24px 26px", textAlign:"center",
+          marginBottom:20, minHeight:340, display:"flex", flexDirection:"column", justifyContent:"space-between",
+          boxShadow:`0 8px 40px ${card.color1}33`,
+          transition:"all 0.3s",
+        }}>
+          {/* Emoji en círculo */}
+          <div>
+            <div style={{
+              width:90, height:90, borderRadius:"50%", margin:"0 auto 18px",
+              background:`radial-gradient(circle, ${card.color1}55, ${card.color2}22)`,
+              border:`2px solid ${card.color1}88`,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              fontSize:48, boxShadow:`0 0 24px ${card.color1}55`,
+            }}>{card.emoji}</div>
+
+            {/* Título */}
+            <div style={{ color:"#fff", fontSize:20, fontWeight:800, marginBottom:12, lineHeight:1.3, letterSpacing:"-0.01em" }}>
+              {card.titulo}
+            </div>
+
+            {/* Desc */}
+            <div style={{ color:"#94a3b8", fontSize:13.5, lineHeight:1.7, marginBottom:18 }}>
+              {card.desc}
+            </div>
+          </div>
+
+          {/* Detalle pill */}
+          <div style={{
+            background:"#ffffff0d", border:`1px solid ${card.color1}33`,
+            borderRadius:12, padding:"10px 14px", fontSize:12, color:"#64748b", lineHeight:1.5,
+          }}>
+            {card.detalle}
+          </div>
+        </div>
+
+        {/* Dots */}
+        <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:20 }}>
+          {ONBOARDING_CARDS.map((_, i) => (
+            <div key={i} onClick={() => setIdx(i)} style={{
+              width: i===idx ? 28 : 8, height:8, borderRadius:4,
+              background: i===idx ? `linear-gradient(90deg,${card.color1},${card.color2})` : "#334155",
+              cursor:"pointer", transition:"all 0.3s",
+            }} />
+          ))}
+        </div>
+
+        {/* Botones */}
+        <button onClick={() => esUltima ? onTerminar() : setIdx(i => i+1)}
+          style={{ ...BtnP, width:"100%", padding:14, fontSize:15, marginBottom:10,
+            background:`linear-gradient(90deg, ${card.color1}, ${card.color2})`,
+            boxShadow:`0 4px 20px ${card.color1}55`, border:"none",
+          }}>
+          {esUltima ? "🚀 ¡Quiero participar!" : "Siguiente →"}
+        </button>
+        {!esUltima && (
+          <button onClick={onTerminar} style={{ ...Btn({width:"100%", padding:10, fontSize:13}), color:C.muted }}>
+            Saltar intro
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── PANTALLA: BIENVENIDA ECARD ────────────────
+function Bienvenida({ participante, onContinuar }) {
+  const canvasRef = useRef(null);
+  const [compartido, setCompartido] = useState(false);
+
+  useEffect(() => {
+    // Mandar WA de bienvenida automático
+    if (participante.whatsapp) {
+      fetch(`/api/wa-bienvenida?participante_id=${participante.id}`).catch(()=>{});
+    }
+    // Dibujar ecard
+    setTimeout(() => dibujar(), 80);
+  }, []);
+
+  function dibujar() {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const W = 640, H = 400;
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+
+    // Fondo oscuro
+    ctx.fillStyle = "#0a0e1a";
+    ctx.fillRect(0, 0, W, H);
+
+    // Franja superior degradada
+    const g = ctx.createLinearGradient(0, 0, W, 0);
+    g.addColorStop(0, "#7c3aed"); g.addColorStop(0.5, "#1d4ed8"); g.addColorStop(1, "#0891b2");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, 6);
+
+    // Franja inferior
+    ctx.fillStyle = g; ctx.fillRect(0, H - 6, W, 6);
+
+    // Patrón de puntos decorativos
+    ctx.fillStyle = "#ffffff08";
+    for (let x = 20; x < W; x += 40) for (let y = 20; y < H; y += 40) {
+      ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+    }
+
+    // Trofeo grande
+    ctx.font = "80px serif";
+    ctx.textAlign = "center";
+    ctx.fillText("🏆", W / 2, 110);
+
+    // Título
+    ctx.font = "bold 28px Inter, Arial, sans-serif";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillText("¡Bienvenido al Mundial 2026!", W / 2, 155);
+
+    // Nombre grande
+    ctx.font = "bold 38px Inter, Arial, sans-serif";
+    const grad2 = ctx.createLinearGradient(0, 0, W, 0);
+    grad2.addColorStop(0, "#a78bfa"); grad2.addColorStop(1, "#60a5fa");
+    ctx.fillStyle = grad2;
+    ctx.fillText(participante.nombre, W / 2, 205);
+
+    // Equipo
+    ctx.font = "32px serif";
+    ctx.fillText(participante.flag, W/2 - 30, 258);
+    ctx.font = "bold 22px Inter, Arial, sans-serif";
+    ctx.fillStyle = "#e2e8f0";
+    ctx.fillText(participante.equipo, W/2 + 20, 258);
+
+    // Subtítulo
+    ctx.font = "15px Inter, Arial, sans-serif";
+    ctx.fillStyle = "#64748b";
+    ctx.fillText("quienvaaganar.vercel.app  ·  Mundial 2026", W / 2, 310);
+
+    // Badge
+    ctx.fillStyle = "#7c3aed33";
+    ctx.beginPath(); ctx.roundRect(W/2 - 110, 330, 220, 34, 17); ctx.fill();
+    ctx.font = "bold 13px Inter, Arial, sans-serif";
+    ctx.fillStyle = "#a78bfa";
+    ctx.fillText("⚽ Quiniela entre amigos", W/2, 352);
+  }
+
+  async function compartir() {
+    const canvas = canvasRef.current; if (!canvas) return;
+    const text = `⚽ ¡Me uní a la quiniela del Mundial 2026!\n\n${participante.flag} Voy con *${participante.equipo}*\n\n¿Te apuntas? 👇\n${APP_URL}`;
+    if (navigator.share) {
+      canvas.toBlob(async blob => {
+        try {
+          const file = new File([blob], "bienvenida-mundial.png", { type:"image/png" });
+          await navigator.share({ title:"¡Me uní al Mundial 2026!", text, files:[file] });
+          setCompartido(true);
+        } catch(e) {
+          if (e.name !== "AbortError") window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+        }
+      }, "image/png");
+    } else {
+      window.open("https://wa.me/?text="+encodeURIComponent(text),"_blank");
+      setCompartido(true);
+    }
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px 20px" }}>
+      <div style={{ maxWidth:480, width:"100%", textAlign:"center" }}>
+        <div style={{ fontSize:48, marginBottom:8 }}>🎉</div>
+        <h1 style={{ color:C.text, fontSize:22, fontWeight:700, marginBottom:4 }}>¡Ya eres parte del grupo!</h1>
+        <p style={{ color:C.muted, fontSize:14, marginBottom:20 }}>Esta es tu tarjeta de jugador. Compártela con tus amigos para presumir tu equipo.</p>
+
+        <canvas ref={canvasRef} style={{ width:"100%", borderRadius:14, display:"block", marginBottom:16, boxShadow:"0 4px 32px #7c3aed33" }} />
+
+        <button onClick={compartir} style={{ ...Btn({ width:"100%", padding:12, background:"#25D366", color:"#fff", border:"none", fontWeight:600, fontSize:15, marginBottom:10 }) }}>
+          {compartido ? "¡Compartido! 🎉" : "📤 Compartir por WhatsApp"}
+        </button>
+        <button onClick={onContinuar} style={{ ...BtnP, width:"100%", padding:12, fontSize:15 }}>
+          Entrar a la quiniela →
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── PANTALLA: UNIRSE ──────────────────────────
 function Unirse({ sala, participantes, onJoin }) {
+  const [paso, setPaso] = useState(1); // 1=avatar, 2=nombre+wa, 3=equipo+pron
   const [nombre, setNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
   const [whatsapp, setWhatsapp] = useState(() => localStorage.getItem("quiniela_wa") || "");
+  const [loginSugerido, setLoginSugerido] = useState(null); // participante existente con ese WA
+  const [password, setPassword] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState(false);
+  const [showPass, setShowPass] = useState(false);
+  const [showLoginPass, setShowLoginPass] = useState(false);
   const [equipo, setEquipo] = useState("");
   const [modoJugador, setModoJugador] = useState(sala.modo === "hibrido" ? "dinero" : sala.modo);
   const [apuesta, setApuesta] = useState(sala.cuota > 0 ? sala.cuota : 100);
@@ -445,6 +719,12 @@ function Unirse({ sala, participantes, onJoin }) {
   const [pronSub, setPronSub] = useState("");
   const [loading, setLoading] = useState(false);
   const canvasRef = useRef(null);
+  // Avatar
+  const [avatarTab, setAvatarTab] = useState("foto"); // "foto" | "emoji"
+  const [avatarEmoji, setAvatarEmoji] = useState("");
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const fileRef = useRef(null);
 
   const disponibles = TEAMS;
 
@@ -509,6 +789,21 @@ function Unirse({ sala, participantes, onJoin }) {
   async function unirse() {
     if (!nombre.trim() || !equipo) return;
     setLoading(true);
+
+    // WA duplicado ya se maneja en paso 2 con loginSugerido
+
+    // Subir foto si la eligieron
+    let avatarUrl = null;
+    if (avatarTab === "foto" && avatarFile) {
+      const ext = avatarFile.name.split(".").pop();
+      const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("avatars").upload(path, avatarFile, { contentType: avatarFile.type, upsert: false });
+      if (!upErr) {
+        const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+        avatarUrl = urlData.publicUrl;
+      }
+    }
+
     const t = TEAMS.find(x => x.n === equipo);
     const { data, error } = await supabase.from("participantes").insert({
       sala_id: sala.id, nombre: nombre.trim(), whatsapp: whatsapp.trim() || null, equipo, flag: t.f,
@@ -517,12 +812,15 @@ function Unirse({ sala, participantes, onJoin }) {
       points: 0, penalties: 0, eliminado: false,
       pron_camp: pronCamp || null, pron_camp_flag: pronCamp ? TEAMS.find(x=>x.n===pronCamp)?.f : null,
       pron_sub: pronSub || null, pron_sub_flag: pronSub ? TEAMS.find(x=>x.n===pronSub)?.f : null,
+      avatar_url: avatarUrl,
+      avatar_emoji: avatarTab === "emoji" && avatarEmoji ? avatarEmoji : null,
+      password: password.trim() || null,
     }).select().single();
     if (!error && data) onJoin(data);
     else { alert("Error: " + (error?.message || "intenta de nuevo")); setLoading(false); }
   }
 
-  function compartirWA() {
+  async function compartirWA() {
     const canvas = canvasRef.current;
     const tc = TEAMS.find(x=>x.n===pronCamp), ts = TEAMS.find(x=>x.n===pronSub);
     const tEquipo = TEAMS.find(x=>x.n===equipo);
@@ -537,90 +835,271 @@ function Unirse({ sala, participantes, onJoin }) {
       ``,
       `Calendario · Resultados · Noticias del Mundial 2026 🌍🏆`,
     ].filter(Boolean).join("\n");
-    // Intentar Web Share API nativa (abre sheet de iOS/Android directamente)
+
+    // Primero registrar si aún no está registrado
+    if (!nombre.trim() || !equipo) { unirse(); return; }
+
+    // Compartir y luego entrar a la quiniela
+    const irAQuiniela = () => unirse();
+
     if (canvas && navigator.share) {
       canvas.toBlob(async blob => {
         try {
           const file = new File([blob], "pronostico-mundial.png", {type:"image/png"});
           await navigator.share({ title:"Mi pronóstico Mundial 2026", text, files:[file] });
-          return;
         } catch(e) {
-          if (e.name === "AbortError") return; // usuario canceló, no hacer nada más
-          // Si no soporta archivos, intentar sin archivo
-          try { await navigator.share({ title:"Mi pronóstico", text }); return; } catch(_) {}
+          if (e.name !== "AbortError") {
+            try { await navigator.share({ title:"Mi pronóstico", text }); } catch(_) {
+              window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
+            }
+          }
         }
-        // Último fallback: solo abrir WA con texto
-        window.location.href = "https://wa.me/?text="+encodeURIComponent(text);
+        irAQuiniela();
       }, "image/png");
       return;
     }
-    // Sin canvas ni share API → WA con texto
-    window.location.href = "https://wa.me/?text="+encodeURIComponent(text);
+    window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank");
+    irAQuiniela();
   }
 
+  // Header de pasos
+  const PasoHeader = ({ actual, titulo, subtitulo }) => (
+    <div style={{ textAlign:"center", marginBottom:28 }}>
+      {/* Dots de progreso */}
+      <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:18 }}>
+        {[1,2,3].map(n => (
+          <div key={n} style={{
+            width: n === actual ? 24 : 8, height:8, borderRadius:4,
+            background: n <= actual ? "linear-gradient(90deg,#7c3aed,#1d4ed8)" : C.border,
+            transition:"all 0.3s",
+          }} />
+        ))}
+      </div>
+      <h1 style={{ color:C.text, fontSize:20, fontWeight:700, margin:"0 0 6px" }}>{titulo}</h1>
+      {subtitulo && <p style={{ color:C.muted, fontSize:13, margin:0 }}>{subtitulo}</p>}
+    </div>
+  );
+
   return (
-    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", padding:"24px 20px" }}>
-      <div style={{ maxWidth:480, margin:"0 auto" }}>
-        <div style={{ textAlign:"center", marginBottom:24 }}>
-          <div style={{ fontSize:40 }}>⚽</div>
-          <h1 style={{ color:C.text, fontSize:20, fontWeight:700, margin:"8px 0 4px" }}>{sala.nombre}</h1>
-          <p style={{ color:C.muted, fontSize:13 }}>Regístrate para ver la tabla y participar.</p>
-        </div>
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", padding:"32px 20px" }}>
+      <div style={{ maxWidth:420, margin:"0 auto" }}>
 
-        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu nombre</div>
-        <input style={{ ...inp, marginBottom:16 }} placeholder="¿Cómo te llamas?" value={nombre} onChange={e=>setNombre(e.target.value)} />
+        {/* ── PASO 1: Avatar ── */}
+        {paso === 1 && <>
+          <PasoHeader actual={1} titulo="Tu foto de perfil" subtitulo="Opcional — puedes saltarte este paso" />
 
-        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu WhatsApp</div>
-        <input style={{ ...inp, marginBottom:16 }} placeholder="Ej: 4431234567" type="tel" value={whatsapp} onChange={e=>setWhatsapp(e.target.value)} />
-
-        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu equipo</div>
-        <select style={{ ...inp, marginBottom:20 }} value={equipo} onChange={e=>setEquipo(e.target.value)}>
-          <option value="">— Elige tu equipo —</option>
-          {disponibles.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
-        </select>
-
-        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>
-          Tu pronóstico (opcional)
-        </div>
-        <p style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Predice campeón y subcampeón. Se genera una tarjeta para compartir.</p>
-        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
-          <div>
-            <div style={{ color:C.muted, fontSize:11, marginBottom:4 }}>🏆 Campeón</div>
-            <select style={inp} value={pronCamp} onChange={e=>setPronCamp(e.target.value)}>
-              <option value="">— Selecciona —</option>
-              {TEAMS.filter(t=>t.n!==pronSub).map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
-            </select>
+          {/* Preview grande */}
+          <div style={{ display:"flex", justifyContent:"center", marginBottom:24 }}>
+            <div style={{ position:"relative" }}>
+              <Avatar p={{ avatar_url: avatarPreview, avatar_emoji: avatarEmoji, flag:"⚽" }} size={100} />
+              {(avatarEmoji || avatarPreview) && (
+                <button onClick={() => { setAvatarEmoji(""); setAvatarFile(null); setAvatarPreview(null); }} style={{ position:"absolute", top:-6, right:-6, width:22, height:22, borderRadius:"50%", background:C.red, border:"none", color:"#fff", fontSize:12, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>✕</button>
+              )}
+            </div>
           </div>
-          <div>
-            <div style={{ color:C.muted, fontSize:11, marginBottom:4 }}>🥈 Subcampeón</div>
-            <select style={inp} value={pronSub} onChange={e=>setPronSub(e.target.value)}>
-              <option value="">— Selecciona —</option>
-              {TEAMS.filter(t=>t.n!==pronCamp).map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
-            </select>
-          </div>
-        </div>
 
-        {pronCamp && pronSub && pronCamp!==pronSub && <>
-          <canvas ref={canvasRef} style={{ width:"100%", borderRadius:10, display:"block", marginBottom:10 }} />
-          <button onClick={compartirWA} style={{ ...Btn({ width:"100%", padding:10, background:"#25D366", color:"#fff", border:"none", fontWeight:600, fontSize:14, marginBottom:16 }) }}>
-            Compartir pronóstico por WhatsApp
+          {/* Tabs */}
+          <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+            {[{id:"foto",label:"📷 Foto"},{id:"emoji",label:"😀 Emoji"}].map(t=>(
+              <button key={t.id} onClick={()=>setAvatarTab(t.id)} style={{ flex:1, padding:"9px 0", borderRadius:10, border:"none", cursor:"pointer", fontSize:14, fontWeight:600, background: avatarTab===t.id ? "linear-gradient(90deg,#7c3aed,#1d4ed8)" : C.card, color: avatarTab===t.id ? "#fff" : C.muted }}>
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Foto */}
+          {avatarTab === "foto" && (
+            <div style={{ textAlign:"center", background:C.card, border:`2px dashed ${C.border}`, borderRadius:14, padding:"28px 20px" }}>
+              <input ref={fileRef} type="file" accept="image/*" style={{ display:"none" }} onChange={e => {
+                const f = e.target.files[0]; if (!f) return;
+                setAvatarFile(f); setAvatarPreview(URL.createObjectURL(f));
+              }} />
+              {avatarPreview
+                ? <button onClick={() => fileRef.current.click()} style={{ ...Btn({ padding:"10px 24px", fontSize:13 }) }}>Cambiar foto</button>
+                : <>
+                    <div style={{ fontSize:40, marginBottom:10 }}>📷</div>
+                    <button onClick={() => fileRef.current.click()} style={{ ...BtnP, padding:"12px 28px", fontSize:14 }}>Elegir foto de la galería</button>
+                    <div style={{ color:C.muted, fontSize:12, marginTop:10 }}>JPG, PNG o HEIC</div>
+                  </>
+              }
+              {avatarPreview && <div style={{ color:C.green, fontSize:13, marginTop:10 }}>✓ Foto lista</div>}
+            </div>
+          )}
+
+          {/* Emoji grid */}
+          {avatarTab === "emoji" && (
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px" }}>
+              <div style={{ display:"flex", flexWrap:"wrap", gap:8, justifyContent:"center" }}>
+                {AVATAR_EMOJIS.map(e => (
+                  <button key={e} onClick={() => setAvatarEmoji(e)} style={{ width:44, height:44, fontSize:24, background: avatarEmoji===e ? "#7c3aed33" : "transparent", border: avatarEmoji===e ? "2px solid #7c3aed" : `1px solid ${C.border}`, borderRadius:12, cursor:"pointer" }}>
+                    {e}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <button onClick={() => setPaso(2)} style={{ ...BtnP, width:"100%", padding:14, fontSize:15, marginTop:20 }}>
+            {avatarPreview || avatarEmoji ? "Siguiente →" : "Saltar este paso →"}
           </button>
         </>}
 
+        {/* ── PASO 2: Nombre + WA ── */}
+        {paso === 2 && <>
+          <PasoHeader actual={2} titulo="¿Quién eres?" subtitulo="Con esto te identificamos en la quiniela" />
 
-        <button style={{ ...BtnP, width:"100%", padding:12, fontSize:15, opacity:(!nombre.trim()||!equipo)?0.4:1 }}
-          disabled={!nombre.trim()||!equipo||loading} onClick={unirse}>
-          {loading ? "Entrando..." : "Entrar a la quiniela →"}
-        </button>
+          {/* Mini avatar + cambiar */}
+          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24, background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px" }}>
+            <Avatar p={{ avatar_url: avatarPreview, avatar_emoji: avatarEmoji, flag:"⚽" }} size={44} />
+            <div style={{ flex:1 }}>
+              <div style={{ color:C.text, fontSize:13, fontWeight:500 }}>{avatarPreview ? "Foto elegida ✓" : avatarEmoji ? `Emoji: ${avatarEmoji}` : "Sin avatar"}</div>
+              <div style={{ color:C.muted, fontSize:11 }}>Tu foto de perfil</div>
+            </div>
+            <button onClick={() => setPaso(1)} style={{ ...Btn({ padding:"6px 12px", fontSize:12 }), color:C.muted }}>Cambiar</button>
+          </div>
+
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu nombre</div>
+          <input style={{ ...inp, marginBottom:16 }} placeholder="¿Cómo te llamas?" value={nombre} onChange={e=>setNombre(e.target.value)} autoFocus />
+
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu WhatsApp</div>
+          <input style={{ ...inp, marginBottom:16 }} placeholder="Ej: 4431234567" type="tel" value={whatsapp} onChange={e=>{ setWhatsapp(e.target.value); setLoginSugerido(null); setLoginError(false); }} />
+
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>🔒 Contraseña</div>
+          <div style={{ position:"relative", marginBottom:6 }}>
+            <input style={{ ...inp }} placeholder="Crea una contraseña" type={showPass?"text":"password"} value={password} onChange={e=>setPassword(e.target.value)} />
+            <button onClick={()=>setShowPass(v=>!v)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16 }}>
+              {showPass ? "🙈" : "👁️"}
+            </button>
+          </div>
+          <div style={{ color:C.muted, fontSize:11, marginBottom:24 }}>Solo tú la sabrás — la necesitarás para volver a entrar</div>
+
+          {/* Login sugerido cuando WA ya existe */}
+          {loginSugerido && (
+            <div style={{ background:"#7c3aed22", border:`1px solid #7c3aed55`, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                <Avatar p={loginSugerido} size={40} />
+                <div>
+                  <div style={{ color:C.text, fontWeight:600, fontSize:14 }}>{loginSugerido.nombre}</div>
+                  <div style={{ color:C.muted, fontSize:12 }}>{loginSugerido.equipo} {loginSugerido.flag}</div>
+                </div>
+              </div>
+              <div style={{ color:"#c4b5fd", fontSize:13, marginBottom:10 }}>Este número ya está registrado. Escribe tu contraseña para entrar.</div>
+              <div style={{ position:"relative", marginBottom:10 }}>
+                <input
+                  style={{ ...inp, borderColor: loginError ? C.red : C.border }}
+                  placeholder="Tu contraseña"
+                  type={showLoginPass?"text":"password"}
+                  value={loginPassword}
+                  onChange={e=>{ setLoginPassword(e.target.value); setLoginError(false); }}
+                  autoFocus
+                />
+                <button onClick={()=>setShowLoginPass(v=>!v)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16 }}>
+                  {showLoginPass ? "🙈" : "👁️"}
+                </button>
+              </div>
+              {loginError && <div style={{ color:C.red, fontSize:12, marginBottom:10 }}>❌ Contraseña incorrecta. Inténtalo de nuevo.</div>}
+              <div style={{ display:"flex", gap:8 }}>
+                <button onClick={() => {
+                  if (!loginSugerido.password) { onJoin(loginSugerido); return; } // cuenta sin contraseña → entrar directo
+                  if (loginPassword === loginSugerido.password) { onJoin(loginSugerido); }
+                  else { setLoginError(true); }
+                }} style={{ ...BtnP, flex:1, padding:10, fontSize:13 }}>
+                  Entrar →
+                </button>
+                <button onClick={() => { setLoginSugerido(null); setLoginPassword(""); setLoginError(false); }} style={{ ...Btn({ padding:10, fontSize:13 }), color:C.muted }}>
+                  No soy yo
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!loginSugerido && <button onClick={() => {
+            if (!nombre.trim()) { alert("Escribe tu nombre para continuar"); return; }
+            if (!password.trim()) { alert("Crea una contraseña para proteger tu cuenta"); return; }
+            if (whatsapp.trim()) {
+              const norm = v => v.replace(/\D/g,"").slice(-10);
+              const waNorm = norm(whatsapp.trim());
+              const dup = participantes.find(p => norm(p.whatsapp||"") === waNorm);
+              if (dup) { setLoginSugerido(dup); return; }
+            }
+            setPaso(3);
+          }} style={{ ...BtnP, width:"100%", padding:14, fontSize:15 }}>
+            Siguiente →
+          </button>}
+          <button onClick={() => { setPaso(1); setLoginSugerido(null); setLoginError(false); }} style={{ ...Btn({ width:"100%", padding:10, fontSize:13, marginTop:8 }), color:C.muted }}>← Atrás</button>
+        </>}
+
+        {/* ── PASO 3: Equipo + Pronóstico + Entrar ── */}
+        {paso === 3 && <>
+          <PasoHeader actual={3} titulo="Tu equipo y pronóstico" subtitulo="¿A quién sigue tu corazón?" />
+
+          {/* Resumen pasos anteriores */}
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:20, background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"10px 14px" }}>
+            <Avatar p={{ avatar_url: avatarPreview, avatar_emoji: avatarEmoji, flag:"⚽" }} size={36} />
+            <div style={{ color:C.text, fontSize:14, fontWeight:500 }}>{nombre}</div>
+            <button onClick={() => setPaso(2)} style={{ ...Btn({ padding:"4px 10px", fontSize:11 }), color:C.muted, marginLeft:"auto" }}>Cambiar</button>
+          </div>
+
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>❤️ Tu equipo · ¿A quién sigue tu corazón?</div>
+          <select style={{ ...inp, marginBottom:20 }} value={equipo} onChange={e=>setEquipo(e.target.value)}>
+            <option value="">— Elige tu equipo —</option>
+            {TEAMS.map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
+          </select>
+
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Tu pronóstico</div>
+          <p style={{ color:C.muted, fontSize:12, marginBottom:10 }}>¿Quién crees que será el campeón y subcampeón?</p>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, marginBottom:12 }}>
+            <div>
+              <div style={{ color:C.muted, fontSize:11, marginBottom:4 }}>🏆 Campeón</div>
+              <select style={inp} value={pronCamp} onChange={e=>setPronCamp(e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {TEAMS.filter(t=>t.n!==pronSub).map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
+              </select>
+            </div>
+            <div>
+              <div style={{ color:C.muted, fontSize:11, marginBottom:4 }}>🥈 Subcampeón</div>
+              <select style={inp} value={pronSub} onChange={e=>setPronSub(e.target.value)}>
+                <option value="">— Selecciona —</option>
+                {TEAMS.filter(t=>t.n!==pronCamp).map(t=><option key={t.n} value={t.n}>{t.f} {t.n}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {pronCamp && pronSub && pronCamp!==pronSub &&
+            <canvas ref={canvasRef} style={{ width:"100%", borderRadius:10, display:"block", marginBottom:12 }} />
+          }
+
+          <button style={{ ...BtnP, width:"100%", padding:14, fontSize:15, opacity:(!equipo)?0.4:1, marginBottom:10 }}
+            disabled={!equipo||loading} onClick={unirse}>
+            {loading ? "Entrando..." : "Entrar a la quiniela →"}
+          </button>
+
+          {pronCamp && pronSub && pronCamp!==pronSub && (
+            <button onClick={compartirWA} style={{ ...Btn({ width:"100%", padding:11, background:"#25D366", color:"#fff", border:"none", fontWeight:600, fontSize:14 }) }}>
+              📤 Compartir pronóstico por WhatsApp
+            </button>
+          )}
+
+          <button onClick={() => setPaso(2)} style={{ ...Btn({ width:"100%", padding:10, fontSize:13, marginTop:8 }), color:C.muted }}>← Atrás</button>
+        </>}
+
       </div>
     </div>
   );
 }
 
 // ── PANTALLA: TABLA PRINCIPAL ─────────────────
-function Sala({ sala, miId }) {
+function Sala({ sala, miId, onFirstTabChange }) {
   const [participantes, setParticipantes] = useState([]);
   const [tab, setTab] = useState("calendario");
+  const tabChangedRef = useRef(false);
+  function cambiarTab(k) {
+    setTab(k);
+    if (!tabChangedRef.current && k !== "calendario") {
+      tabChangedRef.current = true;
+      onFirstTabChange?.();
+    }
+  }
   const [sorteoP, setSorteoP] = useState(null);
   const [sorteoOpts, setSorteoOpts] = useState([]);
   const [sorteoChosen, setSorteoChosen] = useState(null);
@@ -629,10 +1108,14 @@ function Sala({ sala, miId }) {
   const [flash, setFlash] = useState(sala.flash || []);
   const [castigoSent, setCastigoSent] = useState(false);
   const [castigoLoading, setCastigoLoading] = useState(false);
+  const [waPasswordSent, setWaPasswordSent] = useState(false);
+  const [waPasswordLoading, setWaPasswordLoading] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const salaLink = `${APP_URL}/sala/${sala.id}`;
   const yo = participantes.find(p => p.id === miId);
-  const esAdmin = participantes.length > 0 && participantes[0]?.id === miId;
+  const ADMIN_WA = "4431406867";
+  const esAdmin = yo?.whatsapp?.replace(/\D/g,"").endsWith(ADMIN_WA);
 
   useEffect(() => {
     // Carga inicial
@@ -795,14 +1278,23 @@ function Sala({ sala, miId }) {
               })()}
             </div>
           </div>
-          <div style={{ display:"flex", gap:6 }}>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap", justifyContent:"flex-end" }}>
             <button style={{ ...Btn({fontSize:12}), background:"#25D366", color:"#fff", border:"none" }} onClick={compartirWA}>Invitar</button>
             <button style={{ ...Btn({fontSize:12}) }} onClick={copiarLink}>{copied?"¡Copiado!":"Copiar link"}</button>
+            <button style={{ ...Btn({fontSize:11}), color:C.muted, padding:"4px 8px" }} onClick={() => { localStorage.removeItem("miId_"+SALA_GLOBAL_ID); localStorage.removeItem("quiniela_wa"); localStorage.removeItem("quiniela_nombre"); localStorage.removeItem("vioIntro"); window.location.reload(); }}>Salir</button>
           </div>
         </div>
-        <div style={{ display:"flex", gap:0, marginTop:14, overflowX:"auto" }}>
-          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["prons","Pronósticos"]].map(([k,l])=>(
-            <button key={k} style={tabStyle(tab===k)} onClick={()=>setTab(k)}>{l}</button>
+        {/* Acumulado siempre visible */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, margin:"12px 0 0", background:"#7c3aed22", border:`1px solid #7c3aed44`, borderRadius:10, padding:"8px 14px" }}>
+          <span style={{ fontSize:22 }}>🏆</span>
+          <div>
+            <div style={{ color:"#c4b5fd", fontSize:15, fontWeight:700 }}>${(participantes.length * 250).toLocaleString("es-MX")} MXN</div>
+            <div style={{ color:C.muted, fontSize:11 }}>Acumulado · {participantes.length} jugadores × $250</div>
+          </div>
+        </div>
+        <div style={{ display:"flex", gap:0, marginTop:10, overflowX:"auto" }}>
+          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["quiniela","Quiniela 🎯"]].map(([k,l])=>(
+            <button key={k} style={tabStyle(tab===k)} onClick={()=>cambiarTab(k)}>{l}</button>
           ))}
         </div>
       </div>
@@ -822,7 +1314,7 @@ function Sala({ sala, miId }) {
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <span style={{ fontSize:14, minWidth:22 }}>{medals[i]||i+1}</span>
-                  <span style={{ fontSize:26 }}>{p.flag}</span>
+                  <Avatar p={p} size={38} />
                   <div>
                     <div style={{ color:C.text, fontWeight:500, fontSize:14 }}>
                       {p.nombre}
@@ -843,8 +1335,8 @@ function Sala({ sala, miId }) {
                   <div style={{ color:C.muted, fontSize:10 }}>pts</div>
                 </div>
               </div>
-              {/* Controles solo para admin o para el propio jugador */}
-              {(esAdmin || p.id===miId) && (
+              {/* Controles solo para admin (visible al expandir panel admin) */}
+              {esAdmin && showAdminPanel && (
                 <div style={{ display:"flex", gap:6, marginTop:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
                   <button style={{...BtnG,fontSize:12}} onClick={()=>modPts(p.id,curPts)}>+{curPts}</button>
                   <button style={{...BtnR,fontSize:12}} onClick={()=>modPts(p.id,-curPts)}>−{curPts}</button>
@@ -886,7 +1378,7 @@ function Sala({ sala, miId }) {
                     </div>
                     {!ultimo.whatsapp && <div style={{ color:C.muted, fontSize:11, marginTop:2 }}>Sin WhatsApp registrado</div>}
                   </div>
-                  {esAdmin && (
+                  {esAdmin && showAdminPanel && (
                     <button
                       style={{ ...BtnR, fontSize:12, opacity:castigoSent||castigoLoading?0.6:1 }}
                       onClick={mandarCastigo}
@@ -899,6 +1391,74 @@ function Sala({ sala, miId }) {
               </div>
             );
           })()}
+
+          {/* Panel admin colapsable */}
+          {esAdmin && (
+            <div style={{ marginTop:16 }}>
+              <button onClick={() => setShowAdminPanel(v => !v)}
+                style={{ background:"#0a0e1a", border:`1px solid #374151`, borderRadius:10, padding:"8px 14px", color:"#6b7280", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6, marginLeft:"auto" }}>
+                <span>⚙️ Admin</span>
+                <span style={{ fontSize:10 }}>{showAdminPanel ? "▲" : "▼"}</span>
+              </button>
+            </div>
+          )}
+          {esAdmin && showAdminPanel && <>
+            <AdminBonusPanel salaId={sala.id} participantes={participantes} />
+
+          {/* Botón admin: avisar quiniela por WA */}
+          {(() => {
+            const [waQSent, setWaQSent] = useState(false);
+            const [waQLoading, setWaQLoading] = useState(false);
+            return (
+              <div style={{ marginTop:16, background:"#0a0e1a", border:`1px solid #7c3aed33`, borderRadius:12, padding:"12px 16px" }}>
+                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600, marginBottom:4 }}>🎯 Quiniela sin llenar</div>
+                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Avisa por WhatsApp a los jugadores que no han pronosticado ningún partido.</div>
+                <button
+                  disabled={waQLoading || waQSent}
+                  onClick={async () => {
+                    setWaQLoading(true);
+                    try {
+                      const r = await fetch(`/api/wa-quiniela?secret=qvag_cron_2026`);
+                      const d = await r.json();
+                      if (d.ok) { setWaQSent(true); alert(`✅ Mensajes enviados a ${d.enviados} jugadores sin quiniela`); }
+                      else alert("Error al enviar");
+                    } catch { alert("Error de conexión"); }
+                    setWaQLoading(false);
+                  }}
+                  style={{ ...Btn({ background:"#7c3aed22", color:"#a78bfa", border:`1px solid #7c3aed44` }), fontSize:12, opacity: waQSent||waQLoading ? 0.6 : 1 }}>
+                  {waQLoading ? "Enviando…" : waQSent ? "✓ Enviado" : "📲 Avisar por WhatsApp"}
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Botón admin: mandar WA de contraseña */}
+          {(() => {
+            const sinPass = participantes.filter(p => !p.password && p.whatsapp);
+            if (!sinPass.length) return null;
+            return (
+              <div style={{ marginTop:16, background:"#1a1200", border:`1px solid ${C.gold}44`, borderRadius:12, padding:"12px 16px" }}>
+                <div style={{ color:C.gold, fontSize:12, fontWeight:600, marginBottom:4 }}>🔒 {sinPass.length} jugador{sinPass.length>1?"es":""} sin contraseña</div>
+                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Puedes avisarles por WhatsApp para que la creen.</div>
+                <button
+                  disabled={waPasswordLoading || waPasswordSent}
+                  onClick={async () => {
+                    setWaPasswordLoading(true);
+                    try {
+                      const r = await fetch(`/api/wa-password?secret=qvag_cron_2026`);
+                      const d = await r.json();
+                      if (d.ok) { setWaPasswordSent(true); alert(`✅ Mensajes enviados a ${d.enviados} jugadores`); }
+                      else alert("Error al enviar");
+                    } catch(e) { alert("Error de conexión"); }
+                    setWaPasswordLoading(false);
+                  }}
+                  style={{ ...BtnW, fontSize:12, opacity: waPasswordSent||waPasswordLoading ? 0.6 : 1 }}>
+                  {waPasswordLoading ? "Enviando…" : waPasswordSent ? "✓ Enviado" : `📲 Avisar a ${sinPass.length} por WhatsApp`}
+                </button>
+              </div>
+            );
+          })()}
+          </>}
         </>}
 
         {tab==="flash" && <>
@@ -939,23 +1499,9 @@ function Sala({ sala, miId }) {
           ))}
         </>}
 
-        {tab==="prons" && <>
-          <p style={{ color:C.muted,fontSize:13,marginBottom:12 }}>Pronósticos de todos los participantes.</p>
-          {participantes.map(p=>(
-            <div key={p.id} style={{ ...cardStyle, display:"flex",alignItems:"center",gap:10 }}>
-              <span style={{ fontSize:22 }}>{p.flag}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ color:C.text,fontWeight:500,fontSize:14 }}>{p.nombre}</div>
-                <div style={{ color:C.muted,fontSize:12 }}>
-                  {p.pron_camp
-                    ? <span>🏆 {p.pron_camp_flag} {p.pron_camp} &nbsp;·&nbsp; 🥈 {p.pron_sub_flag} {p.pron_sub}</span>
-                    : "Sin pronóstico aún"
-                  }
-                </div>
-              </div>
-            </div>
-          ))}
-        </>}
+        {tab==="quiniela" && (
+          <QuinielaTab miId={miId} salaId={sala.id} yo={yo} participantes={participantes} esAdmin={esAdmin} />
+        )}
 
         {tab==="cuentas" && <>
           {sala.modo!=="dinero" && sala.modo!=="hibrido"
@@ -967,7 +1513,7 @@ function Sala({ sala, miId }) {
                 return(
                   <div key={p.id} style={{ ...cardStyle, display:"flex",justifyContent:"space-between",alignItems:"center" }}>
                     <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <span style={{ fontSize:20 }}>{p.flag}</span>
+                      <Avatar p={p} size={34} />
                       <div><div style={{ color:C.text,fontWeight:500,fontSize:14 }}>{p.nombre}</div><div style={{ color:C.muted,fontSize:12 }}>{p.penalties||0} castigo{p.penalties!==1?"s":""}</div></div>
                     </div>
                     <div style={{ fontSize:16,fontWeight:700,color:v>0?C.green:v<0?C.red:C.muted }}>{v>0?"+":""}{v===0?"—":"$"+Math.abs(v).toLocaleString()}</div>
@@ -993,13 +1539,811 @@ function Sala({ sala, miId }) {
           }
         </>}
 
-        {tab==="calendario" && <Calendario salaLink={salaLink} yo={yo} />}
+        {tab==="calendario" && <Calendario salaLink={salaLink} yo={yo} miId={miId} salaId={sala.id} />}
 
         {tab==="noticias" && <Noticias />}
 
         {tab==="tips" && <TipsInfo />}
 
       </div>
+    </div>
+  );
+}
+
+// ── TAB: QUINIELA ─────────────────────────────
+function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPlaceholder, onDone }) {
+  const [llenando, setLlenando] = useState(false);
+
+  async function llenar() {
+    if (!miId || llenando) return;
+    setLlenando(true);
+    const pendientes = matches.filter(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === "home");
+      const away = comp?.competitors?.find(c => c.homeAway === "away");
+      const homeName = home?.team?.shortDisplayName || home?.team?.location || "";
+      const awayName = away?.team?.shortDisplayName || away?.team?.location || "";
+      const state = comp?.status?.type?.state;
+      const locked = state === "in" || state === "post" || new Date(ev.date) <= new Date();
+      return !locked && !isPlaceholder(homeName) && !isPlaceholder(awayName) && !misProns[ev.id];
+    }).map(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === "home");
+      const away = comp?.competitors?.find(c => c.homeAway === "away");
+      return { id: ev.id, local: home?.team?.shortDisplayName || home?.team?.location || "?", away: away?.team?.shortDisplayName || away?.team?.location || "?" };
+    });
+
+    // Si no hay pendientes, pedir revisión de partidos futuros ya llenos
+    const objetivo = pendientes.length ? pendientes : matches.filter(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === "home");
+      const away = comp?.competitors?.find(c => c.homeAway === "away");
+      const homeName = home?.team?.shortDisplayName || home?.team?.location || "";
+      const awayName = away?.team?.shortDisplayName || away?.team?.location || "";
+      const state = comp?.status?.type?.state;
+      const locked = state === "in" || state === "post" || new Date(ev.date) <= new Date();
+      return !locked && !isPlaceholder(homeName) && !isPlaceholder(awayName);
+    }).slice(0,20).map(ev => {
+      const comp = ev.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === "home");
+      const away = comp?.competitors?.find(c => c.homeAway === "away");
+      return { id: ev.id, local: home?.team?.shortDisplayName || home?.team?.location || "?", away: away?.team?.shortDisplayName || away?.team?.location || "?" };
+    });
+    if (!objetivo.length) { setLlenando(false); return; }
+    const soloRevision = !pendientes.length;
+
+    // Descuenta 1pt por usar la ayuda IA
+    if (miId) {
+      const { data: yo } = await supabase.from("participantes").select("pts_quiniela").eq("id", miId).single();
+      await supabase.from("participantes").update({ pts_quiniela: Math.max(0, (yo?.pts_quiniela||0) - 1) }).eq("id", miId);
+    }
+    try {
+      let nuevasProns = { ...misProns };
+      const sugerencias = {};
+      for (let i = 0; i < objetivo.length; i += 30) {
+        const lote = objetivo.slice(i, i + 30);
+        const r = await fetch("/api/recomendar-quiniela", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ partidos: lote }) });
+        const data = await r.json();
+        if (!data.predicciones) continue;
+        for (const p of data.predicciones) {
+          if (soloRevision) {
+            sugerencias[p.id] = p.pred;
+          } else {
+            nuevasProns[p.id] = p.pred;
+          }
+        }
+      }
+      if (soloRevision) {
+        // Mostrar cuántos coinciden vs difieren
+        const difs = Object.entries(sugerencias).filter(([id, pred]) => misProns[id] && misProns[id] !== pred).length;
+        const coinciden = Object.entries(sugerencias).filter(([id, pred]) => misProns[id] && misProns[id] === pred).length;
+        alert(`🤖 Revisión IA de tus próximos partidos:\n✅ ${coinciden} coinciden con tu quiniela\n⚠️ ${difs} difieren de tu quiniela\n\nLa IA no cambia tus pronósticos existentes — solo te da contexto.`);
+      } else {
+        try { localStorage.setItem(lsKey, JSON.stringify(nuevasProns)); } catch {}
+        const rows = Object.entries(nuevasProns)
+          .filter(([id]) => objetivo.find(p => String(p.id) === String(id)))
+          .map(([match_id, prediccion]) => ({ participante_id: miId, sala_id: salaId, match_id, prediccion, usa_ia: true }));
+        if (rows.length) await supabase.from("pronosticos_partidos").upsert(rows, { onConflict:"participante_id,match_id" });
+        onDone(nuevasProns);
+      }
+    } catch(e) { console.error(e); }
+    setLlenando(false);
+  }
+
+  const pendientesCount = matches.filter(ev => {
+    const comp = ev.competitions?.[0];
+    const home = comp?.competitors?.find(c => c.homeAway === "home");
+    const away = comp?.competitors?.find(c => c.homeAway === "away");
+    const homeName = home?.team?.shortDisplayName || home?.team?.location || "";
+    const awayName = away?.team?.shortDisplayName || away?.team?.location || "";
+    const state = comp?.status?.type?.state;
+    const locked = state === "in" || state === "post" || new Date(ev.date) <= new Date();
+    return !locked && !isPlaceholder(homeName) && !isPlaceholder(awayName) && !misProns[ev.id];
+  }).length;
+
+  return (
+    <button onClick={llenar} disabled={llenando}
+      style={{ width:"100%", padding:"12px", borderRadius:10, border:`1px solid #7c3aed55`,
+        background: llenando ? "#7c3aed22" : "linear-gradient(90deg,#7c3aed22,#1d4ed822)",
+        color:"#a78bfa", fontFamily:"inherit", fontSize:13, fontWeight:600,
+        cursor: llenando ? "wait" : "pointer", marginBottom:4,
+        display:"flex", alignItems:"center", justifyContent:"center", gap:8 }}>
+      {llenando
+        ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite"}}>⚙️</span> {pendientesCount > 0 ? `Llenando ${pendientesCount} partidos…` : "Cargando sugerencias…"}</>
+        : pendientesCount > 0
+          ? <>🤖 Llenar {pendientesCount} partidos con IA <span style={{color:C.red,fontSize:11}}>(-1pt por partido lleno)</span></>
+          : <>🤖 Pedir ayuda de IA <span style={{color:C.red,fontSize:11}}>(-1pt)</span></>}
+    </button>
+  );
+}
+
+function AnalisisIA({ misProns, matches, nombre }) {
+  const [analisis, setAnalisis] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  async function analizar() {
+    setLoading(true);
+    setVisible(true);
+    const predicciones = Object.entries(misProns).map(([matchId, pred]) => {
+      const ev = matches.find(e => String(e.id) === String(matchId));
+      const comp = ev?.competitions?.[0];
+      const home = comp?.competitors?.find(c => c.homeAway === "home");
+      const away = comp?.competitors?.find(c => c.homeAway === "away");
+      return {
+        local: home?.team?.shortDisplayName || home?.team?.location || "?",
+        away: away?.team?.shortDisplayName || away?.team?.location || "?",
+        pred,
+      };
+    }).filter(p => p.local !== "?");
+
+    try {
+      const r = await fetch("/api/analizar-quiniela", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nombre, predicciones }),
+      });
+      const data = await r.json();
+      setAnalisis(data.analisis || "No se pudo generar el análisis.");
+    } catch {
+      setAnalisis("Hubo un error al conectar con la IA. Intenta de nuevo.");
+    }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ marginBottom:16 }}>
+      {!visible
+        ? <div>
+            <button onClick={analizar}
+              style={{ width:"100%", padding:"10px", borderRadius:10, border:`1px solid #7c3aed44`, background:"#7c3aed0a", color:"#a78bfa", fontFamily:"inherit", fontSize:13, fontWeight:600, cursor:"pointer" }}>
+              ✨ Analizar mi quiniela con IA
+            </button>
+            <div style={{ color:"#6b7280", fontSize:10, textAlign:"center", marginTop:4 }}>Solo por diversión · no afecta tus puntos</div>
+          </div>
+        : <div style={{ ...cardStyle, border:`1px solid #7c3aed44`, background:"#7c3aed08" }}>
+            <div style={{ fontSize:11, color:"#a78bfa", fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>✨ Análisis IA de tu quiniela</div>
+            {loading
+              ? <div style={{ display:"flex", alignItems:"center", gap:8, color:C.muted, fontSize:13 }}>
+                  <span style={{ display:"inline-block", animation:"spin 1s linear infinite" }}>⚙️</span> Analizando tus pronósticos…
+                </div>
+              : <p style={{ color:C.text, fontSize:13, lineHeight:1.65, margin:0 }}>{analisis}</p>
+            }
+            {!loading && <button onClick={analizar}
+              style={{ marginTop:10, fontSize:11, color:C.muted, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
+              🔄 Regenerar análisis
+            </button>}
+          </div>
+      }
+    </div>
+  );
+}
+
+function BonusCard({ q, yaRespondida, onGuardar }) {
+  const initResp = () => {
+    if (yaRespondida?.respuesta) return typeof yaRespondida.respuesta === "object" ? yaRespondida.respuesta : { texto: String(yaRespondida.respuesta) };
+    return q.tipo === "marcador" ? { local:"", visitante:"" } : { texto:"" };
+  };
+  const [resp, setResp] = useState(initResp);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(!!yaRespondida);
+
+  async function confirmar() {
+    setSaving(true);
+    await onGuardar(q.id, resp);
+    setSaving(false);
+    setSaved(true);
+  }
+
+  return (
+    <div style={{ ...cardStyle, border:`1px solid #7c3aed44`, background:"#7c3aed08", marginBottom:8 }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+        <span style={{ background:"#7c3aed", color:"#e9d5ff", fontSize:9, fontWeight:700, padding:"2px 8px", borderRadius:5, letterSpacing:"0.05em" }}>
+          {yaRespondida?.pts_obtenidos != null ? `+${yaRespondida.pts_obtenidos} PTS OBTENIDOS` : "BONUS"}
+        </span>
+        <span style={{ fontSize:16, fontWeight:700, color:"#a78bfa" }}>+{q.pts}<span style={{ fontSize:10, color:"#7c3aed", fontWeight:400 }}> pts</span></span>
+      </div>
+      <div style={{ fontSize:13, fontWeight:600, color:C.text, marginBottom:10, lineHeight:1.4 }}>{q.pregunta}</div>
+      {saved
+        ? <div style={{ fontSize:12, color: yaRespondida?.pts_obtenidos > 0 ? C.green : "#60a5fa" }}>
+            {yaRespondida?.pts_obtenidos != null ? `¡Correcto! +${yaRespondida.pts_obtenidos} pts` : "✓ Respuesta guardada"}
+          </div>
+        : <>
+          {q.tipo === "marcador"
+            ? <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                <input type="number" min="0" max="20" value={resp.local}
+                  onChange={e => setResp(p => ({...p, local:e.target.value}))}
+                  style={{ ...inp, width:50, textAlign:"center", fontSize:18, fontWeight:700, padding:"6px" }} placeholder="0" />
+                <span style={{ color:C.muted, fontSize:16 }}>-</span>
+                <input type="number" min="0" max="20" value={resp.visitante}
+                  onChange={e => setResp(p => ({...p, visitante:e.target.value}))}
+                  style={{ ...inp, width:50, textAlign:"center", fontSize:18, fontWeight:700, padding:"6px" }} placeholder="0" />
+              </div>
+            : <input type="text" value={resp.texto||""} onChange={e => setResp(p => ({...p, texto:e.target.value}))}
+                placeholder="Tu respuesta…" style={{ ...inp, marginBottom:10 }} />
+          }
+          <button onClick={confirmar} disabled={saving}
+            style={{ ...BtnP, width:"100%", fontSize:12, padding:"8px", opacity:saving?0.7:1 }}>
+            {saving ? "Guardando…" : "Confirmar pronóstico"}
+          </button>
+        </>
+      }
+    </div>
+  );
+}
+
+function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
+  const [matches, setMatches] = useState([]);
+  const [loadingMatches, setLoadingMatches] = useState(true);
+  const [misProns, setMisProns] = useState({});
+  const [pronsPts, setPronsPts] = useState({});
+  const [bonusPreguntas, setBonusPreguntas] = useState([]);
+  const [misRespBonus, setMisRespBonus] = useState({});
+  const [savingPron, setSavingPron] = useState(null);
+  const [tipsIA, setTipsIA] = useState({});   // { matchId: { loading, pred, razon } }
+  const [tipsUsados, setTipsUsados] = useState({}); // { matchId: true } — tip visto
+  const [publicando, setPublicando] = useState(false);
+  const [quinielaPublicada, setQuinielaPublicada] = useState(() => !!yo?.quiniela_publicada);
+  const matchesCache = useRef(null);
+
+  useEffect(() => {
+    if (matchesCache.current) { setMatches(matchesCache.current); setLoadingMatches(false); return; }
+    Promise.all([
+      fetch("/api/fotmob?endpoint=schedule&dates=20260611-20260624").then(r=>r.json()).catch(()=>({events:[]})),
+      fetch("/api/fotmob?endpoint=schedule&dates=20260625-20260708").then(r=>r.json()).catch(()=>({events:[]})),
+      fetch("/api/fotmob?endpoint=schedule&dates=20260709-20260719").then(r=>r.json()).catch(()=>({events:[]})),
+    ]).then(results => {
+      const seen = new Set();
+      const all = results.flatMap(r => r.events || []).filter(ev => {
+        if (seen.has(ev.id)) return false;
+        seen.add(ev.id);
+        return true;
+      }).sort((a,b) => new Date(a.date) - new Date(b.date));
+      matchesCache.current = all;
+      setMatches(all);
+      setLoadingMatches(false);
+    });
+  }, []);
+
+  const lsKey = miId ? `prons_${miId}` : null;
+
+  useEffect(() => {
+    if (!miId) return;
+    // Carga local primero para respuesta inmediata
+    try {
+      const local = JSON.parse(localStorage.getItem(lsKey) || "{}");
+      if (Object.keys(local).length) setMisProns(local);
+    } catch {}
+    // Luego Supabase (fuente de verdad)
+    supabase.from("pronosticos_partidos").select("*").eq("participante_id", miId)
+      .then(({ data }) => {
+        if (!data) return;
+        const pm = {}, ptm = {};
+        data.forEach(p => {
+          pm[p.match_id] = p.prediccion;
+          if (p.pts_obtenidos != null) ptm[p.match_id] = p.pts_obtenidos;
+        });
+        setMisProns(pm);
+        setPronsPts(ptm);
+        localStorage.setItem(lsKey, JSON.stringify(pm));
+      });
+  }, [miId]);
+
+  useEffect(() => {
+    if (!salaId) return;
+    supabase.from("preguntas_bonus").select("*").eq("sala_id", salaId).order("created_at")
+      .then(({ data }) => { if (data) setBonusPreguntas(data); });
+    if (miId) {
+      supabase.from("respuestas_bonus").select("*").eq("participante_id", miId)
+        .then(({ data }) => {
+          if (!data) return;
+          const m = {};
+          data.forEach(r => { m[r.pregunta_id] = r; });
+          setMisRespBonus(m);
+        });
+    }
+  }, [salaId, miId]);
+
+  function isPlaceholder(name) {
+    if (!name) return true;
+    // Filtra: "RD32 W1", "RD16 W2", "QF W1", "SF L1", "SF W2", "W1", "2A", "1C", "3RD A/B/F", "TBD"
+    return /^(RD\d|QF|SF|W\d|\d[A-Z]|3RD|TBD)/i.test(name.trim());
+  }
+
+  async function guardarPron(matchId, pred) {
+    if (!miId) return;
+    setSavingPron(matchId);
+    setMisProns(prev => {
+      const next = { ...prev, [matchId]: pred };
+      try { localStorage.setItem(lsKey, JSON.stringify(next)); } catch {}
+      return next;
+    });
+    const usaIA = !!tipsUsados[matchId];
+    await supabase.from("pronosticos_partidos")
+      .upsert({ participante_id: miId, sala_id: salaId, match_id: matchId, prediccion: pred, usa_ia: usaIA }, { onConflict: "participante_id,match_id" });
+    setSavingPron(null);
+  }
+
+  async function pedirTipIA(ev) {
+    const comp = ev.competitions?.[0];
+    const home = comp?.competitors?.find(c => c.homeAway === "home");
+    const away = comp?.competitors?.find(c => c.homeAway === "away");
+    const local = home?.team?.shortDisplayName || home?.team?.location || "?";
+    const awayName = away?.team?.shortDisplayName || away?.team?.location || "?";
+    const matchId = ev.id;
+
+    setTipsIA(prev => ({ ...prev, [matchId]: { loading: true } }));
+    setTipsUsados(prev => ({ ...prev, [matchId]: true }));
+
+    // Descuenta 1pt inmediatamente por usar la IA
+    if (miId) {
+      const yo = participantes.find(p => p.id === miId);
+      const ptsActuales = yo?.pts_quiniela || 0;
+      await supabase.from("participantes").update({ pts_quiniela: Math.max(0, ptsActuales - 1) }).eq("id", miId);
+    }
+
+    try {
+      const r = await fetch("/api/recomendar-quiniela", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partidos: [{ id: matchId, local, away: awayName }] }),
+      });
+      const data = await r.json();
+      const tip = data.predicciones?.[0];
+      setTipsIA(prev => ({ ...prev, [matchId]: { loading: false, pred: tip?.pred, razon: tip?.razon || "Sin razón disponible" } }));
+    } catch {
+      setTipsIA(prev => ({ ...prev, [matchId]: { loading: false, razon: "Error al obtener tip" } }));
+    }
+  }
+
+  async function guardarRespBonus(preguntaId, respuesta) {
+    if (!miId) return;
+    setMisRespBonus(prev => ({ ...prev, [preguntaId]: { respuesta } }));
+    await supabase.from("respuestas_bonus")
+      .upsert({ participante_id: miId, pregunta_id: preguntaId, respuesta }, { onConflict: "participante_id,pregunta_id" });
+  }
+
+  function getPhase(dateStr) {
+    const d = new Date(dateStr);
+    if (d <= new Date("2026-06-27T23:59:59Z")) return "Fase de Grupos";
+    if (d <= new Date("2026-07-04T23:59:59Z")) return "Ronda de 32";
+    if (d <= new Date("2026-07-09T23:59:59Z")) return "Ronda de 16";
+    if (d <= new Date("2026-07-12T23:59:59Z")) return "Cuartos de Final";
+    if (d <= new Date("2026-07-16T23:59:59Z")) return "Semifinales";
+    return "Final";
+  }
+
+  function isLocked(ev) {
+    if (quinielaPublicada) return true;
+    const state = ev.competitions?.[0]?.status?.type?.state;
+    return state === "in" || state === "post" || new Date(ev.date) <= new Date();
+  }
+
+  function getResult(ev) {
+    const comp = ev.competitions?.[0];
+    if (comp?.status?.type?.state !== "post") return null;
+    const home = comp.competitors?.find(c => c.homeAway === "home");
+    const away = comp.competitors?.find(c => c.homeAway === "away");
+    const sH = parseInt(home?.score ?? -1), sA = parseInt(away?.score ?? -1);
+    if (sH > sA) return "local";
+    if (sA > sH) return "visitante";
+    return "empate";
+  }
+
+  const pronosticados = Object.keys(misProns).length;
+  const misPtsQ = Object.values(pronsPts).reduce((a,b) => a + b, 0);
+  const aciertos = Object.values(pronsPts).filter(p => p > 0).length;
+  const sorted = [...participantes].sort((a,b) => (b.pts_quiniela||0) - (a.pts_quiniela||0));
+  const miLugar = miId ? sorted.findIndex(p => p.id === miId) + 1 : 0;
+
+  const now = new Date();
+  const activeBonus = bonusPreguntas.filter(q => {
+    const abierta = !q.fecha_apertura || new Date(q.fecha_apertura) <= now;
+    const noCerrada = !q.fecha_cierre || new Date(q.fecha_cierre) > now;
+    return q.activa && abierta && noCerrada;
+  });
+  const proximasBonus = bonusPreguntas.filter(q => q.activa && q.fecha_apertura && new Date(q.fecha_apertura) > now);
+
+  const byPhase = {};
+  matches.forEach(ev => {
+    const comp = ev.competitions?.[0];
+    const home = comp?.competitors?.find(c => c.homeAway === "home");
+    const away = comp?.competitors?.find(c => c.homeAway === "away");
+    const homeName = home?.team?.shortDisplayName || home?.team?.location || "";
+    const awayName = away?.team?.shortDisplayName || away?.team?.location || "";
+    // Ocultar si alguno de los equipos aún es un placeholder (ej. "2A", "3RD B/E/F")
+    if (isPlaceholder(homeName) || isPlaceholder(awayName)) return;
+    const ph = getPhase(ev.date);
+    if (!byPhase[ph]) byPhase[ph] = [];
+    byPhase[ph].push(ev);
+  });
+
+  return (
+    <div>
+      {/* Acumulado */}
+      <div style={{ background:"linear-gradient(135deg,#7c3aed,#db2777)", borderRadius:16, padding:"18px 16px", textAlign:"center", marginBottom:16 }}>
+        <div style={{ fontSize:12, color:"#f9a8d4", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:2 }}>🎰 Acumulado</div>
+        <div style={{ fontSize:36, fontWeight:900, color:"#fff" }}>
+          ${(participantes.length * 250).toLocaleString("es-MX")}<span style={{ fontSize:14, fontWeight:400, marginLeft:4 }}>MXN</span>
+        </div>
+        <div style={{ color:"#f9a8d4", fontSize:12, marginTop:2 }}>{participantes.length} jugadores × $250</div>
+      </div>
+
+      {/* Mini dashboard */}
+      <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+        {[
+          { label:"mis pts quiniela", val: misPtsQ, color:C.text },
+          { label:"aciertos", val: aciertos, color:C.green },
+          { label:"lugar", val: miLugar ? `#${miLugar}/${participantes.length}` : "—", color:"#a78bfa" },
+        ].map(({label,val,color}) => (
+          <div key={label} style={{ flex:1, background:C.card, border:`0.5px solid ${C.border}`, borderRadius:10, padding:"8px 6px", textAlign:"center" }}>
+            <div style={{ fontSize:15, fontWeight:700, color }}>{val}</div>
+            <div style={{ fontSize:9, color:C.muted, marginTop:2, lineHeight:1.3 }}>{label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Barra de progreso */}
+      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+        <span style={{ fontSize:11, color:C.muted }}>Pronósticos llenados</span>
+        <span style={{ fontSize:11, color:C.muted }}>{pronosticados} / {matches.length || "…"}</span>
+      </div>
+      <div style={{ height:4, background:C.border, borderRadius:2, marginBottom:16 }}>
+        <div style={{ height:"100%", background:"linear-gradient(90deg,#7c3aed,#818cf8)", borderRadius:2, width: matches.length ? `${Math.min(100,(pronosticados/matches.length)*100)}%` : "0%" }} />
+      </div>
+
+      {/* Info tip IA + botón llenar */}
+      {!loadingMatches && matches.length > 0 && (
+        <>
+          <div style={{ ...cardStyle, fontSize:11, color:C.muted, display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+            <span style={{ fontSize:16 }}>💡</span>
+            <span>Puedes pedir un <strong style={{color:"#a78bfa"}}>tip de IA</strong> por partido. Cuesta <strong style={{color:C.red}}>-1pt</strong> y si aciertas con el tip solo ganas <strong style={{color:C.gold}}>1pt</strong> en lugar de 2.</span>
+          </div>
+          <LlenarConIA miId={miId} salaId={salaId} matches={matches} misProns={misProns} lsKey={lsKey}
+            tipsUsados={tipsUsados} isPlaceholder={isPlaceholder}
+            onDone={(nuevasProns, nuevasRazones) => {
+              setMisProns(nuevasProns);
+            }} />
+        </>
+      )}
+
+      {/* Análisis IA (diversión, sin costo) */}
+      {pronosticados >= 5 && (
+        <div style={{ marginTop:8 }}>
+          <AnalisisIA misProns={misProns} matches={matches} nombre={yo?.nombre} />
+        </div>
+      )}
+
+      {/* Bonus activas */}
+      {activeBonus.length > 0 && <>
+        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8, fontWeight:600 }}>Preguntas bonus · activas ahora</div>
+        {activeBonus.map(q => (
+          <BonusCard key={q.id} q={q} yaRespondida={misRespBonus[q.id]} onGuardar={guardarRespBonus} />
+        ))}
+      </>}
+
+      {/* Bonus próximas */}
+      {proximasBonus.length > 0 && <>
+        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", margin:"16px 0 8px", fontWeight:600 }}>Próximas preguntas bonus</div>
+        {proximasBonus.map(q => (
+          <div key={q.id} style={{ ...cardStyle, display:"flex", alignItems:"center", gap:10, opacity:0.65 }}>
+            <span style={{ background:"#7c3aed22", color:"#a78bfa", fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:6, border:`0.5px solid #7c3aed44`, whiteSpace:"nowrap" }}>+{q.pts} pts</span>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, color:"#9ca3af" }}>{q.pregunta}</div>
+              <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>
+                Se abre {new Date(q.fecha_apertura).toLocaleDateString("es-MX",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}
+              </div>
+            </div>
+            <span style={{ fontSize:12 }}>🔒</span>
+          </div>
+        ))}
+      </>}
+
+      {/* Lista de partidos */}
+      {loadingMatches && <p style={{ color:C.muted, textAlign:"center", padding:24, fontSize:13 }}>Cargando partidos…</p>}
+      {!loadingMatches && matches.length === 0 && <p style={{ color:C.muted, textAlign:"center", padding:24, fontSize:13 }}>No se pudieron cargar los partidos.</p>}
+      {Object.entries(byPhase).map(([phase, evs]) => (
+        <div key={phase}>
+          <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.06em", margin:"16px 0 8px", fontWeight:600 }}>{phase}</div>
+          {evs.map(ev => {
+            const comp = ev.competitions?.[0];
+            const home = comp?.competitors?.find(c => c.homeAway === "home");
+            const away = comp?.competitors?.find(c => c.homeAway === "away");
+            const homeName = home?.team?.shortDisplayName || home?.team?.location || "—";
+            const awayName = away?.team?.shortDisplayName || away?.team?.location || "—";
+            const homeLogo = home?.team?.logo;
+            const awayLogo = away?.team?.logo;
+            const locked = isLocked(ev);
+            const state = comp?.status?.type?.state;
+            const live = state === "in";
+            const done = state === "post";
+            const result = getResult(ev);
+            const miPred = misProns[ev.id];
+            const miPts = pronsPts[ev.id];
+
+            const btnStyle = (tipo) => {
+              const sel = miPred === tipo;
+              if (done && sel && result === tipo) return { background:"#10b98122", color:"#34d399", border:`0.5px solid #10b98144` };
+              if (done && sel && result !== tipo) return { background:"#ef444422", color:"#f87171", border:`0.5px solid #ef444444` };
+              if (sel) return { background:"#1d4ed822", color:"#60a5fa", border:`0.5px solid #1d4ed844` };
+              return { background:C.bg, color:C.muted, border:`0.5px solid ${C.border}` };
+            };
+
+            return (
+              <div key={ev.id} style={{ ...cardStyle, marginBottom:6, opacity: done && !miPred ? 0.45 : 1 }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:7 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:5, fontSize:12, fontWeight:500, overflow:"hidden" }}>
+                    {homeLogo && <img src={homeLogo} style={{width:16,height:16,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"} />}
+                    <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:72 }}>{homeName}</span>
+                    <span style={{ color:C.muted, fontSize:10, flexShrink:0 }}>vs</span>
+                    {awayLogo && <img src={awayLogo} style={{width:16,height:16,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"} />}
+                    <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:72 }}>{awayName}</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:5, flexShrink:0 }}>
+                    {done && miPts != null && (
+                      <span style={{ fontSize:11, fontWeight:700, color: miPts > 0 ? C.green : C.muted }}>{miPts > 0 ? `+${miPts}` : "0"}pts</span>
+                    )}
+                    {live && <span style={{ fontSize:9, padding:"2px 5px", background:"#10b98122", color:"#10b981", borderRadius:4, fontWeight:700 }}>EN VIVO</span>}
+                    {!live && !done && <span style={{ fontSize:10, color:C.muted }}>{new Date(ev.date).toLocaleDateString("es-MX",{month:"short",day:"numeric"})}</span>}
+                    {done && <span style={{ fontSize:10, color:C.muted, background:C.border+"55", padding:"2px 5px", borderRadius:4 }}>TC {parseInt(home?.score)}-{parseInt(away?.score)}</span>}
+                  </div>
+                </div>
+                {locked
+                  ? <div style={{ fontSize:11, color:C.muted, display:"flex", alignItems:"center", gap:5, flexWrap:"wrap" }}>
+                      <span>🔒 {live ? "Partido en curso" : done ? "Terminado" : "Bloqueado"}</span>
+                      {miPred && <span style={{ color:"#60a5fa" }}>· Tu pronóstico: <strong>{miPred==="local" ? homeName : miPred==="visitante" ? awayName : "Empate"}</strong></span>}
+                    </div>
+                  : <>
+                  <div style={{ display:"flex", gap:5 }}>
+                      {[["local",homeName],["empate","Empate"],["visitante",awayName]].map(([tipo,label]) => (
+                        <button key={tipo} disabled={!!savingPron}
+                          style={{ flex:1, padding:"6px 2px", borderRadius:7, cursor:"pointer", fontFamily:"inherit", fontSize:11, fontWeight:500, textAlign:"center", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", ...btnStyle(tipo) }}
+                          onClick={() => guardarPron(ev.id, tipo)}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                    {/* Tip IA */}
+                    {(() => {
+                      const tip = tipsIA[ev.id];
+                      if (tip?.loading) return <div style={{ fontSize:10, color:"#a78bfa", marginTop:5 }}>⚙️ Consultando IA…</div>;
+                      if (tip?.razon) return (
+                        <div style={{ marginTop:5, padding:"5px 8px", background:"#7c3aed15", borderRadius:6, border:"0.5px solid #7c3aed33" }}>
+                          <span style={{ fontSize:10, color:"#a78bfa", fontWeight:600 }}>💡 Tip IA: </span>
+                          <span style={{ fontSize:10, color:C.muted }}>
+                            {tip.pred === "local" ? homeName : tip.pred === "visitante" ? awayName : "Empate"} — {tip.razon}
+                          </span>
+                          <span style={{ fontSize:9, color:C.red, marginLeft:6 }}>(-1pt descontado)</span>
+                        </div>
+                      );
+                      if (!miPred) return (
+                        <button onClick={() => pedirTipIA(ev)}
+                          style={{ marginTop:5, fontSize:10, color:"#a78bfa", background:"none", border:"0.5px solid #7c3aed44", borderRadius:6, padding:"3px 8px", cursor:"pointer", fontFamily:"inherit" }}>
+                          💡 Pedir tip IA <span style={{ color:C.red }}>-1pt</span>
+                        </button>
+                      );
+                      return null;
+                    })()}
+                  </>
+                }
+              </div>
+            );
+          })}
+        </div>
+      ))}
+
+      {/* Botón publicar quiniela */}
+      <div style={{ marginTop:24, textAlign:"center" }}>
+          {quinielaPublicada ? (
+            <div style={{ background:"#052e16", border:"1px solid #16a34a44", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:20 }}>🔒</span>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ color:"#4ade80", fontWeight:700, fontSize:13 }}>Quiniela publicada</div>
+                <div style={{ color:"#86efac", fontSize:11 }}>Tus pronósticos quedaron guardados al 100</div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button
+                style={{ background: publicando ? "#374151" : "linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:12, padding:"14px 28px", fontSize:15, fontWeight:700, cursor: publicando ? "default" : "pointer", opacity: publicando ? 0.7 : 1, fontFamily:"inherit", boxShadow:"0 4px 16px #16a34a44" }}
+                disabled={publicando}
+                onClick={async () => {
+                  if (!window.confirm("¿Publicar tu quiniela? Ya no podrás cambiar tus pronósticos.")) return;
+                  setPublicando(true);
+                  await supabase.from("participantes").update({ quiniela_publicada: true }).eq("id", miId);
+                  setQuinielaPublicada(true);
+                  setPublicando(false);
+                }}
+              >
+                {publicando ? "Publicando…" : "🔒 Publicar mi quiniela"}
+              </button>
+              <div style={{ color:"#6b7280", fontSize:11, marginTop:6 }}>Una vez publicada no podrás editar tus pronósticos</div>
+            </div>
+          )}
+        </div>
+
+      {/* Pronósticos de campeón */}
+      {participantes.some(p => p.pron_camp) && <>
+        <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", margin:"24px 0 10px", fontWeight:600 }}>🔮 Pronósticos de campeón</div>
+        {participantes.filter(p => p.pron_camp).map(p => (
+          <div key={p.id} style={{ ...cardStyle, display:"flex", alignItems:"center", gap:12, padding:"10px 14px" }}>
+            <Avatar p={p} size={38} />
+            <div style={{ flex:1 }}>
+              <div style={{ color:C.text, fontWeight:600, fontSize:13 }}>{p.nombre}</div>
+              <div style={{ color:C.muted, fontSize:12 }}>🏆 {p.pron_camp_flag} {p.pron_camp} · 🥈 {p.pron_sub_flag} {p.pron_sub}</div>
+            </div>
+            {(p.pts_quiniela || 0) > 0 && <span style={{ background:C.blue+"22", color:C.blue, fontSize:12, fontWeight:700, padding:"3px 8px", borderRadius:16 }}>{p.pts_quiniela}pts</span>}
+          </div>
+        ))}
+      </>}
+    </div>
+  );
+}
+
+function AdminBonusPanel({ salaId, participantes }) {
+  const [preguntas, setPreguntas] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [form, setForm] = useState({ pregunta:"", tipo:"texto", pts:3, fecha_apertura:"", fecha_cierre:"" });
+  const [saving, setSaving] = useState(false);
+  const [calculando, setCalculando] = useState(false);
+
+  useEffect(() => {
+    supabase.from("preguntas_bonus").select("*").eq("sala_id", salaId).order("created_at")
+      .then(({ data }) => { if (data) setPreguntas(data); });
+  }, [salaId]);
+
+  async function crearPregunta() {
+    if (!form.pregunta.trim()) return;
+    setSaving(true);
+    const { data } = await supabase.from("preguntas_bonus").insert({
+      sala_id: salaId,
+      pregunta: form.pregunta.trim(),
+      tipo: form.tipo,
+      pts: Number(form.pts),
+      fecha_apertura: form.fecha_apertura || null,
+      fecha_cierre: form.fecha_cierre || null,
+      activa: true,
+    }).select().single();
+    if (data) setPreguntas(prev => [...prev, data]);
+    setForm({ pregunta:"", tipo:"texto", pts:3, fecha_apertura:"", fecha_cierre:"" });
+    setShowForm(false);
+    setSaving(false);
+  }
+
+  async function toggleActiva(id, activa) {
+    await supabase.from("preguntas_bonus").update({ activa }).eq("id", id);
+    setPreguntas(prev => prev.map(q => q.id === id ? { ...q, activa } : q));
+  }
+
+  async function asignarPts(preguntaId, respuestaCorrecta) {
+    const pts = preguntas.find(q => q.id === preguntaId)?.pts || 0;
+    await supabase.from("preguntas_bonus").update({ respuesta_correcta: respuestaCorrecta }).eq("id", preguntaId);
+    const { data: respuestas } = await supabase.from("respuestas_bonus").select("*").eq("pregunta_id", preguntaId);
+    if (!respuestas) return;
+    for (const r of respuestas) {
+      const texto = typeof r.respuesta === "object" ? JSON.stringify(r.respuesta) : String(r.respuesta);
+      const correcto = texto.toLowerCase().includes(respuestaCorrecta.toLowerCase());
+      const ptsObtenidos = correcto ? pts : 0;
+      await supabase.from("respuestas_bonus").update({ pts_obtenidos: ptsObtenidos }).eq("id", r.id);
+      if (correcto) {
+        const p = participantes.find(x => x.id === r.participante_id);
+        if (p) await supabase.from("participantes").update({ pts_quiniela: (p.pts_quiniela||0) + pts }).eq("id", p.id);
+      }
+    }
+    alert("✅ Puntos bonus asignados");
+  }
+
+  async function calcularQuiniela() {
+    setCalculando(true);
+    try {
+      const chunks = await Promise.all([
+        fetch("/api/fotmob?endpoint=schedule&dates=20260611-20260624").then(r=>r.json()).catch(()=>({events:[]})),
+        fetch("/api/fotmob?endpoint=schedule&dates=20260625-20260708").then(r=>r.json()).catch(()=>({events:[]})),
+        fetch("/api/fotmob?endpoint=schedule&dates=20260709-20260719").then(r=>r.json()).catch(()=>({events:[]})),
+      ]);
+      const seen = new Set();
+      const matches = chunks.flatMap(r => r.events || []).filter(ev => { if(seen.has(ev.id)) return false; seen.add(ev.id); return true; });
+      const finished = matches.filter(ev => ev.competitions?.[0]?.status?.type?.state === "post");
+
+      let updated = 0;
+      for (const ev of finished) {
+        const comp = ev.competitions[0];
+        const home = comp.competitors?.find(c => c.homeAway === "home");
+        const away = comp.competitors?.find(c => c.homeAway === "away");
+        const sH = parseInt(home?.score ?? -1), sA = parseInt(away?.score ?? -1);
+        const result = sH > sA ? "local" : sA > sH ? "visitante" : "empate";
+
+        const { data: prons } = await supabase.from("pronosticos_partidos").select("*").eq("match_id", ev.id).is("pts_obtenidos", null);
+        if (!prons?.length) continue;
+
+        for (const pr of prons) {
+          // win=2, draw=1, lose=0 — si usó IA: máximo 1pt por ese partido
+          const ptsBase = pr.prediccion === result ? (result === "empate" ? 1 : 2) : 0;
+          const ptsReal = pr.usa_ia ? Math.min(1, ptsBase) : ptsBase;
+          await supabase.from("pronosticos_partidos").update({ resultado: result, pts_obtenidos: ptsReal }).eq("id", pr.id);
+          const p = participantes.find(x => x.id === pr.participante_id);
+          if (p && ptsReal > 0) {
+            await supabase.from("participantes").update({ pts_quiniela: (p.pts_quiniela||0) + ptsReal }).eq("id", p.id);
+          }
+          updated++;
+        }
+      }
+      alert(`✅ Quiniela calculada: ${updated} pronósticos actualizados en ${finished.length} partidos terminados.`);
+    } catch(e) {
+      alert("Error al calcular: " + e.message);
+    }
+    setCalculando(false);
+  }
+
+  if (!preguntas.length && !showForm) return (
+    <div style={{ marginTop:16, background:"#0a0e1a", border:`1px solid #7c3aed33`, borderRadius:12, padding:"12px 16px" }}>
+      <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600, marginBottom:8 }}>🎯 Admin · Quiniela</div>
+      <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+        <button style={{ ...BtnP, fontSize:12 }} onClick={() => setShowForm(true)}>+ Crear pregunta bonus</button>
+        <button style={{ ...Btn(), fontSize:12, opacity:calculando?0.6:1 }} onClick={calcularQuiniela} disabled={calculando}>
+          {calculando ? "Calculando…" : "⚽ Calcular quiniela"}
+        </button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginTop:16, background:"#0a0e1a", border:`1px solid #7c3aed33`, borderRadius:12, padding:"12px 16px" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+        <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600 }}>🎯 Admin · Quiniela</div>
+        <button style={{ ...BtnP, fontSize:11, padding:"4px 10px" }} onClick={() => setShowForm(v => !v)}>
+          {showForm ? "Cancelar" : "+ Bonus"}
+        </button>
+      </div>
+
+      {showForm && (
+        <div style={{ marginBottom:12, display:"flex", flexDirection:"column", gap:8 }}>
+          <input style={inp} placeholder="Pregunta bonus…" value={form.pregunta} onChange={e => setForm(p => ({...p, pregunta:e.target.value}))} />
+          <div style={{ display:"flex", gap:8 }}>
+            <select style={{ ...inp, flex:1 }} value={form.tipo} onChange={e => setForm(p => ({...p, tipo:e.target.value}))}>
+              <option value="texto">Texto libre</option>
+              <option value="marcador">Marcador exacto</option>
+            </select>
+            <input type="number" min="1" max="10" style={{ ...inp, width:70 }} placeholder="pts" value={form.pts} onChange={e => setForm(p => ({...p, pts:e.target.value}))} />
+          </div>
+          <input type="datetime-local" style={inp} value={form.fecha_apertura} onChange={e => setForm(p => ({...p, fecha_apertura:e.target.value}))} />
+          <input type="datetime-local" style={inp} value={form.fecha_cierre} onChange={e => setForm(p => ({...p, fecha_cierre:e.target.value}))} placeholder="Cierre (opcional)" />
+          <button style={{ ...BtnP, fontSize:12, padding:"8px", opacity:saving?0.7:1 }} onClick={crearPregunta} disabled={saving}>
+            {saving ? "Guardando…" : "Guardar pregunta"}
+          </button>
+        </div>
+      )}
+
+      {preguntas.map(q => (
+        <div key={q.id} style={{ ...cardStyle, marginBottom:6, padding:"10px 12px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
+            <div style={{ flex:1 }}>
+              <div style={{ fontSize:12, color:C.text, fontWeight:500 }}>{q.pregunta}</div>
+              <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>+{q.pts}pts · {q.tipo}</div>
+            </div>
+            <button style={{ ...Btn(), fontSize:11, padding:"3px 8px", color: q.activa ? C.green : C.muted, border:`0.5px solid ${q.activa ? C.green+"44" : C.border}` }}
+              onClick={() => toggleActiva(q.id, !q.activa)}>
+              {q.activa ? "Activa" : "Inactiva"}
+            </button>
+          </div>
+          {q.activa && !q.respuesta_correcta && (
+            <div style={{ marginTop:8, display:"flex", gap:6 }}>
+              <input type="text" placeholder="Respuesta correcta para asignar pts…" style={{ ...inp, fontSize:11, padding:"5px 10px" }}
+                id={`rc-${q.id}`} />
+              <button style={{ ...BtnG, fontSize:11, padding:"5px 10px", whiteSpace:"nowrap" }}
+                onClick={() => {
+                  const val = document.getElementById(`rc-${q.id}`)?.value;
+                  if (val?.trim()) asignarPts(q.id, val.trim());
+                }}>Asignar</button>
+            </div>
+          )}
+          {q.respuesta_correcta && <div style={{ fontSize:11, color:C.green, marginTop:6 }}>✓ Resp. correcta: {q.respuesta_correcta}</div>}
+        </div>
+      ))}
+
+      <button style={{ ...Btn(), fontSize:12, width:"100%", marginTop:8, opacity:calculando?0.6:1 }} onClick={calcularQuiniela} disabled={calculando}>
+        {calculando ? "Calculando…" : "⚽ Calcular quiniela (partidos terminados)"}
+      </button>
     </div>
   );
 }
@@ -1201,7 +2545,7 @@ function TipsInfo() {
 }
 
 // ── PESTAÑA: CALENDARIO MUNDIAL ───────────────
-function Calendario({ salaLink, yo }) {
+function Calendario({ salaLink, yo, miId, salaId }) {
   const [scoreboard, setScoreboard] = useState(null);
   const [standings,  setStandings]  = useState(null);
   const [loadSb,     setLoadSb]     = useState(true);
@@ -1213,6 +2557,7 @@ function Calendario({ salaLink, yo }) {
   const [shareNombre,setShareNombre]= useState(yo?.nombre||"");
   const [shareEquipo,setShareEquipo]= useState(yo?.equipo||"");
   const [nextMap,    setNextMap]    = useState({});
+  const [misProns,   setMisProns]   = useState({});
   const standingsCache = useRef(null);
   const nextCache      = useRef(null);
 
@@ -1239,6 +2584,14 @@ function Calendario({ salaLink, yo }) {
     const d=new Date(); d.setDate(d.getDate()+off);
     return d.toLocaleDateString("es-MX",{weekday:"short",day:"numeric",month:"short"});
   }
+
+  useEffect(() => {
+    if (!miId) return;
+    const lsKey = `prons_${salaId}_${miId}`;
+    try { const cached = localStorage.getItem(lsKey); if (cached) setMisProns(JSON.parse(cached)); } catch {}
+    supabase.from("pronosticos_partidos").select("match_id,prediccion").eq("participante_id", miId)
+      .then(({ data }) => { if (data) setMisProns(Object.fromEntries(data.map(r => [r.match_id, r.prediccion]))); });
+  }, [miId]);
 
   useEffect(() => {
     setLoadSb(true);
@@ -1324,33 +2677,61 @@ function Calendario({ salaLink, yo }) {
             const homeName=home?.team?.shortDisplayName||home?.team?.location||"—";
             const awayName=away?.team?.shortDisplayName||away?.team?.location||"—";
             const homeLogo=home?.team?.logo, awayLogo=away?.team?.logo;
+            const miPred = misProns[String(ev.id)];
+            const predLabel = miPred === "local" ? `🏠 ${homeName}` : miPred === "visitante" ? `✈️ ${awayName}` : miPred === "empate" ? "🤝 Empate" : null;
             return (
               <div key={i} style={{
-                display:"grid",gridTemplateColumns:"44px 1fr auto 1fr",
-                alignItems:"center",gap:6,padding:"10px 10px",
                 borderBottom:i<evs.length-1?`1px solid ${C.border}20`:undefined,
                 borderLeft:`3px solid ${live?"#10b981":"transparent"}`,
               }}>
-                <div style={{textAlign:"center"}}>
-                  {live
-                    ? <span style={{background:"#10b98122",color:"#10b981",fontSize:9,fontWeight:700,padding:"3px 4px",borderRadius:4}}>{clock?.replace("'","′")||"●"}</span>
-                    : done
-                      ? <span style={{color:C.muted,fontSize:10,fontWeight:600,background:C.border+"55",padding:"3px 4px",borderRadius:4}}>TC</span>
-                      : <span style={{color:C.muted,fontSize:11}}>{fmtHour(ev.date)}</span>}
+                <div style={{
+                  display:"grid",gridTemplateColumns:"44px 1fr auto 1fr",
+                  alignItems:"center",gap:6,padding:"10px 10px",
+                }}>
+                  <div style={{textAlign:"center"}}>
+                    {live
+                      ? <span style={{background:"#10b98122",color:"#10b981",fontSize:9,fontWeight:700,padding:"3px 4px",borderRadius:4}}>{clock?.replace("'","′")||"●"}</span>
+                      : done
+                        ? <span style={{color:C.muted,fontSize:10,fontWeight:600,background:C.border+"55",padding:"3px 4px",borderRadius:4}}>TC</span>
+                        : <span style={{color:C.muted,fontSize:11}}>{fmtHour(ev.date)}</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,overflow:"hidden"}}>
+                    <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{homeName}</span>
+                    {homeLogo?<img src={homeLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
+                  </div>
+                  <div style={{textAlign:"center",minWidth:36}}>
+                    {done||live
+                      ? <span style={{color:C.text,fontSize:14,fontWeight:800,letterSpacing:"1px"}}>{sH}-{sA}</span>
+                      : <span style={{color:C.muted,fontSize:11}}>vs</span>}
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:5,overflow:"hidden"}}>
+                    {awayLogo?<img src={awayLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
+                    <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{awayName}</span>
+                  </div>
                 </div>
-                <div style={{display:"flex",alignItems:"center",justifyContent:"flex-end",gap:5,overflow:"hidden"}}>
-                  <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,textAlign:"right",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{homeName}</span>
-                  {homeLogo?<img src={homeLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
-                </div>
-                <div style={{textAlign:"center",minWidth:36}}>
-                  {done||live
-                    ? <span style={{color:C.text,fontSize:14,fontWeight:800,letterSpacing:"1px"}}>{sH}-{sA}</span>
-                    : <span style={{color:C.muted,fontSize:11}}>vs</span>}
-                </div>
-                <div style={{display:"flex",alignItems:"center",gap:5,overflow:"hidden"}}>
-                  {awayLogo?<img src={awayLogo} style={{width:20,height:20,objectFit:"contain",flexShrink:0}} onError={e=>e.target.style.display="none"}/>:<span style={{fontSize:14,flexShrink:0}}>🏳️</span>}
-                  <span style={{color:done||live?C.text:"#9ca3af",fontSize:12,fontWeight:done||live?500:400,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{awayName}</span>
-                </div>
+                {predLabel && (
+                  <div style={{padding:"0 10px 8px 54px"}}>
+                    <span style={{
+                      display:"inline-block",
+                      fontSize:10,fontWeight:600,
+                      color: done ? (
+                        (miPred==="local"&&parseInt(sH)>parseInt(sA)) || (miPred==="visitante"&&parseInt(sA)>parseInt(sH)) || (miPred==="empate"&&sH===sA)
+                          ? "#4ade80" : "#f87171"
+                      ) : "#a78bfa",
+                      background: done ? (
+                        (miPred==="local"&&parseInt(sH)>parseInt(sA)) || (miPred==="visitante"&&parseInt(sA)>parseInt(sH)) || (miPred==="empate"&&sH===sA)
+                          ? "#052e16" : "#2d0a0a"
+                      ) : "#1e1b4b",
+                      border:`0.5px solid ${done ? (
+                        (miPred==="local"&&parseInt(sH)>parseInt(sA)) || (miPred==="visitante"&&parseInt(sA)>parseInt(sH)) || (miPred==="empate"&&sH===sA)
+                          ? "#16a34a55" : "#dc262655"
+                      ) : "#7c3aed55"}`,
+                      borderRadius:6,padding:"2px 8px",
+                    }}>
+                      Mi quiniela: {predLabel}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1551,8 +2932,268 @@ function Calendario({ salaLink, yo }) {
   );
 }
 
+// ── PANTALLA: AGREGAR CALENDARIO ─────────────
+function PasoCalendario({ onContinuar, equipoDefault }) {
+  const [seleccion, setSeleccion] = useState("todos"); // "todos" | "mis-equipos"
+  const [equiposElegidos, setEquiposElegidos] = useState(
+    equipoDefault ? [equipoDefault] : []
+  );
+
+  function toggleEquipo(n) {
+    setEquiposElegidos(prev =>
+      prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n]
+    );
+  }
+
+  function getUrls() {
+    const teamsParam = seleccion === "mis-equipos" && equiposElegidos.length
+      ? `?teams=${encodeURIComponent(equiposElegidos.join(","))}`
+      : "";
+    const base = `${APP_URL}/api/calendar.ics${teamsParam}`;
+    const webcal = base.replace("https://", "webcal://").replace("http://", "webcal://");
+    return {
+      apple: webcal,
+      google: `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(base)}`,
+    };
+  }
+
+  const urls = getUrls();
+  const labelCal = seleccion === "mis-equipos" && equiposElegidos.length
+    ? `${equiposElegidos.map(n => TEAMS.find(t=>t.n===n)?.f||"").join("")} ${equiposElegidos.join(", ")}`
+    : "📅 Todos los partidos del Mundial";
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", padding:"28px 20px", overflowY:"auto" }}>
+      <div style={{ maxWidth:420, margin:"0 auto", textAlign:"center" }}>
+        <div style={{ fontSize:56, marginBottom:10 }}>📅</div>
+        <h1 style={{ color:C.text, fontSize:21, fontWeight:700, marginBottom:6 }}>¡No te pierdas ningún partido!</h1>
+        <p style={{ color:C.muted, fontSize:13, lineHeight:1.6, marginBottom:22 }}>
+          Agrega el calendario a tu teléfono y recibe notificación antes de cada partido.
+        </p>
+
+        <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Tú decides qué juegos seguir en tu calendario</div>
+
+        {/* Selector: todos vs filtro */}
+        <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+          {[["todos","🌍 Todos los partidos"],["mis-equipos","❤️ Mis equipos"]].map(([k,l])=>(
+            <button key={k} onClick={()=>setSeleccion(k)} style={{
+              flex:1, padding:"10px 8px", borderRadius:10, fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit",
+              border:`1.5px solid ${seleccion===k ? C.blue : C.border}`,
+              background: seleccion===k ? C.blue+"22" : C.card,
+              color: seleccion===k ? C.blue : C.muted,
+            }}>{l}</button>
+          ))}
+        </div>
+
+        {/* Selector de equipos */}
+        {seleccion === "mis-equipos" && (
+          <div style={{ marginBottom:16, textAlign:"left" }}>
+            <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>
+              Elige los equipos que te interesan
+            </div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
+              {TEAMS.map(t => {
+                const sel = equiposElegidos.includes(t.n);
+                return (
+                  <button key={t.n} onClick={()=>toggleEquipo(t.n)} style={{
+                    padding:"6px 12px", borderRadius:20, fontSize:13, cursor:"pointer", fontFamily:"inherit",
+                    border:`1.5px solid ${sel ? "#7c3aed" : C.border}`,
+                    background: sel ? "#7c3aed33" : C.card,
+                    color: sel ? "#c4b5fd" : C.muted,
+                    fontWeight: sel ? 600 : 400,
+                  }}>
+                    {t.f} {t.n}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Lo que se va a agregar */}
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:10, padding:"10px 14px", marginBottom:14, textAlign:"left", fontSize:12, color:C.muted }}>
+          Se agregará: <span style={{ color:C.text, fontWeight:600 }}>{labelCal}</span>
+        </div>
+
+        {/* Botones de agregar */}
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, overflow:"hidden", marginBottom:14 }}>
+          {[
+            { icon:"🍎", label:"Apple Calendar", url: urls.apple },
+            { icon:"📅", label:"Google Calendar", url: urls.google },
+          ].map((o, i) => (
+            <a key={o.label} href={o.url} target="_blank" rel="noreferrer"
+              onClick={() => setTimeout(onContinuar, 1500)}
+              style={{ display:"flex", alignItems:"center", gap:14, padding:"15px 18px", color:C.text, textDecoration:"none", fontSize:14, borderBottom: i===0 ? `1px solid ${C.border}` : "none" }}>
+              <span style={{ fontSize:26 }}>{o.icon}</span>
+              <div style={{ flex:1, textAlign:"left" }}>
+                <div style={{ fontWeight:600 }}>{o.label}</div>
+                <div style={{ fontSize:11, color:C.muted, marginTop:1 }}>Toca para agregar</div>
+              </div>
+              <span style={{ color:C.muted, fontSize:18 }}>›</span>
+            </a>
+          ))}
+        </div>
+
+        <button onClick={onContinuar} style={{ ...Btn({ width:"100%", padding:12, fontSize:13 }), color:C.muted }}>
+          Ya lo tengo / Saltar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── PANTALLA: AGREGAR A INICIO ────────────────
+function PasoInstall({ onContinuar }) {
+  const [agregado, setAgregado] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const isAndroid = /android/i.test(navigator.userAgent);
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isChromeIOS = isIOS && /CriOS/i.test(navigator.userAgent);
+  const [browserTab, setBrowserTab] = useState(isChromeIOS ? "chrome" : "safari");
+
+  useEffect(() => {
+    // Android Chrome: capturar el evento de instalación nativa
+    const handler = (e) => { e.preventDefault(); setDeferredPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  async function instalarAndroid() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === "accepted") { setAgregado(true); setTimeout(onContinuar, 1000); }
+    setDeferredPrompt(null);
+  }
+
+  return (
+    <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", display:"flex", alignItems:"center", justifyContent:"center", padding:"28px 20px" }}>
+      <div style={{ maxWidth:420, width:"100%", textAlign:"center" }}>
+
+        {/* Ícono */}
+        <div style={{ marginBottom:16 }}>
+          <img src="/icon-192.svg" style={{ width:90, height:90, borderRadius:22, boxShadow:"0 8px 32px #7c3aed55" }} alt="Quiniela Mundial 2026" />
+        </div>
+
+        <h1 style={{ color:C.text, fontSize:21, fontWeight:700, marginBottom:6 }}>¡Agrégala a tus apps!</h1>
+        <p style={{ color:C.muted, fontSize:13, lineHeight:1.6, marginBottom:20 }}>
+          Accede a la quiniela desde tu pantalla de inicio como si fuera una app — sin buscar el link cada vez.
+        </p>
+
+        {/* Android con prompt disponible → botón mágico */}
+        {isAndroid && deferredPrompt && (
+          <button onClick={instalarAndroid} style={{
+            ...BtnP, width:"100%", padding:16, fontSize:16, marginBottom:12,
+            background:"linear-gradient(90deg,#7c3aed,#1d4ed8)",
+            boxShadow:"0 4px 24px #7c3aed55",
+          }}>
+            📲 Instalar en mi teléfono
+          </button>
+        )}
+
+        {/* Instrucciones manuales */}
+        {(isIOS || (isAndroid && !deferredPrompt)) && (() => {
+          // SVG: ícono compartir iOS (flecha arriba saliendo de caja)
+          const ShareIcon = () => (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{display:"inline",verticalAlign:"middle",margin:"0 2px -2px"}}>
+              <path d="M12 2l-4 4h3v8h2V6h3l-4-4z"/>
+              <path d="M5 12v7a1 1 0 001 1h12a1 1 0 001-1v-7"/>
+            </svg>
+          );
+          // SVG: ícono tres puntos horizontal (Chrome iOS barra inferior)
+          const DotsIcon = () => (
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="#60a5fa" style={{display:"inline",verticalAlign:"middle",margin:"0 2px -2px"}}>
+              <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+            </svg>
+          );
+
+          const instrucciones = {
+            safari: [
+              { n:"1", jsx: <span>Toca el botón <ShareIcon /> <strong style={{color:C.text}}>Compartir</strong> en la barra de abajo de Safari</span> },
+              { n:"2", jsx: <span>Busca y toca <strong style={{color:C.text}}>"Agregar a pantalla de inicio"</strong> ➕</span> },
+              { n:"3", jsx: <span>Toca <strong style={{color:C.text}}>"Agregar"</strong> arriba a la derecha ✅</span> },
+            ],
+            chrome: [
+              { n:"1", jsx: <span>Toca el botón <DotsIcon /> <strong style={{color:C.text}}>tres puntos</strong> en la barra de abajo de Chrome</span> },
+              { n:"2", jsx: <span>Toca el ícono <ShareIcon /> <strong style={{color:C.text}}>Compartir</strong> en el menú que aparece</span> },
+              { n:"3", jsx: <span>Busca y toca <strong style={{color:C.text}}>"Agregar a pantalla de inicio"</strong> ➕ y luego <strong style={{color:C.text}}>"Agregar"</strong> ✅</span> },
+            ],
+            android: [
+              { n:"1", jsx: <span>Toca el menú <strong style={{color:C.text}}>⋮</strong> (tres puntos) arriba a la derecha</span> },
+              { n:"2", jsx: <span>Selecciona <strong style={{color:C.text}}>"Agregar a pantalla de inicio"</strong></span> },
+              { n:"3", jsx: <span>Toca <strong style={{color:C.text}}>"Agregar"</strong> y ¡listo! ✅</span> },
+            ],
+          };
+
+          const pasos = isIOS ? instrucciones[browserTab] : instrucciones.android;
+
+          return (
+            <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"16px", marginBottom:16, textAlign:"left" }}>
+              {/* Tabs Safari / Chrome (solo iOS) */}
+              {isIOS && (
+                <div style={{ display:"flex", gap:6, marginBottom:14 }}>
+                  {[{id:"safari",label:"🧭 Safari"},{id:"chrome",label:"🌐 Chrome"}].map(b => (
+                    <button key={b.id} onClick={() => setBrowserTab(b.id)} style={{
+                      flex:1, padding:"7px 0", borderRadius:8, border:"none", cursor:"pointer", fontSize:13, fontWeight:600,
+                      background: browserTab === b.id ? "linear-gradient(90deg,#7c3aed,#1d4ed8)" : C.bg,
+                      color: browserTab === b.id ? "#fff" : C.muted,
+                      transition:"all 0.2s",
+                    }}>{b.label}</button>
+                  ))}
+                </div>
+              )}
+              {!isIOS && (
+                <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:10 }}>Android · Chrome</div>
+              )}
+              {pasos.map(s => (
+                <div key={s.n} style={{ display:"flex", gap:12, alignItems:"flex-start", marginBottom:10 }}>
+                  <div style={{ minWidth:26, height:26, borderRadius:"50%", background:"linear-gradient(135deg,#7c3aed,#1d4ed8)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"#fff" }}>{s.n}</div>
+                  <div style={{ color:C.text, fontSize:13, lineHeight:1.5, paddingTop:3 }}>{s.jsx}</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* Preview ícono */}
+        <div style={{ background:C.card, border:`1px solid ${C.border}`, borderRadius:14, padding:"14px 16px", marginBottom:20, display:"flex", alignItems:"center", gap:14 }}>
+          <img src="/icon-192.svg" style={{ width:52, height:52, borderRadius:12 }} alt="" />
+          <div style={{ textAlign:"left" }}>
+            <div style={{ color:C.text, fontWeight:600, fontSize:14 }}>Mundial 2026</div>
+            <div style={{ color:C.muted, fontSize:12 }}>quienvaaganar.vercel.app</div>
+          </div>
+          <div style={{ marginLeft:"auto", fontSize:22 }}>📲</div>
+        </div>
+
+        <button onClick={() => {
+          localStorage.setItem("vioInstallBanner","1"); // no mostrar banner si ya la agregó
+          setAgregado(true);
+          setTimeout(onContinuar, 800);
+        }} style={{
+          ...BtnP, width:"100%", padding:13, fontSize:15, marginBottom:10,
+          background: agregado ? "#16a34a" : "linear-gradient(90deg,#7c3aed,#1d4ed8)",
+        }}>
+          {agregado ? "¡Listo! Entrando... ✅" : "Ya la agregué →"}
+        </button>
+        <button onClick={onContinuar} style={{ ...Btn({ width:"100%", padding:10, fontSize:13 }), color:C.muted }}>
+          Saltar este paso
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── ROOT ──────────────────────────────────────
 export default function App() {
+  // Reset de sesión para testing: ?test en la URL
+  if (new URLSearchParams(window.location.search).has("test")) {
+    localStorage.removeItem("miId_"+SALA_GLOBAL_ID);
+    localStorage.removeItem("vioIntro");
+    localStorage.removeItem("quiniela_wa");
+    localStorage.removeItem("quiniela_nombre");
+    window.history.replaceState({}, "", "/");
+  }
+
   const [sala, setSala] = useState(null);
   const [participantes, setParticipantes] = useState([]);
   const [miId, setMiId] = useState(() => localStorage.getItem("miId_"+SALA_GLOBAL_ID) || null);
@@ -1590,9 +3231,181 @@ export default function App() {
     localStorage.setItem("miId_"+SALA_GLOBAL_ID, participante.id);
     if (participante.whatsapp) localStorage.setItem("quiniela_wa", participante.whatsapp);
     if (participante.nombre)   localStorage.setItem("quiniela_nombre", participante.nombre);
-    setParticipantes(prev => [...prev, participante]);
-    setMiId(participante.id);
+    setParticipantes(prev => {
+      const existe = prev.find(p => p.id === participante.id);
+      return existe ? prev : [...prev, participante];
+    });
+    setMiId(participante.id); // → directo a la sala
   }
+
+  const [vioIntro, setVioIntro] = useState(() => !!localStorage.getItem("vioIntro"));
+
+  // Prompt quiniela — aparece si el usuario tiene 0 pronósticos después de 5s
+  const [showQuinielaPrompt, setShowQuinielaPrompt] = useState(false);
+
+  useEffect(() => {
+    if (!miId || !participantes.length) return;
+    if (localStorage.getItem("skipQuinielaPrompt_"+miId)) return;
+    const t = setTimeout(async () => {
+      const { count } = await supabase.from("pronosticos_partidos")
+        .select("id", { count:"exact", head:true }).eq("participante_id", miId);
+      if ((count || 0) === 0) setShowQuinielaPrompt(true);
+    }, 5000);
+    return () => clearTimeout(t);
+  }, [miId, participantes]);
+
+  // Prompt de contraseña para cuentas antiguas sin password
+  const [showPasswordPrompt, setShowPasswordPrompt] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordShow, setNewPasswordShow] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  useEffect(() => {
+    if (!miId || !participantes.length) return;
+    const yo = participantes.find(p => p.id === miId);
+    if (yo && !yo.password && !localStorage.getItem("skipPasswordPrompt_"+miId)) {
+      // Mostrar prompt después de 2s para no abrumar
+      const t = setTimeout(() => setShowPasswordPrompt(true), 2000);
+      return () => clearTimeout(t);
+    }
+  }, [miId, participantes]);
+
+  async function guardarPassword() {
+    if (!newPassword.trim()) return;
+    setSavingPassword(true);
+    await supabase.from("participantes").update({ password: newPassword.trim() }).eq("id", miId);
+    setParticipantes(prev => prev.map(p => p.id === miId ? { ...p, password: newPassword.trim() } : p));
+    setSavingPassword(false);
+    setShowPasswordPrompt(false);
+  }
+
+  // Banner carrusel — visible para todos (no solo iOS) salvo standalone o ya cerrado
+  const [showInstall, setShowInstall] = useState(() => {
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone;
+    const yaVio = !!localStorage.getItem("vioInstallBanner");
+    return !isStandalone && !yaVio;
+  });
+
+  function cerrarInstall() {
+    localStorage.setItem("vioInstallBanner", "1");
+    setShowInstall(false);
+  }
+
+  // Carrusel de banners: publicidad + recordatorios (15s por slide)
+  const BANNER_SLIDES = [
+    {
+      bg:"linear-gradient(135deg,#7c3aed,#1d4ed8)",
+      emoji:"📲", shadow:"#7c3aed55",
+      titulo:"Agregar a pantalla de inicio",
+      desc:"Accede a la quiniela en 1 toque, sin buscar el link",
+      cta: null, // sin botón extra, solo el ✕
+    },
+    {
+      bg:"linear-gradient(135deg,#0891b2,#0d9488)",
+      emoji:"📅", shadow:"#0891b255",
+      titulo:"¿Ya tienes el calendario?",
+      desc:"104 partidos del Mundial directo en tu cel con recordatorios antes de cada juego",
+      cta: null,
+    },
+    {
+      bg:"linear-gradient(135deg,#e11d48,#f97316)",
+      emoji:"💰", shadow:"#e11d4855",
+      titulo:`Acumulado: $${(participantes.length * 250).toLocaleString("es-MX")} MXN`,
+      desc:`${participantes.length} jugadores ya están adentro — ¿Ya invitaste a tus amigos?`,
+      cta: null,
+    },
+    {
+      bg:"linear-gradient(135deg,#7c3aed,#db2777)",
+      emoji:"🏆", shadow:"#db277755",
+      titulo:"¿Quién va a ganar el Mundial?",
+      desc:"Ve tus pronósticos y sube en la tabla · El 1er lugar gana el acumulado",
+      cta: null,
+    },
+  ];
+
+  const [bannerIdx, setBannerIdx] = useState(0);
+  useEffect(() => {
+    if (!showInstall) return;
+    const t = setInterval(() => setBannerIdx(i => (i + 1) % BANNER_SLIDES.length), 15000);
+    return () => clearInterval(t);
+  }, [showInstall]);
+
+  // Popup de calendario — aparece solo después de que el usuario cambia de tab (señal de que ya exploró)
+  // y mínimo 30s después de entrar, solo una vez
+  const [showCalPopup, setShowCalPopup] = useState(false);
+  const [calTimerReady, setCalTimerReady] = useState(false);
+  const [calTabReady, setCalTabReady] = useState(false);
+
+  useEffect(() => {
+    if (!miId) return;
+    if (localStorage.getItem("vioCalendarioPopup")) return;
+    // Timer: mínimo 30s en la app
+    const t = setTimeout(() => setCalTimerReady(true), 30000);
+    return () => clearTimeout(t);
+  }, [miId]);
+
+  // Se dispara cuando AMBAS condiciones se cumplen: timer + cambió de tab
+  useEffect(() => {
+    if (calTimerReady && calTabReady && !localStorage.getItem("vioCalendarioPopup")) {
+      setShowCalPopup(true);
+    }
+  }, [calTimerReady, calTabReady]);
+
+  function cerrarCalPopup() {
+    localStorage.setItem("vioCalendarioPopup","1");
+    setShowCalPopup(false);
+  }
+
+  const InstallBanner = () => {
+    if (!showInstall) return null;
+    const slide = BANNER_SLIDES[bannerIdx];
+    return (
+      <div style={{
+        position:"fixed", bottom:0, left:0, right:0, zIndex:999,
+        background: slide.bg,
+        padding:"14px 18px 26px",
+        boxShadow:`0 -4px 24px ${slide.shadow}`,
+        fontFamily:"Inter,sans-serif",
+        transition:"background 0.6s ease",
+      }}>
+        {/* Cerrar */}
+        <button onClick={cerrarInstall} style={{
+          position:"absolute", top:10, right:14, background:"none", border:"none",
+          color:"#ffffff99", fontSize:20, cursor:"pointer", lineHeight:1,
+        }}>✕</button>
+
+        {/* Contenido */}
+        <div style={{ display:"flex", alignItems:"center", gap:12, paddingRight:28 }}>
+          <span style={{ fontSize:32, lineHeight:1 }}>{slide.emoji}</span>
+          <div style={{ flex:1 }}>
+            <div style={{ color:"#fff", fontWeight:700, fontSize:14, marginBottom:2 }}>{slide.titulo}</div>
+            <div style={{ color:"#ffffffcc", fontSize:12, lineHeight:1.4 }}>{slide.desc}</div>
+          </div>
+        </div>
+
+        {/* Dots indicadores */}
+        <div style={{ display:"flex", justifyContent:"center", gap:6, marginTop:12 }}>
+          {BANNER_SLIDES.map((_,i) => (
+            <button key={i} onClick={() => setBannerIdx(i)} style={{
+              width: i === bannerIdx ? 18 : 6, height:6, borderRadius:3,
+              background: i === bannerIdx ? "#fff" : "#ffffff44",
+              border:"none", cursor:"pointer", padding:0,
+              transition:"all 0.3s",
+            }}/>
+          ))}
+        </div>
+
+        {/* Barra de progreso 15s */}
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:3, background:"#ffffff22", overflow:"hidden" }}>
+          <div key={bannerIdx} style={{
+            height:"100%", background:"#ffffff88",
+            animation:"bannerProgress 15s linear forwards",
+          }}/>
+        </div>
+        <style>{`@keyframes bannerProgress { from{width:0%} to{width:100%} }`}</style>
+      </div>
+    );
+  };
 
   const Footer = () => (
     <div style={{
@@ -1646,10 +3459,178 @@ export default function App() {
     </div>
   );
 
+  // Modal popup de calendario (5s tras entrar a sala)
+  const CalendarioPopup = () => {
+    if (!showCalPopup) return null;
+    const yo = participantes.find(p => p.id === miId);
+    const equipoDef = yo?.equipo || "";
+    const [sel, setSel] = useState(equipoDef ? [equipoDef] : []);
+    const icsUrl = sel.length > 0
+      ? `https://quienvaaganar.vercel.app/api/calendar.ics?teams=${encodeURIComponent(sel.join(","))}`
+      : "https://quienvaaganar.vercel.app/api/calendar.ics";
+    const webcalUrl = icsUrl.replace("https://","webcal://");
+    const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:1100, background:"#000000bb", display:"flex", alignItems:"flex-end", justifyContent:"center", fontFamily:"Inter,sans-serif" }}
+        onClick={cerrarCalPopup}>
+        <div style={{ background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 36px", width:"100%", maxWidth:480 }}
+          onClick={e => e.stopPropagation()}>
+          {/* Handle */}
+          <div style={{ width:40, height:4, borderRadius:2, background:C.border, margin:"0 auto 20px" }} />
+          <div style={{ textAlign:"center", marginBottom:18 }}>
+            <div style={{ fontSize:36, marginBottom:8 }}>📅</div>
+            <div style={{ color:C.text, fontWeight:700, fontSize:18, marginBottom:6 }}>Agrega el calendario del Mundial</div>
+            <div style={{ color:C.muted, fontSize:13, lineHeight:1.5 }}>104 partidos directo en tu cel · Notificación antes de cada juego</div>
+          </div>
+          {/* Chip de equipo */}
+          {equipoDef && (
+            <div style={{ marginBottom:14 }}>
+              <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:8 }}>¿Seguir solo a tu equipo?</div>
+              <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                {[{label:"🌍 Todos los partidos", val:[]}, {label:`${yo?.flag||""} Solo ${equipoDef}`, val:[equipoDef]}].map((opt,i) => (
+                  <button key={i} onClick={() => setSel(opt.val)} style={{
+                    padding:"8px 14px", borderRadius:20, border:"none", cursor:"pointer", fontSize:13, fontWeight:600,
+                    background: JSON.stringify(sel)===JSON.stringify(opt.val) ? "linear-gradient(90deg,#7c3aed,#1d4ed8)" : C.bg,
+                    color: JSON.stringify(sel)===JSON.stringify(opt.val) ? "#fff" : C.muted,
+                  }}>{opt.label}</button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <a href={webcalUrl} onClick={() => setTimeout(cerrarCalPopup, 1000)} style={{ ...BtnP, display:"block", textAlign:"center", padding:14, fontSize:14, textDecoration:"none", borderRadius:10 }}>
+              🍎 Agregar a Apple Calendar
+            </a>
+            <a href={googleUrl} target="_blank" rel="noreferrer" onClick={() => setTimeout(cerrarCalPopup, 1000)} style={{ ...Btn({ display:"block", textAlign:"center", padding:13, fontSize:14, textDecoration:"none", borderRadius:10 }) }}>
+              📆 Agregar a Google Calendar
+            </a>
+            <button onClick={cerrarCalPopup} style={{ ...Btn({ width:"100%", padding:12, fontSize:14, background:C.green+"22", color:C.green, border:`1px solid ${C.green}44` }) }}>
+              ✅ Ya lo hice
+            </button>
+            <button onClick={cerrarCalPopup} style={{ ...Btn({ width:"100%", padding:10, fontSize:12 }), color:C.muted }}>
+              Saltar por ahora
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   // ¿Ya estoy registrado?
   if (!miId || !participantes.find(p=>p.id===miId)) {
+    if (!vioIntro) {
+      return <><Onboarding onTerminar={() => { localStorage.setItem("vioIntro","1"); setVioIntro(true); }} /><Footer /></>;
+    }
     return <><Unirse sala={sala} participantes={participantes} onJoin={onUnirse} /><Footer /></>;
   }
 
-  return <><Sala sala={sala} miId={miId} /><Footer /></>;
+  // Modal: crear contraseña para cuentas antiguas
+  const PasswordPrompt = () => {
+    if (!showPasswordPrompt) return null;
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:1200, background:"#000000cc", display:"flex", alignItems:"flex-end", justifyContent:"center", fontFamily:"Inter,sans-serif" }}>
+        <div style={{ background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 36px", width:"100%", maxWidth:480 }}>
+          <div style={{ width:40, height:4, borderRadius:2, background:C.border, margin:"0 auto 18px" }} />
+          <div style={{ textAlign:"center", marginBottom:18 }}>
+            <div style={{ fontSize:36, marginBottom:8 }}>🔒</div>
+            <div style={{ color:C.text, fontWeight:700, fontSize:18, marginBottom:6 }}>Crea tu contraseña</div>
+            <div style={{ color:C.muted, fontSize:13, lineHeight:1.5 }}>La necesitarás para entrar desde otro cel o si borras el historial del navegador.</div>
+          </div>
+          <div style={{ position:"relative", marginBottom:10 }}>
+            <input
+              style={{ ...inp }}
+              placeholder="Escribe una contraseña"
+              type={newPasswordShow ? "text" : "password"}
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              autoFocus
+            />
+            <button onClick={() => setNewPasswordShow(v=>!v)} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", color:C.muted, cursor:"pointer", fontSize:16 }}>
+              {newPasswordShow ? "🙈" : "👁️"}
+            </button>
+          </div>
+          <button onClick={guardarPassword} disabled={!newPassword.trim() || savingPassword}
+            style={{ ...BtnP, width:"100%", padding:13, fontSize:15, marginBottom:10, opacity: !newPassword.trim() ? 0.4 : 1 }}>
+            {savingPassword ? "Guardando..." : "Guardar contraseña →"}
+          </button>
+          <button onClick={() => { localStorage.setItem("skipPasswordPrompt_"+miId,"1"); setShowPasswordPrompt(false); }}
+            style={{ ...Btn({ width:"100%", padding:10, fontSize:13 }), color:C.muted }}>
+            Ahora no
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const QuinielaPrompt = () => {
+    if (!showQuinielaPrompt) return null;
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:1200, background:"#000000cc", display:"flex", alignItems:"flex-end", justifyContent:"center", fontFamily:"Inter,sans-serif" }}>
+        <div style={{ background:C.card, borderRadius:"20px 20px 0 0", padding:"24px 20px 36px", width:"100%", maxWidth:480 }}>
+          <div style={{ width:40, height:4, borderRadius:2, background:C.border, margin:"0 auto 18px" }} />
+          <div style={{ textAlign:"center", marginBottom:20 }}>
+            <div style={{ fontSize:40, marginBottom:8 }}>🎯</div>
+            <div style={{ color:C.text, fontWeight:700, fontSize:18, marginBottom:6 }}>¡Llena tu quiniela!</div>
+            <div style={{ color:C.muted, fontSize:13, lineHeight:1.6 }}>
+              Pronostica <strong style={{color:C.text}}>Gana · Empate · Pierde</strong> en cada partido.<br/>
+              Gana 2pts · Empate 1pt · Fallo 0pts<br/>
+              <span style={{color:"#a78bfa"}}>+ preguntas bonus para sumar extra 🔥</span>
+            </div>
+          </div>
+          <button onClick={() => { setShowQuinielaPrompt(false); }}
+            style={{ ...BtnP, width:"100%", padding:13, fontSize:15, marginBottom:10,
+              background:"linear-gradient(90deg,#7c3aed,#1d4ed8)" }}>
+            Ir a mi quiniela →
+          </button>
+          <button onClick={() => { localStorage.setItem("skipQuinielaPrompt_"+miId,"1"); setShowQuinielaPrompt(false); }}
+            style={{ ...Btn({ width:"100%", padding:10, fontSize:13 }), color:C.muted }}>
+            Ahora no
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const AvisoApuesta = () => {
+    const key = `avisoApuesta_${miId}`;
+    const [visible, setVisible] = useState(() => !!miId && !localStorage.getItem(key));
+    const [eligiendo, setEligiendo] = useState(false);
+    if (!miId || !visible) return null;
+    async function elegir(conLana) {
+      setEligiendo(true);
+      localStorage.setItem(key, "1");
+      await supabase.from("participantes")
+        .update({ modo_jugador: conLana ? "dinero" : "retos" })
+        .eq("id", miId);
+      setVisible(false);
+      setEligiendo(false);
+    }
+    return (
+      <div style={{ position:"fixed", inset:0, zIndex:1300, background:"#000000dd", display:"flex", alignItems:"center", justifyContent:"center", padding:20, fontFamily:"Inter,sans-serif" }}>
+        <div style={{ background:C.card, borderRadius:20, padding:"28px 22px", width:"100%", maxWidth:400, border:`1px solid #7c3aed44` }}>
+          <div style={{ textAlign:"center", marginBottom:18 }}>
+            <div style={{ fontSize:44, marginBottom:10 }}>⚽💰</div>
+            <div style={{ color:C.text, fontWeight:700, fontSize:17, marginBottom:10, lineHeight:1.4 }}>
+              Recuerda que no somos una casa de apuestas
+            </div>
+            <div style={{ color:C.muted, fontSize:13, lineHeight:1.7 }}>
+              Somos una <strong style={{color:C.text}}>quiniela entre amigos</strong>.<br/>
+              Los <strong style={{color:"#fbbf24"}}>$250 pesos</strong> se te pedirán en su momento cuando el admin lo indique.<br/><br/>
+              ¿Quieres entrar con lana o solo por la gloria? 😄
+            </div>
+          </div>
+          <button onClick={() => elegir(true)} disabled={eligiendo}
+            style={{ ...BtnP, width:"100%", padding:13, fontSize:14, marginBottom:10, background:"linear-gradient(90deg,#16a34a,#15803d)", opacity:eligiendo?0.7:1 }}>
+            {eligiendo ? "Guardando…" : "💰 Voy con todo — entro con $250"}
+          </button>
+          <button onClick={() => elegir(false)} disabled={eligiendo}
+            style={{ ...Btn({ width:"100%", padding:13, fontSize:13 }), color:C.muted, opacity:eligiendo?0.7:1 }}>
+            🎲 Solo por diversión — nada que perder... ni ganar 😅
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  return <><Sala sala={sala} miId={miId} onFirstTabChange={() => setCalTabReady(true)} /><Footer /><InstallBanner /><CalendarioPopup /><PasswordPrompt /><QuinielaPrompt /><AvisoApuesta /></>;
 }

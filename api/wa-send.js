@@ -41,6 +41,39 @@ function normalizePhone(raw) {
   return null;
 }
 
+export async function sendWATemplate(to, templateName, params = []) {
+  const phone = normalizePhone(to);
+  if (!phone) return { ok: false, error: "número inválido: " + to };
+
+  const components = params.length > 0 ? [{
+    type: "body",
+    parameters: params.map(p => ({ type: "text", text: String(p) })),
+  }] : [];
+
+  const body = {
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "template",
+    template: {
+      name: templateName,
+      language: { code: "es_MX" },
+      ...(components.length > 0 && { components }),
+    },
+  };
+
+  const r = await fetch(WA_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await r.json();
+  return { ok: r.ok, status: r.status, data };
+}
+
 // Handler HTTP directo (para pruebas manuales)
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");

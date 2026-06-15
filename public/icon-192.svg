@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7c3aed"/>
+      <stop offset="100%" style="stop-color:#1d4ed8"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+
+  <!-- Calendario: rectángulo blanco -->
+  <rect x="24" y="44" width="144" height="100" rx="14" fill="white" opacity="0.95"/>
+
+  <!-- Barra superior del calendario -->
+  <rect x="24" y="44" width="144" height="32" rx="14" fill="#5b21b6"/>
+  <rect x="24" y="62" width="144" height="14" fill="#5b21b6"/>
+
+  <!-- Argollas del calendario -->
+  <rect x="58" y="30" width="12" height="26" rx="6" fill="white"/>
+  <rect x="122" y="30" width="12" height="26" rx="6" fill="white"/>
+
+  <!-- Líneas de días (grid) pequeñas arriba -->
+  <rect x="36" y="88" width="16" height="3" rx="2" fill="#e2e8f0"/>
+  <rect x="62" y="88" width="16" height="3" rx="2" fill="#e2e8f0"/>
+  <rect x="88" y="88" width="16" height="3" rx="2" fill="#e2e8f0"/>
+  <rect x="114" y="88" width="16" height="3" rx="2" fill="#e2e8f0"/>
+  <rect x="140" y="88" width="16" height="3" rx="2" fill="#e2e8f0"/>
+
+  <!-- Balón de fútbol grande y centrado -->
+  <circle cx="96" cy="124" r="34" fill="#1e293b"/>
+
+  <!-- Pentágono central blanco -->
+  <polygon points="96,105 112,117 106,135 86,135 80,117" fill="white"/>
+
+  <!-- Líneas del balón -->
+  <line x1="96" y1="90" x2="96" y2="105" stroke="white" stroke-width="2.5"/>
+  <line x1="112" y1="117" x2="125" y2="113" stroke="white" stroke-width="2.5"/>
+  <line x1="106" y1="135" x2="112" y2="148" stroke="white" stroke-width="2.5"/>
+  <line x1="86" y1="135" x2="80" y2="148" stroke="white" stroke-width="2.5"/>
+  <line x1="80" y1="117" x2="67" y2="113" stroke="white" stroke-width="2.5"/>
+</svg>

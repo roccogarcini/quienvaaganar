@@ -70,7 +70,16 @@ export default async function handler(req, res) {
         }
       }
 
-      if (title && link) {
+      const KEYWORDS = [
+        "mundial","world cup","copa del mundo","fifa 2026","2026",
+        "selección","seleccion","mexico","méxico","grupo","fase de grupos",
+        "octavos","cuartos","semifinal","final","metlife","canada","estados unidos",
+        "gol","partido","arbitro","árbitro","var","penal","penalty",
+      ];
+      const texto = (title + " " + description).toLowerCase();
+      const esMundial = KEYWORDS.some(kw => texto.includes(kw));
+
+      if (title && link && esMundial) {
         items.push({
           source: sourceId,
           sourceName,
@@ -79,10 +88,10 @@ export default async function handler(req, res) {
           link,
           pubDate,
           description,
-          image,          // puede ser null — el frontend usa fallbackImage por fuente
+          image,
         });
       }
-      if (items.length >= 6) break;
+      if (items.length >= 8) break;
     }
     return items;
   }

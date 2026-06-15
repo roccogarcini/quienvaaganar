@@ -1,0 +1,24 @@
+{
+  "name": "Quiniela Mundial 2026",
+  "short_name": "Mundial 2026",
+  "description": "El calendario más divertido del Mundial. Sigue partidos, compite en la tabla y gana el bote.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0e1a",
+  "theme_color": "#7c3aed",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

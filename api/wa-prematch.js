@@ -1,7 +1,7 @@
 // Pre-match hype — Vercel Cron cada hora, detecta partidos en ~90 min
 // Envía mensaje divertido antes de cada partido del Mundial
 
-import { sendWA } from "./wa-send.js";
+import { sendWATemplate } from "./wa-send.js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -88,8 +88,9 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < unicos.length; i++) {
       const p = unicos[i];
-      const msg = mensajePrePartido(p.nombre || "crack", homeTeam, awayTeam, horaStr);
-      const r = await sendWA(p.whatsapp, msg);
+      const r = await sendWATemplate(p.whatsapp, "prepartido_hype", [
+        homeTeam, horaStr, homeTeam, awayTeam,
+      ]);
       resultados.push({ nombre: p.nombre, partido: `${homeTeam} vs ${awayTeam}`, ok: r.ok });
 
       if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));

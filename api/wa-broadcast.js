@@ -1,7 +1,7 @@
 // Broadcast diario — llama 2x/día via Vercel Cron
 // Envía resumen de noticias + partidos del día a todos los participantes activos
 
-import { sendWA } from "./wa-send.js";
+import { sendWATemplate } from "./wa-send.js";
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY  = process.env.VITE_SUPABASE_ANON_KEY;
@@ -141,12 +141,12 @@ export default async function handler(req, res) {
   const resultados = [];
   for (let i = 0; i < unicos.length; i++) {
     const p = unicos[i];
-    const msg = esMañana
-      ? mensajeManana(p.nombre || "crack", partidos, noticias, i)
-      : mensajeNoche(p.nombre || "crack", partidos, noticias, i);
+    const nombre = p.nombre || "crack";
+    const partidosTxt = partidos.length > 0 ? partidos.join(" · ") : "Sin partidos hoy 😴";
+    const noticiasTxt = noticias.length > 0 ? noticias.join(" · ") : "Sin noticias destacadas.";
 
-    const r = await sendWA(p.whatsapp, msg);
-    resultados.push({ nombre: p.nombre, wa: p.whatsapp, ok: r.ok });
+    const r = await sendWATemplate(p.whatsapp, "resumen_diario", [nombre, partidosTxt, noticiasTxt]);
+    resultados.push({ nombre: p.nombre, wa: p.whatsapp, ok: r.ok, error: r.ok ? undefined : r.data });
 
     // Pequeña pausa para no saturar la API (max 80 msg/seg en Meta)
     if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
