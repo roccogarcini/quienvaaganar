@@ -1,4 +1,4 @@
-# QuiénVaAGanar — Contexto v2.2
+# QuiénVaAGanar — Contexto v2.3
 
 ## App en producción
 **URL:** https://quienvaaganar.vercel.app  
@@ -8,26 +8,38 @@
 
 ---
 
+## Admin
+- Admin determinado por número WhatsApp hardcodeado: **`4431406867`** (Rocco Garcini)
+- `const esAdmin = yo?.whatsapp?.replace(/\D/g,"").endsWith("4431406867")`
+- El admin ve la app **exactamente igual que cualquier jugador** — los controles de admin están colapsados en un botón discreto **⚙️ Admin ▼** en la pestaña Tabla
+
+---
+
 ## Flujo completo de usuario nuevo
 
 ```
-1. Onboarding (4 ecards deslizables)
+1. Onboarding (4 ecards deslizables) — vioIntro en localStorage
         ↓
 2. Registro wizard — 3 pasos:
-   Paso 1: Avatar (foto o emoji)
-   Paso 2: Nombre + WhatsApp + Contraseña
-   Paso 3: Equipo + Pronóstico → Entrar
+   Paso 1: Nombre + WhatsApp + Contraseña  ← PRIMERO
+   Paso 2: Avatar (foto o emoji) — opcional
+   Paso 3: Equipo + Pronóstico campeón → Entrar
         ↓
-3. Sala principal (5 tabs) — directo, sin pasos intermedios
+3. AvisoApuesta popup (una vez por miId)
+   → "💰 Voy con todo — entro con $250"  → modo_jugador="dinero" (entra a la bolsa)
+   → "🎲 Solo por diversión"             → modo_jugador="retos" (acceso completo, fuera de bolsa)
+        ↓
+4. Sala principal (5 tabs)
         ↓
    [A los 30s + primer cambio de tab]
-4. Popup calendario (una sola vez)
+5. Popup calendario (una sola vez)
 ```
 
 ### Usuario ya registrado
+→ Onboarding se muestra (puede saltarlo)  
 → Auto-login por `miId_mundial2026` en localStorage  
 → Si no hay ID pero sí WA guardado → auto-login por WA  
-→ Si escribe su WA en Paso 2 y ya existe → pide contraseña para entrar
+→ Si escribe su WA en Paso 1 y ya existe → pide contraseña para entrar
 
 ### Botón "Salir" (header)
 → Limpia `miId_mundial2026`, `quiniela_wa`, `quiniela_nombre`, `vioIntro` → regresa al onboarding
@@ -35,13 +47,14 @@
 ---
 
 ## Tabs de la sala
+
 | Tab | Contenido |
 |-----|-----------|
-| ⚽ Mundial | Marcadores del día (hoy/ayer/mañana con ‹ ›), tabla de grupos |
+| ⚽ Mundial | Marcadores del día (hoy/ayer/mañana con ‹ ›) + badge "Mi quiniela" en cada partido + tabla de grupos |
 | Noticias 📰 | Feed RSS filtrado por keywords del Mundial. Con imágenes. Filtrable por fuente |
 | Tips 🧠 | Cards con tips: offside, tarjetas, VAR, penal, formato Mundial 2026 |
-| Tabla | Ranking + Avatar + card "💀 Último lugar" + botón 😈 castigo (admin) + card de jugadores sin contraseña (admin) |
-| Pronósticos | Acumulado en grande + lista con Avatar + pronósticos |
+| Tabla 🏆 | Ranking + Avatar + card "💀 Último lugar" + botón ⚙️ Admin (colapsable) |
+| Quiniela 🎯 | Sistema completo de pronósticos de partidos |
 
 ### Header siempre visible
 - Título: **Mundial 2026**
@@ -49,6 +62,139 @@
 - Badge verde: `🏆 Final en X días`
 - **Acumulado:** `$X,XXX MXN · X jugadores × $250` — barra morada siempre visible
 - Botones: Invitar (WA) · Copiar link · Salir
+
+---
+
+## Sistema de Quiniela 🎯
+
+### Puntos
+| Resultado | Pts sin IA | Pts con IA |
+|-----------|-----------|-----------|
+| Gana (correcto) | 2pts | máximo 1pt |
+| Empate (correcto) | 1pt | máximo 1pt |
+| Falla | 0pts | 0pts |
+
+### Bloqueo de partidos
+- Se bloquean automáticamente cuando el partido comienza o ya terminó
+- Si el usuario publicó su quiniela (`quiniela_publicada=true`) → todos los partidos bloqueados
+
+### Filtro de partidos placeholder
+- `isPlaceholder(name)` filtra equipos aún sin asignar: `RD32 W1`, `QF W1`, `SF L1`, etc.
+- Regex: `/^(RD\d|QF|SF|W\d|\d[A-Z]|3RD|TBD)/i`
+
+### Contenido de la pestaña Quiniela (orden)
+1. Barra de progreso (X / total partidos pronosticados)
+2. Info sobre tips de IA + **🤖 Pedir ayuda de IA (-1pt)** — siempre visible
+3. **✨ Analizar mi quiniela con IA** — aparece con 5+ pronósticos, solo por diversión sin costo
+4. Preguntas bonus activas
+5. Preguntas bonus próximas
+6. Lista de partidos por fase (con tip IA por partido)
+7. **🔮 Proyección siguiente ronda** — clasifica grupos según predicciones del usuario
+8. **🔒 Publicar mi quiniela** — bloquea edición permanentemente
+9. Pronósticos de campeón de todos los jugadores
+
+### Ayuda de IA (-1pt)
+- **Por partido:** botón "💡 Pedir tip IA -1pt" en cada tarjeta de partido (solo si no se ha pedido antes)
+- **Bulk (🤖 Pedir ayuda de IA):** llena todos los partidos sin pronóstico con IA. Si ya están todos llenos, pide revisión y muestra cuántos coinciden/difieren vs la IA
+- Costo: -1pt de `pts_quiniela` inmediatamente al usar
+- Si aciertas con tip IA → máximo 1pt (no 2pts)
+- Partidos llenados con IA se marcan `usa_ia=true` en BD
+
+### Análisis IA (sin costo)
+- Botón "✨ Analizar mi quiniela con IA" — aparece al tener 5+ pronósticos
+- Llama a `/api/analizar-quiniela` (claude-haiku, max 300 tokens)
+- Análisis divertido en español mexicano con humor
+- Etiqueta "Solo por diversión · no afecta tus puntos"
+
+### Proyección siguiente ronda
+- Componente `ProyeccionQuiniela` — calcula standings de grupos desde predicciones
+- Aparece al fondo de la lista de partidos
+- Muestra top 2 clasificados por grupo con puntos proyectados
+- Extrae grupo de `ev.competitions[0].notes[0].headline` (ESPN API)
+
+### Publicar quiniela
+- Botón "🔒 Publicar mi quiniela" visible para TODOS (incluyendo admin)
+- Guarda `quiniela_publicada=true` en `participantes`
+- Una vez publicado: badge verde "🔒 Quiniela publicada", todos los partidos se bloquean
+
+### Badge "Mi quiniela" en pestaña Mundial
+- Aparece debajo de cada partido donde el usuario tiene pronóstico
+- **Partido futuro:** fondo morado `Mi quiniela: 🏠 Netherlands`
+- **Partido terminado y acertaste:** fondo verde
+- **Partido terminado y fallaste:** fondo rojo
+
+### AvisoApuesta (popup una vez)
+- localStorage key: `avisoApuesta_{miId}`
+- "💰 Voy con todo" → `modo_jugador="dinero"` → cuenta en la bolsa
+- "🎲 Solo por diversión" → `modo_jugador="retos"` → fuera de bolsa, acceso total al juego
+- Los de `modo_jugador="dinero"` aparecen en la bolsa acumulada
+
+### localStorage de quiniela
+```
+prons_{salaId}_{miId}   → backup local de pronósticos (JSON)
+tipsUsados_{miId}        → { matchId: true } — tips ya pedidos
+avisoApuesta_{miId}      → "1" si ya respondió el popup
+```
+
+### Supabase (tablas de quiniela)
+```sql
+-- Pronósticos por partido
+CREATE TABLE pronosticos_partidos (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  participante_id uuid REFERENCES participantes(id) ON DELETE CASCADE,
+  sala_id text NOT NULL,
+  match_id text NOT NULL,
+  prediccion text CHECK (prediccion IN ('local','empate','visitante')),
+  resultado text, pts_obtenidos int,
+  usa_ia boolean DEFAULT false,
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(participante_id, match_id)
+);
+
+-- Preguntas bonus
+CREATE TABLE preguntas_bonus (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  sala_id text NOT NULL,
+  pregunta text NOT NULL,
+  tipo text DEFAULT 'texto',  -- 'texto' | 'marcador'
+  pts int DEFAULT 3,
+  fecha_apertura timestamptz,
+  fecha_cierre timestamptz,
+  activa boolean DEFAULT true,
+  respuesta_correcta text,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Respuestas bonus
+CREATE TABLE respuestas_bonus (
+  id uuid DEFAULT gen_random_uuid() PRIMARY KEY,
+  participante_id uuid REFERENCES participantes(id),
+  pregunta_id uuid REFERENCES preguntas_bonus(id),
+  respuesta jsonb,
+  pts_obtenidos int,
+  UNIQUE(participante_id, pregunta_id)
+);
+```
+
+**Columnas extra en `participantes`:**
+```
+pts_quiniela       int DEFAULT 0   ← puntos del sistema de quiniela
+quiniela_publicada bool DEFAULT false ← bloquea edición al publicar
+```
+
+### APIs de quiniela
+| Archivo | Función |
+|---------|---------|
+| `analizar-quiniela.js` | POST — análisis divertido de tu quiniela con Claude Haiku |
+| `recomendar-quiniela.js` | POST — recomendaciones IA para llenar partidos |
+| `wa-quiniela.js` | GET `?secret=` — avisa por WA a quien no ha llenado quiniela |
+
+### Panel Admin (colapsable ⚙️ Admin)
+- Solo visible al expandir el botón admin en Tabla
+- AdminBonusPanel: crear/activar preguntas bonus, asignar respuesta correcta, calcular puntos
+- Botón WA: avisar a jugadores sin quiniela
+- Botón WA: avisar a jugadores sin contraseña
+- +1/-1 puntos manuales por jugador (solo cuando panel expandido)
 
 ---
 
@@ -62,24 +208,17 @@
 | 4 | El acumulado crece con cada jugador | Morado → Rosa |
 
 - Swipeable (touch izq/der) · Dots animados · "Saltar intro" desde card 1-3
-- Se guarda en `localStorage("vioIntro")` — solo se muestra una vez
+- Se guarda en `localStorage("vioIntro")` — se muestra en reingreso (usuario puede saltarla)
 
 ---
 
 ## Registro (wizard 3 pasos)
 
-### Paso 1 — Avatar (opcional)
-- Tab **📷 Foto** (default): botón grande → abre galería → preview circular 100px
-- Tab **😀 Emoji**: grid de 30 emojis divertidos → preview inmediato
-- "Saltar este paso →" si no quieren nada · botón ✕ para limpiar
-
-### Paso 2 — Nombre + WhatsApp + Contraseña
-- Mini-avatar (44px) + botón "Cambiar" para regresar al paso 1
+### Paso 1 — Nombre + WhatsApp + Contraseña ← PRIMERO
 - Campo **nombre** (requerido)
 - Campo **WhatsApp** (opcional) — con auto-detección de cuenta existente
 - Campo **🔒 Contraseña** (requerido) — con botón 👁️ mostrar/ocultar
-- "Solo tú la sabrás — la necesitarás para volver a entrar"
-- Si el WA ya existe → aparece card de login con el participante encontrado + campo de contraseña para confirmar identidad
+- Si el WA ya existe → aparece card de login con el participante encontrado
 
 #### Login con WA existente
 ```
@@ -91,12 +230,17 @@ Escribe WA → detecta cuenta existente → muestra:
   Cuentas sin contraseña (antiguas) → entran directo
 ```
 
+### Paso 2 — Avatar (opcional)
+- Tab **📷 Foto** (default): botón grande → abre galería → preview circular 100px
+- Tab **😀 Emoji**: grid de 30 emojis divertidos → preview inmediato
+- "Saltar este paso →" si no quieren nada · botón ✕ para limpiar
+- "← Atrás" regresa a Paso 1
+
 ### Paso 3 — Equipo + Pronóstico
-- Resumen: avatar + nombre + botón "Cambiar"
+- Resumen: avatar + nombre
 - Selector de equipo (requerido)
 - Campeón/Subcampeón (opcional) → tarjeta canvas para compartir
-- "Entrar a la quiniela →" → **va directo a la sala**
-- "📤 Compartir pronóstico por WhatsApp" (si hay pronóstico)
+- "Entrar a la quiniela →" → va directo a la sala
 
 ### Dots de progreso
 3 dots en la parte superior (●──, ●●─, ●●●)
@@ -118,7 +262,7 @@ Escribe WA → detecta cuenta existente → muestra:
 ## Sistema de contraseñas
 
 ### Al registrarse
-- Campo obligatorio en Paso 2
+- Campo obligatorio en Paso 1
 - Se guarda en `participantes.password` (texto plano)
 
 ### Al volver a entrar
@@ -133,8 +277,7 @@ Escribe WA → detecta cuenta existente → muestra:
 
 ### WA masivo a cuentas sin contraseña
 - API: `GET /api/wa-password?secret=qvag_cron_2026`
-- Mensaje: *"Para que nadie más pueda entrar con tu número, ahora la quiniela tiene contraseña 🛡️"*
-- Botón admin en tab Tabla: `📲 Avisar a X por WhatsApp` (solo aparece si hay jugadores sin contraseña)
+- Botón admin en panel ⚙️ Admin (Tabla): `📲 Avisar a X por WhatsApp`
 
 ---
 
@@ -146,125 +289,72 @@ Jerarquía de fallback:
 2. `p.avatar_emoji` → círculo morado/azul con emoji
 3. `p.flag` → bandera del equipo (default)
 
-### Dónde aparece
-- Tabla (size 38) · Pronósticos (size 42) · Cuentas (size 34)
-- Registro: preview 100px (paso 1), mini 44px (paso 2), mini 36px (paso 3)
-
 ### Supabase Storage
 - Bucket: `avatars` (público) · Path: `{timestamp}-{random}.{ext}`
 - Políticas: insert abierto + select público
-
-### Emojis disponibles (30)
-```js
-["😎","🤩","🥷","🦁","🐯","🦊","🐺","🐸","🐧","🦄",
- "👻","🤖","💀","🎃","🔥","⚡","🌈","🎯","🏆","👑",
- "🍕","🌮","🎸","🚀","💎","🐉","🦅","🐻","🤠","😈"]
-```
 
 ---
 
 ## Acumulado ($250 por jugador)
 - Visible en **header** (barra morada siempre)
-- Visible en **tab Pronósticos** (card grande morado→rosa "🎰 Acumulado")
-- Fórmula: `participantes.length × 250`
-- Texto en toda la app: "acumulado" (no "bote")
-- Tiempo real via Supabase Realtime
+- Solo cuentan jugadores con `modo_jugador="dinero"` (eligieron "Voy con todo")
+- `modo_jugador="retos"` → pueden jugar pero no están en la bolsa
+- Fórmula: `jugsDinero.length × 250`
 
 ---
 
 ## Banner carrusel (InstallBanner)
 - Aparece para **todos** (Android, iOS, cualquier navegador) salvo modo standalone
-- Se oculta permanentemente si: tocó ✕ o tocó "Ya la agregué →" en PasoInstall
-- 4 slides que rotan cada **15 segundos**:
-
-| # | Emoji | Mensaje | Color |
-|---|-------|---------|-------|
-| 1 | 📲 | Agregar a pantalla de inicio | Morado → Azul |
-| 2 | 📅 | ¿Ya tienes el calendario? | Azul → Verde |
-| 3 | 💰 | Acumulado: $X,XXX MXN | Rojo → Naranja |
-| 4 | 🏆 | ¿Quién va a ganar? | Morado → Rosa |
-
-- Dots clickeables · Barra de progreso 15s · ✕ para cerrar permanentemente
+- 4 slides que rotan cada **15 segundos**
 - localStorage: `vioInstallBanner`
-
----
-
-## Popup de calendario (`CalendarioPopup`)
-- Solo aparece **una vez**, cuando se cumplen AMBAS condiciones:
-  1. ⏱️ Mínimo **30 segundos** en la app
-  2. 👆 Usuario cambió de tab al menos una vez
-- Sheet desde abajo con handle gris
-- Chip selector: 🌍 Todos los partidos / 🏳️ Solo tu equipo (pre-seleccionado)
-- Botones: 🍎 Apple Calendar · 📆 Google Calendar · ✅ Ya lo hice · Saltar por ahora
-- Todos cierran el popup y guardan `vioCalendarioPopup` en localStorage
-
----
-
-## PWA / Ícono
-- `public/manifest.json` — nombre: "Mundial 2026", theme: `#7c3aed`
-- `public/icon-192.svg` — calendario con balón grande centrado, fondo morado→azul
-- `index.html` — `apple-touch-icon`, `manifest`, `apple-mobile-web-app-capable`
-- Para actualizar ícono en iPhone: eliminar app y volver a agregar (iOS cachea el ícono)
-
----
-
-## Paso Install (accesible desde banner)
-- Detecta navegador: tabs **🧭 Safari** / **🌐 Chrome** en iOS
-- Default: tab según `CriOS` en UA
-- **Safari iOS:** ⬆️ SVG exacto → "Agregar a pantalla de inicio" → "Agregar"
-- **Chrome iOS:** ··· tres puntos → ⬆️ Compartir → "Agregar" 
-- **Android:** prompt nativo `beforeinstallprompt` o instrucciones manuales
-- "Ya la agregué →" → guarda `vioInstallBanner=1` → banner no aparece en sala
 
 ---
 
 ## Arquitectura
 
-### Frontend `/src/App.jsx` (~2400+ líneas)
+### Frontend `/src/App.jsx` (~3600+ líneas)
 
 **Flujo de componentes:**
 ```
-Onboarding → Unirse (3 pasos) → Sala
-                                  ↓ (30s + tab change)
-                              CalendarioPopup (1 vez)
-                                  ↓ (overlay fijo)
-                              InstallBanner (carrusel)
-                                  ↓ (2s, sin password)
-                              PasswordPrompt
+Onboarding → Unirse (3 pasos) → AvisoApuesta → Sala
+                                                  ↓ (30s + tab change)
+                                              CalendarioPopup (1 vez)
+                                                  ↓ (overlay fijo)
+                                              InstallBanner (carrusel)
+                                                  ↓ (2s, sin password)
+                                              PasswordPrompt
+                                                  ↓ (QuinielaPrompt 5s)
+                                              QuinielaPrompt
 ```
 
-**Componentes:**
+**Componentes principales:**
 - `Avatar` — foto/emoji/bandera con fallback jerárquico
 - `Onboarding` — 4 ecards swipeables
-- `Unirse` — wizard 3 pasos
-- `Sala` — pantalla principal con 5 tabs + prop `onFirstTabChange`
-- `CalendarioPopup` — modal de calendario (30s + tab change, 1 vez)
-- `InstallBanner` — carrusel rotativo 4 slides × 15s
-- `PasswordPrompt` — sheet para crear contraseña (cuentas antiguas)
-
-**Estado global en `App`:**
-```js
-miId              // ID del participante logueado
-sala              // datos de la sala mundial2026
-participantes     // array en tiempo real
-vioIntro          // bool — controla onboarding
-showInstall       // bool — controla InstallBanner
-bannerIdx         // índice del slide activo
-showCalPopup      // bool — controla CalendarioPopup
-calTimerReady     // bool — pasaron 30s
-calTabReady       // bool — usuario cambió de tab
-showPasswordPrompt // bool — prompt de contraseña
-```
+- `Unirse` — wizard 3 pasos (nuevo orden: nombre→avatar→equipo)
+- `AvisoApuesta` — popup "casa de apuestas vs quiniela entre amigos"
+- `Sala` — pantalla principal con 5 tabs
+- `QuinielaTab` — sistema completo de pronósticos
+- `LlenarConIA` — botón bulk/revisión IA (-1pt)
+- `AnalisisIA` — análisis divertido sin costo
+- `ProyeccionQuiniela` — clasifica grupos según predicciones del usuario
+- `BonusCard` — pregunta bonus individual
+- `AdminBonusPanel` — CRUD de preguntas bonus + calcular puntos
+- `Calendario` — marcadores con badge "Mi quiniela" por partido
+- `CalendarioPopup` — modal de calendario (30s + tab change)
+- `PasswordPrompt` — sheet para crear contraseña
+- `QuinielaPrompt` — sheet para invitar a llenar quiniela (5s, 0 pronósticos)
 
 **localStorage keys:**
 ```
-miId_mundial2026          → ID del participante
-quiniela_wa               → WA guardado (auto-login)
-quiniela_nombre           → Nombre guardado
-vioIntro                  → "1" si ya vio onboarding
-vioInstallBanner          → "1" si cerró banner o instaló
-vioCalendarioPopup        → "1" si ya interactuó con popup calendario
-skipPasswordPrompt_{miId} → "1" si tocó "Ahora no" en PasswordPrompt
+miId_mundial2026             → ID del participante
+quiniela_wa                  → WA guardado (auto-login)
+quiniela_nombre              → Nombre guardado
+vioIntro                     → "1" si ya vio onboarding
+vioInstallBanner             → "1" si cerró banner o instaló
+vioCalendarioPopup           → "1" si ya interactuó con popup calendario
+skipPasswordPrompt_{miId}    → "1" si tocó "Ahora no" en PasswordPrompt
+prons_{salaId}_{miId}        → backup local de pronósticos (JSON)
+avisoApuesta_{miId}          → "1" si ya respondió el popup de apuesta
 ```
 
 ---
@@ -272,15 +362,17 @@ skipPasswordPrompt_{miId} → "1" si tocó "Ahora no" en PasswordPrompt
 ### APIs serverless `/api/`
 | Archivo | Función |
 |---------|---------|
-| `noticias.js` | RSS proxy con filtro Mundial. Cache 5min. Extrae imágenes |
+| `noticias.js` | RSS proxy con filtro Mundial. Cache 5min |
 | `fotmob.js` | Proxy ESPN API — marcadores y tabla de grupos |
-| `calendar.ics.js` | Genera `.ics` filtrado por equipos (`?teams=México,Argentina`) |
-| `wa-send.js` | Envío WA individual via Meta Cloud API |
+| `calendar.ics.js` | Genera `.ics` filtrado por equipos |
+| `wa-send.js` | Envío WA individual + templates via Meta Cloud API |
 | `wa-bienvenida.js` | WA automático al registrarse |
-| `wa-password.js` | WA masivo a participantes sin contraseña (`?secret=`) |
+| `wa-password.js` | WA masivo a participantes sin contraseña |
+| `wa-quiniela.js` | WA a jugadores que no han llenado su quiniela |
 | `wa-broadcast.js` | Cron diario: resumen de partidos + noticias |
 | `wa-prematch.js` | Cron: mensajes hype antes de cada partido |
-| `wa-castigo.js` | Castigo al último lugar (valida en Supabase) |
+| `analizar-quiniela.js` | POST — análisis divertido con Claude Haiku |
+| `recomendar-quiniela.js` | POST — recomendaciones IA para llenar partidos |
 
 ### Base de datos Supabase
 **Proyecto:** `wvpleipsgidtbynkkmgi` — región us-east-1
@@ -290,67 +382,43 @@ skipPasswordPrompt_{miId} → "1" si tocó "Ahora no" en PasswordPrompt
 id, sala_id, nombre, whatsapp, equipo, flag,
 pron_camp, pron_sub, pron_camp_flag, pron_sub_flag,
 points, penalties, eliminado, modo_jugador, apuesta,
-avatar_url,    ← URL pública Supabase Storage "avatars"
-avatar_emoji,  ← emoji elegido
-password,      ← contraseña en texto plano
+avatar_url, avatar_emoji, password,
+pts_quiniela int DEFAULT 0,
+quiniela_publicada bool DEFAULT false,
 created_at
 ```
 
-**Supabase Storage:**
-- Bucket: `avatars` (público) — insert abierto, select público
+**Tablas adicionales:**
+- `pronosticos_partidos` — pronósticos de partidos por usuario
+- `preguntas_bonus` — preguntas bonus configuradas por admin
+- `respuestas_bonus` — respuestas de jugadores a preguntas bonus
 
-### Variables de entorno (Vercel)
+### Variables de entorno (Vercel + `.env`)
 ```
 VITE_SUPABASE_URL
 VITE_SUPABASE_ANON_KEY
+VITE_APP_URL=https://quienvaaganar.vercel.app
 WA_PHONE_NUMBER_ID=1119400971261955
 WA_ACCESS_TOKEN=[expira — renovar en Meta Business Suite]
 WA_BUSINESS_ACCOUNT_ID=2646931842371237
 CRON_SECRET=qvag_cron_2026
+ANTHROPIC_API_KEY=sk-ant-api03-...
 ```
 
 ---
 
 ## WhatsApp (Meta Cloud API)
-- **Templates:** `resumen_diario` ✅ Active · `prepartido_hype` ⏳ In review
+- **Templates:** `resumen_diario` ✅ Active · `quiniela_invitacion` (puede estar en review)
 - **⚠️ Token expira.** Renovar: Meta Business Suite → Usuarios del sistema → token permanente
-- **Nota:** mensajes free-form solo funcionan dentro de 24h de la última interacción del usuario. Fuera de esa ventana se requiere template aprobado.
+- Mensajes free-form: solo dentro de 24h de última interacción del usuario
 
-**Mensajes automáticos:**
-- `wa-bienvenida` → al registrarse
-- `wa-password` → admin lo dispara desde Tabla (solo a cuentas sin contraseña)
-- `wa-castigo` → admin lo dispara desde Tabla
+---
 
-### Crons en Vercel
+## Crons en Vercel
 ```json
 { "path": "/api/wa-broadcast?secret=qvag_cron_2026&turno=manana", "schedule": "0 14 * * *" }
 { "path": "/api/wa-prematch?secret=qvag_cron_2026", "schedule": "0 20 * * *" }
 ```
-
----
-
-## Decisiones de diseño
-
-### ✅ Registro en 3 pasos → sala directo
-Sin pasos intermedios de calendario ni install. El calendario se ofrece vía popup inteligente.
-
-### ✅ Contraseña simple (texto plano)
-App casual entre amigos. No hay datos financieros críticos. La contraseña protege contra suplantación por número de WA.
-
-### ✅ Popup de calendario con condiciones
-Solo aparece si llevas 30s en la app Y cambiaste de tab. No interrumpe al entrar.
-
-### ✅ Banner carrusel para todos
-No solo iOS — cualquier usuario ve el banner. Fácil de ampliar: agregar objeto a `BANNER_SLIDES`.
-
-### ✅ "Ya lo hice" en popup calendario
-Evita que el popup vuelva a aparecer sin tener que agregar el calendario.
-
-### ✅ Acumulado (no "bote")
-Término "acumulado" en toda la app — onboarding, tabs, banner, pronósticos.
-
-### ✅ Ícono PWA con balón grande
-Balón de fútbol prominente (r=34) centrado en la parte inferior del calendario.
 
 ---
 
@@ -359,73 +427,17 @@ Balón de fútbol prominente (r=34) centrado en la parte inferior del calendario
 | Item | Estado |
 |------|--------|
 | Token WA permanente | ⚠️ Crear System User token en Meta Business Suite |
-| Template `prepartido_hype` | ⏳ En revisión en Meta |
+| ProyeccionQuiniela | ℹ️ Depende de `notes[0].headline` del ESPN API — verificar que traiga grupo |
 | RLS en Supabase | ⚠️ Validar Row Level Security |
 | Editar perfil / cambiar avatar | 🔜 Los ya registrados no pueden cambiar avatar aún |
-| Contraseña en texto plano | ℹ️ Suficiente para app casual; upgradar a hash si se escala |
+| Contraseña en texto plano | ℹ️ Suficiente para app casual |
 
 ---
 
 ## Deploy
 ```bash
-cd /Users/roccogarcini/Documents/Proyectos/quienvaaganar
-npx vercel --prod --yes
-```
-
----
-
-## Pruebas manuales
-
-### Reset completo
-```
-quienvaaganar.vercel.app?test
-```
-
-### Flujo nuevo usuario
-- [ ] 4 ecards onboarding (swipeable)
-- [ ] Paso 1: elegir emoji o foto
-- [ ] Paso 2: nombre + WA + contraseña → "Siguiente →"
-- [ ] Paso 3: equipo + pronóstico → "Entrar a la quiniela →"
-- [ ] Entra directo a sala (sin pasos intermedios)
-- [ ] A los 30s + cambiar tab → popup calendario
-- [ ] Popup: chip equipo pre-seleccionado · Apple/Google · "✅ Ya lo hice"
-
-### Login con WA existente
-- [ ] Paso 2: escribir WA de alguien → aparece card con su nombre
-- [ ] Contraseña correcta → entra ✅
-- [ ] Contraseña incorrecta → ❌ mensaje de error
-- [ ] "No soy yo" → cierra sugerencia
-
-### Cuentas sin contraseña
-- [ ] Al entrar (2s delay) → sheet "🔒 Crea tu contraseña"
-- [ ] Guardar → se actualiza en Supabase
-- [ ] "Ahora no" → no vuelve a aparecer en ese dispositivo
-- [ ] Admin en Tabla → card dorada con conteo → botón WA
-
-### Avatares
-- [ ] Foto → aparece en Tabla y Pronósticos
-- [ ] Emoji → círculo morado
-- [ ] Sin avatar → bandera del equipo
-
-### Banner carrusel
-- [ ] Aparece en sala (no en registro/onboarding)
-- [ ] Rota cada 15s · dots clickeables · barra de progreso
-- [ ] ✕ cierra permanentemente
-
-### Tab Tabla (admin)
-- [ ] Avatar circular antes del nombre
-- [ ] Card "💀 Último lugar"
-- [ ] Card dorada "🔒 X jugadores sin contraseña" (si aplica)
-- [ ] Botón "📲 Avisar por WA" dispara `/api/wa-password`
-
-### Ícono PWA
-- [ ] Agregar a pantalla de inicio → ícono calendario con balón grande
-- [ ] Para actualizar: eliminar app y volver a agregar
-
-### Calendario ICS
-```bash
-curl "https://quienvaaganar.vercel.app/api/calendar.ics" | head -20
-curl "https://quienvaaganar.vercel.app/api/calendar.ics?teams=México" | grep SUMMARY
+git add -A && git commit -m "mensaje" && git push
+# Vercel detecta el push y despliega automáticamente
 ```
 
 ---
@@ -433,22 +445,24 @@ curl "https://quienvaaganar.vercel.app/api/calendar.ics?teams=México" | grep SU
 ## Repo
 ```
 /Users/roccogarcini/Documents/Proyectos/quienvaaganar/
-├── src/App.jsx              # Todo el frontend (~2400 líneas)
+├── src/App.jsx              # Todo el frontend (~3600 líneas)
 ├── api/
 │   ├── noticias.js
 │   ├── fotmob.js
 │   ├── calendar.ics.js
 │   ├── wa-send.js
 │   ├── wa-bienvenida.js
-│   ├── wa-password.js       ← NUEVO: WA masivo a cuentas sin contraseña
+│   ├── wa-password.js
+│   ├── wa-quiniela.js
 │   ├── wa-broadcast.js
 │   ├── wa-prematch.js
-│   └── wa-castigo.js
+│   ├── analizar-quiniela.js
+│   └── recomendar-quiniela.js
 ├── public/
 │   ├── manifest.json
-│   └── icon-192.svg         # Balón grande (r=34) centrado
+│   └── icon-192.svg
 ├── index.html
 ├── vercel.json
-├── CONTEXTO_V2.md           # Este archivo — checkpoint v2.2
+├── CONTEXTO_V2.md           # Este archivo — checkpoint v2.3
 └── .env
 ```
