@@ -2154,7 +2154,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
                 style={{ background: publicando ? "#374151" : "linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:12, padding:"14px 28px", fontSize:15, fontWeight:700, cursor: publicando ? "default" : "pointer", opacity: publicando ? 0.7 : 1, fontFamily:"inherit", boxShadow:"0 4px 16px #16a34a44" }}
                 disabled={publicando}
                 onClick={async () => {
-                  if (!window.confirm("¿Publicar tu quiniela? Ya no podrás cambiar tus pronósticos.")) return;
+                  if (!window.confirm("Recuerda que podrás editar tu quiniela hasta 15 minutos antes del inicio de cada partido. ¿Publicar ahora?")) return;
                   setPublicando(true);
                   await supabase.from("participantes").update({ quiniela_publicada: true }).eq("id", miId);
                   setQuinielaPublicada(true);
