@@ -24,6 +24,33 @@ async function getParticipantes() {
   return fetchSupabase("participantes?select=nombre,whatsapp,equipo,sala_id&eliminado=eq.false&whatsapp=not.is.null");
 }
 
+const EQUIPOS_ES = {
+  "Argentina":"Argentina","Australia":"Australia","Austria":"Austria","Belgium":"Bélgica",
+  "Brazil":"Brasil","Canada":"Canadá","Chile":"Chile","China PR":"China","Colombia":"Colombia",
+  "Costa Rica":"Costa Rica","Croatia":"Croacia","Czech Republic":"Rep. Checa","Denmark":"Dinamarca",
+  "Ecuador":"Ecuador","Egypt":"Egipto","England":"Inglaterra","France":"Francia",
+  "Germany":"Alemania","Ghana":"Ghana","Greece":"Grecia","Honduras":"Honduras","Hungary":"Hungría",
+  "Indonesia":"Indonesia","Iran":"Irán","Iraq":"Irak","Israel":"Israel","Italy":"Italia",
+  "Jamaica":"Jamaica","Japan":"Japón","Jordan":"Jordania","Kenya":"Kenia","Mali":"Malí",
+  "Mexico":"México","Morocco":"Marruecos","Netherlands":"Países Bajos","New Zealand":"Nueva Zelanda",
+  "Nigeria":"Nigeria","Norway":"Noruega","Panama":"Panamá","Paraguay":"Paraguay","Peru":"Perú",
+  "Poland":"Polonia","Portugal":"Portugal","Qatar":"Qatar","Romania":"Rumanía",
+  "Saudi Arabia":"Arabia Saudita","Scotland":"Escocia","Senegal":"Senegal","Serbia":"Serbia",
+  "Slovakia":"Eslovaquia","Slovenia":"Eslovenia","South Korea":"Corea del Sur","Spain":"España",
+  "Sweden":"Suecia","Switzerland":"Suiza","Trinidad & Tobago":"Trinidad y Tobago",
+  "Turkey":"Turquía","Ukraine":"Ucrania","United States":"Estados Unidos","Uruguay":"Uruguay",
+  "Venezuela":"Venezuela","Cape Verde":"Cabo Verde","Cabo Verde":"Cabo Verde",
+  "South Africa":"Sudáfrica","Algeria":"Argelia","Cameroon":"Camerún","Ivory Coast":"Costa de Marfil",
+  "Burkina Faso":"Burkina Faso","Tanzania":"Tanzania","Zambia":"Zambia","Zimbabwe":"Zimbabue",
+  "Cuba":"Cuba","Guatemala":"Guatemala","El Salvador":"El Salvador","Bolivia":"Bolivia",
+  "Uzbekistan":"Uzbekistán","Thailand":"Tailandia","Vietnam":"Vietnam","Philippines":"Filipinas",
+  "Bahrain":"Baréin","Kuwait":"Kuwait","Oman":"Omán","UAE":"EAU",
+};
+
+function tradEquipo(nombre) {
+  return EQUIPOS_ES[nombre] || nombre;
+}
+
 async function getPartidosHoy() {
   const d = new Date();
   const fecha = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
@@ -35,7 +62,9 @@ async function getPartidosHoy() {
       const home = e.competitions?.[0]?.competitors?.find(c => c.homeAway === "home");
       const away = e.competitions?.[0]?.competitors?.find(c => c.homeAway === "away");
       const hora = e.date ? new Date(e.date).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit", timeZone:"America/Mexico_City" }) : "";
-      return `${home?.team?.shortDisplayName || "?"} vs ${away?.team?.shortDisplayName || "?"} · ${hora}`;
+      const local = tradEquipo(home?.team?.displayName || home?.team?.shortDisplayName || "?");
+      const visit = tradEquipo(away?.team?.displayName || away?.team?.shortDisplayName || "?");
+      return `${local} vs ${visit} · ${hora}`;
     });
   } catch { return []; }
 }
@@ -44,7 +73,10 @@ async function getNoticiasDestacadas() {
   try {
     const r = await fetch("https://quienvaaganar.vercel.app/api/noticias");
     const data = await r.json();
-    return (data.items || []).slice(0, 3).map(n => `📰 ${n.title}`);
+    // Solo fuentes en español (marca, juanfutbol)
+    const enEs = (data.items || []).filter(n => n.source === "marca" || n.source === "juanfutbol");
+    const pool = enEs.length >= 3 ? enEs : (data.items || []);
+    return pool.slice(0, 3).map(n => `📰 ${n.title}`);
   } catch { return []; }
 }
 
