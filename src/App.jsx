@@ -2129,12 +2129,24 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
       {/* Botón publicar quiniela */}
       <div style={{ marginTop:24, textAlign:"center" }}>
           {quinielaPublicada ? (
-            <div style={{ background:"#052e16", border:"1px solid #16a34a44", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
-              <span style={{ fontSize:20 }}>🔒</span>
-              <div style={{ textAlign:"left" }}>
-                <div style={{ color:"#4ade80", fontWeight:700, fontSize:13 }}>Quiniela publicada</div>
-                <div style={{ color:"#86efac", fontSize:11 }}>Tus pronósticos quedaron guardados al 100</div>
+            <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
+              <div style={{ background:"#052e16", border:"1px solid #16a34a44", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:20 }}>🔒</span>
+                <div style={{ textAlign:"left" }}>
+                  <div style={{ color:"#4ade80", fontWeight:700, fontSize:13 }}>Quiniela publicada</div>
+                  <div style={{ color:"#86efac", fontSize:11 }}>Tus pronósticos quedaron guardados al 100</div>
+                </div>
               </div>
+              <button
+                style={{ background:"#1f2937", border:"1px solid #374151", borderRadius:12, padding:"14px 18px", color:"#d1d5db", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                onClick={async () => {
+                  if (!window.confirm("¿Editar tu quiniela? Los partidos ya iniciados seguirán bloqueados.")) return;
+                  await supabase.from("participantes").update({ quiniela_publicada: false }).eq("id", miId);
+                  setQuinielaPublicada(false);
+                }}
+              >
+                ✏️ Editar
+              </button>
             </div>
           ) : (
             <div>
