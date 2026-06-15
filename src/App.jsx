@@ -703,7 +703,7 @@ function Bienvenida({ participante, onContinuar }) {
 
 // ── PANTALLA: UNIRSE ──────────────────────────
 function Unirse({ sala, participantes, onJoin }) {
-  const [paso, setPaso] = useState(1); // 1=avatar, 2=nombre+wa, 3=equipo+pron
+  const [paso, setPaso] = useState(1); // 1=nombre+wa, 2=avatar, 3=equipo+pron
   const [nombre, setNombre] = useState(() => localStorage.getItem("quiniela_nombre") || "");
   const [whatsapp, setWhatsapp] = useState(() => localStorage.getItem("quiniela_wa") || "");
   const [loginSugerido, setLoginSugerido] = useState(null); // participante existente con ese WA
@@ -884,9 +884,9 @@ function Unirse({ sala, participantes, onJoin }) {
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", padding:"32px 20px" }}>
       <div style={{ maxWidth:420, margin:"0 auto" }}>
 
-        {/* ── PASO 1: Avatar ── */}
-        {paso === 1 && <>
-          <PasoHeader actual={1} titulo="Tu foto de perfil" subtitulo="Opcional — puedes saltarte este paso" />
+        {/* ── PASO 2: Avatar ── */}
+        {paso === 2 && <>
+          <PasoHeader actual={2} titulo="Tu foto de perfil" subtitulo="Opcional — puedes saltarte este paso" />
 
           {/* Preview grande */}
           <div style={{ display:"flex", justifyContent:"center", marginBottom:24 }}>
@@ -939,24 +939,15 @@ function Unirse({ sala, participantes, onJoin }) {
             </div>
           )}
 
-          <button onClick={() => setPaso(2)} style={{ ...BtnP, width:"100%", padding:14, fontSize:15, marginTop:20 }}>
+          <button onClick={() => setPaso(3)} style={{ ...BtnP, width:"100%", padding:14, fontSize:15, marginTop:20 }}>
             {avatarPreview || avatarEmoji ? "Siguiente →" : "Saltar este paso →"}
           </button>
+          <button onClick={() => setPaso(1)} style={{ ...Btn({ width:"100%", padding:10, fontSize:13, marginTop:8 }), color:C.muted }}>← Atrás</button>
         </>}
 
-        {/* ── PASO 2: Nombre + WA ── */}
-        {paso === 2 && <>
-          <PasoHeader actual={2} titulo="¿Quién eres?" subtitulo="Con esto te identificamos en la quiniela" />
-
-          {/* Mini avatar + cambiar */}
-          <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:24, background:C.card, border:`1px solid ${C.border}`, borderRadius:12, padding:"12px 14px" }}>
-            <Avatar p={{ avatar_url: avatarPreview, avatar_emoji: avatarEmoji, flag:"⚽" }} size={44} />
-            <div style={{ flex:1 }}>
-              <div style={{ color:C.text, fontSize:13, fontWeight:500 }}>{avatarPreview ? "Foto elegida ✓" : avatarEmoji ? `Emoji: ${avatarEmoji}` : "Sin avatar"}</div>
-              <div style={{ color:C.muted, fontSize:11 }}>Tu foto de perfil</div>
-            </div>
-            <button onClick={() => setPaso(1)} style={{ ...Btn({ padding:"6px 12px", fontSize:12 }), color:C.muted }}>Cambiar</button>
-          </div>
+        {/* ── PASO 1: Nombre + WA ── */}
+        {paso === 1 && <>
+          <PasoHeader actual={1} titulo="¿Quién eres?" subtitulo="Con esto te identificamos en la quiniela" />
 
           <div style={{ color:C.muted, fontSize:11, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:6 }}>Tu nombre</div>
           <input style={{ ...inp, marginBottom:16 }} placeholder="¿Cómo te llamas?" value={nombre} onChange={e=>setNombre(e.target.value)} autoFocus />
@@ -1022,11 +1013,11 @@ function Unirse({ sala, participantes, onJoin }) {
               const dup = participantes.find(p => norm(p.whatsapp||"") === waNorm);
               if (dup) { setLoginSugerido(dup); return; }
             }
-            setPaso(3);
+            setPaso(2);
           }} style={{ ...BtnP, width:"100%", padding:14, fontSize:15 }}>
             Siguiente →
           </button>}
-          <button onClick={() => { setPaso(1); setLoginSugerido(null); setLoginError(false); }} style={{ ...Btn({ width:"100%", padding:10, fontSize:13, marginTop:8 }), color:C.muted }}>← Atrás</button>
+
         </>}
 
         {/* ── PASO 3: Equipo + Pronóstico + Entrar ── */}
