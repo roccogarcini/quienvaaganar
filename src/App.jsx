@@ -2081,7 +2081,7 @@ function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPla
         ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite"}}>⚙️</span> {pendientesCount > 0 ? `Llenando ${pendientesCount} partidos…` : "Cargando sugerencias…"}</>
         : pendientesCount > 0
           ? <>🤖 Llenar {pendientesCount} partidos con IA <span style={{color:C.red,fontSize:11}}>(-1pt por partido lleno)</span></>
-          : <>🤖 Pedir ayuda de IA <span style={{color:C.red,fontSize:11}}>(-1pt)</span></>}
+          : <>🤖 Pedir ayuda de MarketerIA <span style={{color:C.red,fontSize:11}}>(-1pt)</span></>}
     </button>
   );
 }
@@ -4183,8 +4183,17 @@ export default function App() {
 
   const AvisoApuesta = () => {
     const key = `avisoApuesta_${miId}`;
+    const yo = participantes.find(p => p.id === miId);
+    const yaTieneDecision = !!yo?.modo_jugador;
     const [visible, setVisible] = useState(() => !!miId && !localStorage.getItem(key));
     const [eligiendo, setEligiendo] = useState(false);
+    // Si ya tiene modo_jugador en BD, guardar en localStorage y no mostrar
+    useEffect(() => {
+      if (yaTieneDecision && visible) {
+        localStorage.setItem(key, "1");
+        setVisible(false);
+      }
+    }, [yaTieneDecision]);
     if (!miId || !visible) return null;
     async function elegir(conLana) {
       setEligiendo(true);
