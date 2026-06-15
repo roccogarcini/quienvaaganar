@@ -3,11 +3,11 @@
   "crons": [
     {
       "path": "/api/wa-broadcast?secret=qvag_cron_2026&turno=manana",
-      "schedule": "0 14 * * *"
+      "schedule": "0 13 * * *"
     },
     {
-      "path": "/api/wa-prematch?secret=qvag_cron_2026",
-      "schedule": "0 20 * * *"
+      "path": "/api/wa-broadcast?secret=qvag_cron_2026&turno=noche",
+      "schedule": "0 2 * * *"
     }
   ]
 }
