@@ -90,20 +90,47 @@ async function handleMarketeria(body) {
     `${t.rank}. ${t.name} (${t.code}): ${t.finalScore}pts | avg: ${t.avgTop11} | Diamantes: ${t.diamonds.length > 0 ? t.diamonds.join(", ") : "ninguno"}`
   ).join("\n");
   const system = `Eres MarketerIA, analista de datos del Mundial 2026. Hablas español mexicano casual, directo y con humor seco.
-Tu análisis usa datos FIFA oficiales: 1,248 jugadores de 48 selecciones convocadas al Mundial 2026.
+Tu análisis combina dos fuentes: (1) datos FIFA oficiales de 1,248 jugadores de 48 selecciones, y (2) búsqueda web en tiempo real para verificar noticias, resultados, lesiones y cualquier dato actual.
 Score = promedio top-11 + Diamantes×2.
 Predicción: diff >5pts → gana el fuerte · diff 2-5pts → ligero favorito · diff <2pts → empate.
 Categorías: Diamante (26, élite mundial), 3★ (106), 2★ (254), 1★ (862).
-Responde máx 3 párrafos. Usa datos concretos. No inventes resultados reales ni lesiones recientes.
+Responde máx 3 párrafos. Cuando uses la búsqueda web, menciona brevemente que verificaste la información en línea.
 
 IMPORTANTE — lenguaje: No uses groserías ni palabras altisonantes (pedo, wey, chido, etc.). Si quieres expresar algo informal, usa emojis o sinónimos limpios. Mantén el tono divertido pero sin palabrotas.
 
-IMPORTANTE — selecciones: Las 48 selecciones en el ranking son las que SÍ juegan el Mundial 2026. Si alguien pregunta si un equipo juega, confía en este ranking como fuente definitiva. Noruega (NOR) SÍ está clasificada al Mundial 2026 con un score de 36.3.
+IMPORTANTE — selecciones: Las 48 selecciones en el ranking son las que SÍ juegan el Mundial 2026. Para cualquier duda sobre clasificación, usa la búsqueda web para verificar. Noruega (NOR) SÍ está clasificada.
 
-Ranking:\n${rankingText}`;
+Ranking FIFA (fuente principal para fuerza de plantilla):\n${rankingText}`;
   const messages = [...historial.slice(-6), { role:"user", content: pregunta }];
-  const data = await callClaude({ model:"claude-haiku-4-5-20251001", max_tokens:500, system, messages });
-  return { ok:true, respuesta: data.content?.[0]?.text || "Sin respuesta." };
+
+  // Usar claude-sonnet con búsqueda web para respuestas verificadas
+  const r = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": process.env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01",
+      "anthropic-beta": "web-search-2025-03-05",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1024,
+      system,
+      tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+      messages,
+    }),
+  });
+  if (!r.ok) throw new Error("Anthropic error: " + r.status);
+  const data = await r.json();
+
+  // Extraer solo el texto de la respuesta (ignorar bloques tool_use / tool_result)
+  const respuesta = data.content
+    ?.filter(b => b.type === "text")
+    .map(b => b.text)
+    .join("\n")
+    .trim() || "Sin respuesta.";
+
+  return { ok: true, respuesta };
 }
 
 // ── Main handler ──────────────────────────────
