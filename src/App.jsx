@@ -7,6 +7,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://TU_PROYECTO.s
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "TU_ANON_KEY";
 const APP_URL = import.meta.env.VITE_APP_URL || "https://quienvaaganar.vercel.app";
 const SALA_GLOBAL_ID = "mundial2026"; // Sala única — todos los usuarios entran aquí
+const MARKETERIA_ID = "1b3d7ee1-c448-426e-8f22-7d2724f713db";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 // ----------------------
 
@@ -1664,43 +1665,54 @@ function Sala({ sala, miId, onFirstTabChange }) {
               </button>
             ))}
           </div>
-          {sorted.map((p,i)=>(
-            <div key={p.id} style={{ ...cardStyle, opacity:p.eliminado?0.55:1, border:`0.5px solid ${p.id===miId?C.blue:C.border}` }}>
+          {sorted.map((p,i)=>{
+            const esMktIA = p.id === MARKETERIA_ID;
+            return (
+            <div key={p.id} style={{ ...cardStyle, opacity:p.eliminado?0.55:1,
+              border:`0.5px solid ${esMktIA?"#7c3aed66":p.id===miId?C.blue:C.border}`,
+              background: esMktIA?"#0d0a1f":C.card }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <span style={{ fontSize:14, minWidth:22 }}>{medals[i]||i+1}</span>
-                  <Avatar p={p} size={38} />
+                  {esMktIA
+                    ? <div style={{ width:38,height:38,borderRadius:"50%",background:"#7c3aed33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,flexShrink:0 }}>🤖</div>
+                    : <Avatar p={p} size={38} />}
                   <div>
                     <div style={{ color:C.text, fontWeight:500, fontSize:14 }}>
                       {p.nombre}
-                      {p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
-                      {(sala.modo==="hibrido"||sala.modo==="dinero") && p.modo_jugador==="dinero" && <span style={{ fontSize:11, marginLeft:5, color:"#fbbf24" }}>💰${p.apuesta||0}</span>}
-                      {sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:12, marginLeft:5 }}>🎲</span>}
-                      {p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
-                      {!p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
+                      {esMktIA && <span style={{ background:"#7c3aed33",color:"#a78bfa",fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6,fontWeight:600 }}>IA</span>}
+                      {!esMktIA && p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
+                      {!esMktIA && (sala.modo==="hibrido"||sala.modo==="dinero") && p.modo_jugador==="dinero" && <span style={{ fontSize:11, marginLeft:5, color:"#fbbf24" }}>💰${p.apuesta||0}</span>}
+                      {!esMktIA && sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:12, marginLeft:5 }}>🎲</span>}
+                      {!esMktIA && p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
+                      {!esMktIA && !p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
                     </div>
                     <div style={{ color:C.muted, fontSize:12 }}>
                       {p.equipo}
-                      {p.pron_camp && <span style={{ marginLeft:6, fontSize:11, color:"#60a5fa" }}>🏆{p.pron_camp_flag} vs 🥈{p.pron_sub_flag}</span>}
+                      {!esMktIA && p.pron_camp && <span style={{ marginLeft:6, fontSize:11, color:"#60a5fa" }}>🏆{p.pron_camp_flag} vs 🥈{p.pron_sub_flag}</span>}
+                      {esMktIA && <span style={{ marginLeft:6, fontSize:11, color:"#60a5fa" }}>🏆🇵🇹 vs 🥈🇪🇸</span>}
                     </div>
                   </div>
                 </div>
-                <div style={{ textAlign:"right" }}>
-                  <div style={{ fontSize:22, fontWeight:700, color:i===0&&p.points>0?C.gold:C.text }}>{p.points}</div>
-                  <div style={{ color:C.muted, fontSize:10 }}>pts</div>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  {esMktIA && <button onClick={()=>cambiarTab("marketeria")} style={{ ...Btn({padding:"4px 10px",fontSize:11,color:"#a78bfa",border:`0.5px solid #7c3aed44`}) }}>Ver análisis →</button>}
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:22, fontWeight:700, color:i===0&&p.points>0?C.gold:C.text }}>{p.points}</div>
+                    <div style={{ color:C.muted, fontSize:10 }}>pts</div>
+                  </div>
                 </div>
               </div>
-              {/* Controles solo para admin (visible al expandir panel admin) */}
-              {esAdmin && showAdminPanel && (
+              {esAdmin && showAdminPanel && !esMktIA && (
                 <div style={{ display:"flex", gap:6, marginTop:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
                   <button style={{...BtnG,fontSize:12}} onClick={()=>modPts(p.id,curPts)}>+{curPts}</button>
                   <button style={{...BtnR,fontSize:12}} onClick={()=>modPts(p.id,-curPts)}>−{curPts}</button>
-                  {esAdmin && <button style={{...Btn(),fontSize:12}} onClick={()=>toggleElim(p.id)}>{p.eliminado?"Reactivar":"Elim. equipo"}</button>}
-                  {(sala.modo==="dinero"||(sala.modo==="hibrido"&&p.modo_jugador==="dinero")) && esAdmin && <button style={{...BtnW,fontSize:12}} onClick={()=>addPen(p.id)}>+castigo 💰</button>}
+                  <button style={{...Btn(),fontSize:12}} onClick={()=>toggleElim(p.id)}>{p.eliminado?"Reactivar":"Elim. equipo"}</button>
+                  {(sala.modo==="dinero"||(sala.modo==="hibrido"&&p.modo_jugador==="dinero")) && <button style={{...BtnW,fontSize:12}} onClick={()=>addPen(p.id)}>+castigo 💰</button>}
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
           {participantes.length===0 && (
             <div style={{ textAlign:"center", padding:"40px 20px" }}>
               <div style={{ fontSize:40, marginBottom:12 }}>⏳</div>
@@ -1710,41 +1722,6 @@ function Sala({ sala, miId, onFirstTabChange }) {
               </button>
             </div>
           )}
-
-          {/* Card MarketerIA */}
-          <div
-            onClick={async () => {
-              setShowMarketerIA(true);
-              if (!marketeriaMatches.length) {
-                try {
-                  const today = new Date();
-                  const pad = n => String(n).padStart(2,"0");
-                  const dateStr = `${today.getFullYear()}${pad(today.getMonth()+1)}${pad(today.getDate())}`;
-                  const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr}`);
-                  const d = await r.json();
-                  setMarketeriaMatches(d.events || []);
-                } catch {}
-              }
-            }}
-            style={{ ...cardStyle, cursor:"pointer", border:`0.5px solid #7c3aed44`, background:"#0d0a1f", marginTop:8 }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:14, minWidth:22, color:C.muted }}>🤖</span>
-                <div style={{ width:38, height:38, borderRadius:"50%", background:"#7c3aed33", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🤖</div>
-                <div>
-                  <div style={{ color:C.text, fontWeight:500, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
-                    MarketerIA
-                    <span style={{ background:"#7c3aed33", color:"#a78bfa", fontSize:10, padding:"2px 6px", borderRadius:10, fontWeight:600 }}>IA</span>
-                    <span style={{ background:"#fbbf2422", color:"#fbbf24", fontSize:10, padding:"2px 6px", borderRadius:10 }}>Solo referencia</span>
-                  </div>
-                  <div style={{ color:C.muted, fontSize:12 }}>Portugal · Análisis basado en datos FIFA</div>
-                </div>
-              </div>
-              <div style={{ textAlign:"right" }}>
-                <div style={{ fontSize:12, color:"#a78bfa", fontWeight:600 }}>Ver análisis →</div>
-              </div>
-            </div>
-          </div>
 
           {sorted.length >= 2 && (() => {
             const ultimo = sorted[sorted.length - 1];
@@ -1795,6 +1772,50 @@ function Sala({ sala, miId, onFirstTabChange }) {
           )}
           {esAdmin && showAdminPanel && <>
             <AdminBonusPanel salaId={sala.id} participantes={participantes} />
+
+          {/* Botón admin: llenar predicciones MarketerIA */}
+          {(() => {
+            const [mkLoading, setMkLoading] = useState(false);
+            const [mkDone, setMkDone] = useState(null);
+            async function llenarMarketerIA() {
+              setMkLoading(true);
+              setMkDone(null);
+              try {
+                const r = await fetch("/api/fotmob?endpoint=scoreboard&dates=20260611-20260720");
+                const d = await r.json();
+                const events = (d.events || []).filter(ev => {
+                  const comp = ev.competitions?.[0];
+                  const ln = comp?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
+                  const an = comp?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
+                  return ln && an && !ln.startsWith("RD") && !an.startsWith("RD") && !ln.startsWith("QF") && !an.startsWith("QF") && !ln.startsWith("SF") && !an.startsWith("SF");
+                });
+                const rows = [];
+                for (const ev of events) {
+                  const comp = ev.competitions?.[0];
+                  const ln = comp?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
+                  const an = comp?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
+                  const pred = mkteriaPredict(ln, an);
+                  if (pred) rows.push({ participante_id: MARKETERIA_ID, sala_id: sala.id, match_id: ev.id, prediccion: pred.pred, usa_ia: true });
+                }
+                if (rows.length) {
+                  await supabase.from("pronosticos_partidos").upsert(rows, { onConflict:"participante_id,match_id" });
+                }
+                setMkDone(`✅ ${rows.length} predicciones guardadas`);
+              } catch(e) { setMkDone("❌ Error: " + e.message); }
+              setMkLoading(false);
+            }
+            return (
+              <div style={{ marginTop:16, background:"#0d0a1f", border:`1px solid #7c3aed44`, borderRadius:12, padding:"12px 16px" }}>
+                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600, marginBottom:4 }}>🤖 MarketerIA — Predicciones</div>
+                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Llena las predicciones de MarketerIA para todos los partidos de la fase de grupos usando el análisis FIFA.</div>
+                {mkDone && <div style={{ fontSize:12, color:C.green, marginBottom:8 }}>{mkDone}</div>}
+                <button disabled={mkLoading} onClick={llenarMarketerIA}
+                  style={{ ...Btn({background:"#7c3aed22",color:"#a78bfa",border:`1px solid #7c3aed44`}), fontSize:12, opacity:mkLoading?0.6:1 }}>
+                  {mkLoading ? "Llenando…" : "🤖 Llenar predicciones MarketerIA"}
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Botón admin: avisar quiniela por WA */}
           {(() => {
