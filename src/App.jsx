@@ -1079,6 +1079,365 @@ function Unirse({ sala, participantes, onJoin }) {
   );
 }
 
+// ── MARKETERIA: DATOS DE FUERZA DE PLANTILLA ─────────────────
+const MARKETERIA_TEAMS = [
+  { code:"POR", name:"Portugal",            flag:"🇵🇹", score:50.8, avg:40.8, d:5, s3:2  },
+  { code:"ARG", name:"Argentina",           flag:"🇦🇷", score:41.3, avg:39.3, d:1, s3:5  },
+  { code:"FRA", name:"France",              flag:"🇫🇷", score:40.0, avg:38.0, d:1, s3:2  },
+  { code:"TUR", name:"Türkiye",             flag:"🇹🇷", score:38.0, avg:38.0, d:0, s3:3  },
+  { code:"NED", name:"Netherlands",         flag:"🇳🇱", score:39.8, avg:37.8, d:1, s3:7  },
+  { code:"ESP", name:"Spain",               flag:"🇪🇸", score:43.8, avg:37.8, d:3, s3:5  },
+  { code:"GER", name:"Germany",             flag:"🇩🇪", score:43.5, avg:37.5, d:3, s3:4  },
+  { code:"URU", name:"Uruguay",             flag:"🇺🇾", score:36.4, avg:36.4, d:0, s3:2  },
+  { code:"BRA", name:"Brazil",              flag:"🇧🇷", score:42.3, avg:36.3, d:3, s3:3  },
+  { code:"BEL", name:"Belgium",             flag:"🇧🇪", score:42.3, avg:36.3, d:3, s3:3  },
+  { code:"ENG", name:"England",             flag:"🏴󠁧󠁢󠁥󠁮󠁧󠁿", score:38.1, avg:36.1, d:1, s3:3  },
+  { code:"COL", name:"Colombia",            flag:"🇨🇴", score:36.0, avg:36.0, d:0, s3:2  },
+  { code:"CRO", name:"Croatia",             flag:"🇭🇷", score:38.0, avg:36.0, d:1, s3:5  },
+  { code:"USA", name:"USA",                 flag:"🇺🇸", score:35.9, avg:35.9, d:0, s3:2  },
+  { code:"SUI", name:"Switzerland",         flag:"🇨🇭", score:35.8, avg:35.8, d:0, s3:4  },
+  { code:"KSA", name:"Saudi Arabia",        flag:"🇸🇦", score:35.5, avg:35.5, d:0, s3:4  },
+  { code:"AUT", name:"Austria",             flag:"🇦🇹", score:37.4, avg:35.4, d:1, s3:3  },
+  { code:"MEX", name:"Mexico",              flag:"🇲🇽", score:34.6, avg:34.6, d:0, s3:2  },
+  { code:"CAN", name:"Canada",              flag:"🇨🇦", score:34.5, avg:34.5, d:0, s3:4  },
+  { code:"PAN", name:"Panama",              flag:"🇵🇦", score:34.4, avg:34.4, d:0, s3:0  },
+  { code:"JPN", name:"Japan",               flag:"🇯🇵", score:34.3, avg:34.3, d:0, s3:3  },
+  { code:"NOR", name:"Norway",              flag:"🇳🇴", score:36.3, avg:34.3, d:1, s3:2  },
+  { code:"SEN", name:"Senegal",             flag:"🇸🇳", score:34.3, avg:34.3, d:0, s3:2  },
+  { code:"ALG", name:"Algeria",             flag:"🇩🇿", score:33.6, avg:33.6, d:0, s3:3  },
+  { code:"SCO", name:"Scotland",            flag:"🏴󠁧󠁢󠁳󠁣󠁴󠁿", score:33.4, avg:33.4, d:0, s3:3  },
+  { code:"KOR", name:"Korea Republic",      flag:"🇰🇷", score:32.8, avg:32.8, d:0, s3:5  },
+  { code:"QAT", name:"Qatar",               flag:"🇶🇦", score:32.6, avg:32.6, d:0, s3:3  },
+  { code:"CIV", name:"Côte D'Ivoire",       flag:"🇨🇮", score:31.6, avg:31.6, d:0, s3:1  },
+  { code:"COD", name:"Congo DR",            flag:"🇨🇩", score:31.5, avg:31.5, d:0, s3:1  },
+  { code:"ECU", name:"Ecuador",             flag:"🇪🇨", score:30.8, avg:30.8, d:0, s3:2  },
+  { code:"SWE", name:"Sweden",              flag:"🇸🇪", score:30.8, avg:30.8, d:0, s3:2  },
+  { code:"CZE", name:"Czechia",             flag:"🇨🇿", score:30.7, avg:30.7, d:0, s3:2  },
+  { code:"MAR", name:"Morocco",             flag:"🇲🇦", score:32.7, avg:30.7, d:1, s3:2  },
+  { code:"IRN", name:"IR Iran",             flag:"🇮🇷", score:30.6, avg:30.6, d:0, s3:1  },
+  { code:"EGY", name:"Egypt",               flag:"🇪🇬", score:32.3, avg:30.3, d:1, s3:1  },
+  { code:"CPV", name:"Cabo Verde",          flag:"🇨🇻", score:30.3, avg:30.3, d:0, s3:0  },
+  { code:"UZB", name:"Uzbekistan",          flag:"🇺🇿", score:30.2, avg:30.2, d:0, s3:1  },
+  { code:"PAR", name:"Paraguay",            flag:"🇵🇾", score:29.8, avg:29.8, d:0, s3:0  },
+  { code:"CUW", name:"Curaçao",             flag:"🇨🇼", score:29.4, avg:29.4, d:0, s3:0  },
+  { code:"NZL", name:"New Zealand",         flag:"🇳🇿", score:29.2, avg:29.2, d:0, s3:1  },
+  { code:"HAI", name:"Haiti",               flag:"🇭🇹", score:29.0, avg:29.0, d:0, s3:2  },
+  { code:"GHA", name:"Ghana",               flag:"🇬🇭", score:28.5, avg:28.5, d:0, s3:2  },
+  { code:"JOR", name:"Jordan",              flag:"🇯🇴", score:28.3, avg:28.3, d:0, s3:1  },
+  { code:"AUS", name:"Australia",           flag:"🇦🇺", score:28.3, avg:28.3, d:0, s3:0  },
+  { code:"BIH", name:"Bosnia Herzegovina",  flag:"🇧🇦", score:27.7, avg:27.7, d:0, s3:1  },
+  { code:"IRQ", name:"Iraq",                flag:"🇮🇶", score:27.4, avg:27.4, d:0, s3:0  },
+  { code:"TUN", name:"Tunisia",             flag:"🇹🇳", score:27.0, avg:27.0, d:0, s3:0  },
+  { code:"RSA", name:"South Africa",        flag:"🇿🇦", score:25.3, avg:25.3, d:0, s3:0  },
+];
+
+const MKTIA_NAME_MAP = {};
+MARKETERIA_TEAMS.forEach(t => {
+  MKTIA_NAME_MAP[t.name.toLowerCase()] = t;
+  MKTIA_NAME_MAP[t.code.toLowerCase()] = t;
+});
+const MKTIA_ALIASES = {
+  "united states": "usa", "estados unidos": "usa", "eua": "usa",
+  "brasil": "bra", "brazil": "bra",
+  "germany": "ger", "alemania": "ger",
+  "france": "fra", "francia": "fra",
+  "spain": "esp", "españa": "esp",
+  "england": "eng", "inglaterra": "eng",
+  "mexico": "mex", "méxico": "mex",
+  "netherlands": "ned", "países bajos": "ned", "holland": "ned",
+  "turkey": "tur", "türkiye": "tur", "turquía": "tur",
+  "south korea": "kor", "korea republic": "kor", "corea del sur": "kor",
+  "ivory coast": "civ", "côte d'ivoire": "civ", "cote d'ivoire": "civ",
+  "dr congo": "cod", "congo dr": "cod",
+  "iran": "irn", "ir iran": "irn",
+  "saudi arabia": "ksa",
+  "switzerland": "sui", "suiza": "sui",
+  "canada": "can", "canadá": "can",
+  "czechia": "cze", "czech republic": "cze",
+  "bosnia & herzegovina": "bih", "bosnia and herzegovina": "bih",
+  "new zealand": "nzl",
+  "cabo verde": "cpv", "cape verde": "cpv",
+  "curaçao": "cuw", "curacao": "cuw",
+  "senegal": "sen",
+  "norway": "nor", "noruega": "nor",
+};
+
+function mkteriaLookup(name) {
+  if (!name) return null;
+  const low = name.toLowerCase().trim();
+  const alias = MKTIA_ALIASES[low];
+  return MKTIA_NAME_MAP[alias || low] || null;
+}
+
+function mkteriaPredict(localName, awayName) {
+  const local = mkteriaLookup(localName);
+  const away  = mkteriaLookup(awayName);
+  if (!local || !away) return null;
+  const diff = local.score - away.score;
+  let pred, label;
+  if (diff > 5)       { pred = "local";     label = `${local.name} más fuerte (+${diff.toFixed(1)})`; }
+  else if (diff > 2)  { pred = "local";     label = `Ligero favorito ${local.name} (+${diff.toFixed(1)})`; }
+  else if (diff < -5) { pred = "visitante"; label = `${away.name} más fuerte (${diff.toFixed(1)})`; }
+  else if (diff < -2) { pred = "visitante"; label = `Ligero favorito ${away.name} (${diff.toFixed(1)})`; }
+  else                { pred = "empate";    label = `Fuerzas similares (dif ${Math.abs(diff).toFixed(1)})`; }
+  return { pred, label, localScore: local.score, awayScore: away.score, local, away };
+}
+
+// ── MARKETERIA: PÁGINA COMPLETA ───────────────
+function MarketerIA({ onClose, matches }) {
+  const [seccion, setSeccion] = useState("ranking");
+  const [chat, setChat] = useState([
+    { role:"assistant", content:"Hola, soy MarketerIA 🤖 Pregúntame lo que quieras sobre los equipos, jugadores o partidos del Mundial 2026. Analizo con datos reales de FIFA." }
+  ]);
+  const [input, setInput] = useState("");
+  const [cargando, setCargando] = useState(false);
+  const chatEndRef = useRef(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior:"smooth" });
+  }, [chat]);
+
+  const maxScore = Math.max(...MARKETERIA_TEAMS.map(t => t.score));
+
+  async function enviarPregunta() {
+    const q = input.trim();
+    if (!q || cargando) return;
+    const historial = chat.filter(m => m.role !== "system").map(m => ({ role: m.role, content: m.content }));
+    setChat(prev => [...prev, { role:"user", content:q }]);
+    setInput("");
+    setCargando(true);
+    try {
+      const r = await fetch("/api/marketeria-chat", {
+        method:"POST",
+        headers:{ "content-type":"application/json" },
+        body: JSON.stringify({ pregunta: q, historial }),
+      });
+      const d = await r.json();
+      setChat(prev => [...prev, { role:"assistant", content: d.respuesta || "Sin respuesta" }]);
+    } catch {
+      setChat(prev => [...prev, { role:"assistant", content:"Error de conexión, intenta de nuevo." }]);
+    }
+    setCargando(false);
+  }
+
+  const pills = [["ranking","Rankings"],["metodo","Metodología"],["predicciones","Predicciones"],["chat","Chat"]];
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:900, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      {/* Header */}
+      <div style={{ padding:"12px 16px", borderBottom:`0.5px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
+        <button onClick={onClose} style={{ ...Btn(), padding:"6px 10px", fontSize:13 }}>← Volver</button>
+        <div style={{ flex:1 }}>
+          <div style={{ color:C.text, fontWeight:700, fontSize:15, display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{ background:"#7c3aed33", padding:"2px 8px", borderRadius:20, fontSize:12, color:"#a78bfa", fontWeight:600 }}>IA</span>
+            MarketerIA
+          </div>
+          <div style={{ color:C.muted, fontSize:11 }}>Análisis FIFA · 1,248 jugadores · 48 selecciones</div>
+        </div>
+        <div style={{ fontSize:26 }}>🤖</div>
+      </div>
+
+      {/* Perfil */}
+      <div style={{ padding:"16px 16px 0", maxWidth:600, margin:"0 auto", width:"100%" }}>
+        <div style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:12, padding:"14px 16px", marginBottom:14 }}>
+          <p style={{ color:C.muted, fontSize:13, lineHeight:1.6, margin:0 }}>
+            No adivino. Calculo. Tomo los <strong style={{ color:C.text }}>11 mejores jugadores</strong> de cada selección,
+            promedio sus scores FIFA y agrego bonus por tener figuras <strong style={{ color:"#fbbf24" }}>Diamante</strong>.
+            Con esa cifra predigo el resultado más probable.
+          </p>
+        </div>
+
+        {/* Navegación secciones */}
+        <div style={{ display:"flex", gap:6, overflowX:"auto", paddingBottom:4, marginBottom:14 }}>
+          {pills.map(([k,l]) => (
+            <button key={k} onClick={() => setSeccion(k)}
+              style={{ ...Btn(), fontSize:12, padding:"6px 14px", flexShrink:0,
+                background: seccion===k ? "#7c3aed" : C.card,
+                color: seccion===k ? "#fff" : C.muted,
+                border: seccion===k ? "none" : `0.5px solid ${C.border}` }}>
+              {l}
+            </button>
+          ))}
+        </div>
+
+        {/* SECCIÓN: RANKING */}
+        {seccion==="ranking" && (
+          <div>
+            <div style={{ color:C.muted, fontSize:11, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:10 }}>
+              Ranking de fuerza de plantilla (score = top-11 avg + Diamantes×2)
+            </div>
+            {MARKETERIA_TEAMS.map((t, i) => (
+              <div key={t.code} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                <span style={{ fontSize:12, color:C.muted, minWidth:20, textAlign:"right" }}>{i+1}</span>
+                <span style={{ fontSize:16 }}>{t.flag}</span>
+                <div style={{ flex:1 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                    <span style={{ fontSize:13, color:C.text }}>{t.name}
+                      {t.d > 0 && <span style={{ fontSize:10, marginLeft:6, background:"#fbbf2422", color:"#fbbf24", padding:"1px 5px", borderRadius:8 }}>{t.d}💎</span>}
+                    </span>
+                    <span style={{ fontSize:12, fontWeight:600, color:C.text }}>{t.score}</span>
+                  </div>
+                  <div style={{ background:C.border, borderRadius:4, height:5, overflow:"hidden" }}>
+                    <div style={{ width:`${(t.score/maxScore*100).toFixed(0)}%`, height:5, borderRadius:4, background:"#7c3aed" }} />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* SECCIÓN: METODOLOGÍA */}
+        {seccion==="metodo" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:12, padding:"14px 16px" }}>
+              <div style={{ color:"#a78bfa", fontSize:13, fontWeight:600, marginBottom:8 }}>1. Categorizo a los 1,248 jugadores</div>
+              {[
+                ["💎 Diamante","26 jugadores · score 55+","Messi, Cristiano, Mbappé, Haaland, Kane, Salah, Modric, Neuer...","#fbbf24"],
+                ["⭐⭐⭐ 3 Estrellas","106 jugadores · score 45-54","Élite de clubes top europeos, alto rendimiento","#60a5fa"],
+                ["⭐⭐ 2 Estrellas","254 jugadores · score 35-44","Titulares sólidos en ligas de primer nivel","#34d399"],
+                ["⭐ 1 Estrella","862 jugadores · score < 35","Plantilla completa y jugadores en desarrollo","#6b7280"],
+              ].map(([cat,sub,ej,col]) => (
+                <div key={cat} style={{ display:"flex", gap:10, padding:"8px 0", borderBottom:`0.5px solid ${C.border}` }}>
+                  <div style={{ fontSize:16, minWidth:24 }} />
+                  <div>
+                    <div style={{ fontSize:13, color:col, fontWeight:600 }}>{cat}</div>
+                    <div style={{ fontSize:12, color:C.muted }}>{sub}</div>
+                    <div style={{ fontSize:11, color:C.muted, marginTop:2, fontStyle:"italic" }}>{ej}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:12, padding:"14px 16px" }}>
+              <div style={{ color:"#a78bfa", fontSize:13, fontWeight:600, marginBottom:8 }}>2. Calculo el score por equipo</div>
+              <div style={{ background:"#0a0e1a", borderRadius:8, padding:"10px 14px", fontSize:12, color:C.muted, lineHeight:1.8 }}>
+                <div><strong style={{ color:C.text }}>Score final</strong> = promedio top-11 + (Diamantes × 2)</div>
+              </div>
+            </div>
+            <div style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:12, padding:"14px 16px" }}>
+              <div style={{ color:"#a78bfa", fontSize:13, fontWeight:600, marginBottom:8 }}>3. Predigo el resultado</div>
+              {[
+                ["Diferencia > 5pts","El más fuerte gana con claridad","#10b981"],
+                ["Diferencia 2–5pts","Ligero favorito el más fuerte","#60a5fa"],
+                ["Diferencia < 2pts","Empate — fuerzas muy similares","#6b7280"],
+              ].map(([reg,desc,col]) => (
+                <div key={reg} style={{ display:"flex", gap:10, padding:"6px 0", borderBottom:`0.5px solid ${C.border}` }}>
+                  <div style={{ fontSize:12, color:col, fontWeight:600, minWidth:120 }}>{reg}</div>
+                  <div style={{ fontSize:12, color:C.muted }}>{desc}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* SECCIÓN: PREDICCIONES */}
+        {seccion==="predicciones" && (
+          <div>
+            {(!matches || matches.length === 0) ? (
+              <div style={{ textAlign:"center", padding:"30px 20px", color:C.muted, fontSize:13 }}>
+                No hay partidos cargados aún. Ve a la pestaña ⚽ Mundial primero.
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {matches.filter(m => {
+                  const ln = m.competitions?.[0]?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
+                  const an = m.competitions?.[0]?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
+                  return mkteriaLookup(ln) && mkteriaLookup(an);
+                }).map(m => {
+                  const comp = m.competitions?.[0];
+                  const local = comp?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
+                  const away  = comp?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
+                  const pred = mkteriaPredict(local, away);
+                  if (!pred) return null;
+                  const predColors = { local:"#10b981", empate:"#6b7280", visitante:"#60a5fa" };
+                  const predLabel = { local:"Gana local", empate:"Empate", visitante:"Gana visitante" };
+                  return (
+                    <div key={m.id} style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:12, padding:"12px 14px" }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                        <div style={{ fontSize:14, color:C.text, fontWeight:500 }}>{local} vs {away}</div>
+                        <span style={{ fontSize:11, padding:"2px 8px", borderRadius:10, background:predColors[pred.pred]+"22", color:predColors[pred.pred], fontWeight:600 }}>
+                          {predLabel[pred.pred]}
+                        </span>
+                      </div>
+                      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:6 }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.muted, marginBottom:2 }}>
+                            <span>{pred.local.flag} {local}</span><span>{pred.localScore}</span>
+                          </div>
+                          <div style={{ background:C.border, borderRadius:3, height:4 }}>
+                            <div style={{ width:`${(pred.localScore/maxScore*100).toFixed(0)}%`, height:4, borderRadius:3, background:"#7c3aed" }} />
+                          </div>
+                        </div>
+                        <span style={{ fontSize:10, color:C.muted }}>vs</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.muted, marginBottom:2 }}>
+                            <span>{pred.away.flag} {away}</span><span>{pred.awayScore}</span>
+                          </div>
+                          <div style={{ background:C.border, borderRadius:3, height:4 }}>
+                            <div style={{ width:`${(pred.awayScore/maxScore*100).toFixed(0)}%`, height:4, borderRadius:3, background:"#1d9e75" }} />
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:11, color:C.muted }}>{pred.label}</div>
+                    </div>
+                  );
+                })}
+                <div style={{ fontSize:11, color:C.muted, textAlign:"center", padding:"8px 0" }}>
+                  Solo se muestran partidos con ambos equipos en el dataset FIFA
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECCIÓN: CHAT */}
+        {seccion==="chat" && (
+          <div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:14 }}>
+              {chat.map((m, i) => (
+                <div key={i} style={{
+                  alignSelf: m.role==="user" ? "flex-end" : "flex-start",
+                  display:"inline-block",
+                  maxWidth:"85%",
+                  background: m.role==="user" ? "#1d4ed8" : C.card,
+                  border: `0.5px solid ${m.role==="user" ? "transparent" : C.border}`,
+                  borderRadius: m.role==="user" ? "12px 12px 2px 12px" : "2px 12px 12px 12px",
+                  padding:"10px 14px",
+                  fontSize:13,
+                  color:C.text,
+                  lineHeight:1.5,
+                }}>
+                  {m.content}
+                </div>
+              ))}
+              {cargando && (
+                <div style={{ alignSelf:"flex-start", display:"inline-block", background:C.card, border:`0.5px solid ${C.border}`, borderRadius:"2px 12px 12px 12px", padding:"10px 14px", fontSize:13, color:C.muted }}>
+                  Analizando datos…
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+            <div style={{ display:"flex", gap:8, position:"sticky", bottom:0, paddingBottom:20, background:C.bg }}>
+              <input
+                value={input}
+                onChange={e => setInput(e.target.value)}
+                onKeyDown={e => e.key==="Enter" && !e.shiftKey && enviarPregunta()}
+                placeholder="¿Quién va a ganar el grupo A? ¿Qué tan fuerte es México?"
+                style={{ ...inp, flex:1, fontSize:13 }}
+              />
+              <button onClick={enviarPregunta} disabled={cargando || !input.trim()}
+                style={{ ...BtnP, padding:"10px 16px", opacity: cargando||!input.trim() ? 0.5 : 1 }}>
+                →
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ height:30 }} />
+      </div>
+    </div>
+  );
+}
+
 // ── PANTALLA: TABLA PRINCIPAL ─────────────────
 function Sala({ sala, miId, onFirstTabChange }) {
   const [participantes, setParticipantes] = useState([]);
@@ -1102,6 +1461,8 @@ function Sala({ sala, miId, onFirstTabChange }) {
   const [waPasswordSent, setWaPasswordSent] = useState(false);
   const [waPasswordLoading, setWaPasswordLoading] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showMarketerIA, setShowMarketerIA] = useState(false);
+  const [marketeriaMatches, setMarketeriaMatches] = useState([]);
 
   const salaLink = `${APP_URL}/sala/${sala.id}`;
   const yo = participantes.find(p => p.id === miId);
@@ -1229,6 +1590,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
   );
 
   return (
+    <>
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif" }}>
       {/* Header */}
       <div style={{ background:"#0f1829", padding:"16px 20px 0", borderBottom:`1px solid ${C.border}` }}>
@@ -1346,6 +1708,42 @@ function Sala({ sala, miId, onFirstTabChange }) {
               </button>
             </div>
           )}
+
+          {/* Card MarketerIA */}
+          <div
+            onClick={async () => {
+              setShowMarketerIA(true);
+              if (!marketeriaMatches.length) {
+                try {
+                  const today = new Date();
+                  const pad = n => String(n).padStart(2,"0");
+                  const dateStr = `${today.getFullYear()}${pad(today.getMonth()+1)}${pad(today.getDate())}`;
+                  const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr}`);
+                  const d = await r.json();
+                  setMarketeriaMatches(d.events || []);
+                } catch {}
+              }
+            }}
+            style={{ ...cardStyle, cursor:"pointer", border:`0.5px solid #7c3aed44`, background:"#0d0a1f", marginTop:8 }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <span style={{ fontSize:14, minWidth:22, color:C.muted }}>🤖</span>
+                <div style={{ width:38, height:38, borderRadius:"50%", background:"#7c3aed33", display:"flex", alignItems:"center", justifyContent:"center", fontSize:18, flexShrink:0 }}>🤖</div>
+                <div>
+                  <div style={{ color:C.text, fontWeight:500, fontSize:14, display:"flex", alignItems:"center", gap:6 }}>
+                    MarketerIA
+                    <span style={{ background:"#7c3aed33", color:"#a78bfa", fontSize:10, padding:"2px 6px", borderRadius:10, fontWeight:600 }}>IA</span>
+                    <span style={{ background:"#fbbf2422", color:"#fbbf24", fontSize:10, padding:"2px 6px", borderRadius:10 }}>Solo referencia</span>
+                  </div>
+                  <div style={{ color:C.muted, fontSize:12 }}>Portugal · Análisis basado en datos FIFA</div>
+                </div>
+              </div>
+              <div style={{ textAlign:"right" }}>
+                <div style={{ fontSize:12, color:"#a78bfa", fontWeight:600 }}>Ver análisis →</div>
+              </div>
+            </div>
+          </div>
+
           {sorted.length >= 2 && (() => {
             const ultimo = sorted[sorted.length - 1];
             async function mandarCastigo() {
@@ -1538,6 +1936,10 @@ function Sala({ sala, miId, onFirstTabChange }) {
 
       </div>
     </div>
+    {showMarketerIA && (
+      <MarketerIA onClose={() => setShowMarketerIA(false)} matches={marketeriaMatches} />
+    )}
+    </>
   );
 }
 
