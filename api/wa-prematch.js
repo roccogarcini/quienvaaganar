@@ -1,7 +1,7 @@
 // Pre-match hype — Vercel Cron cada hora, detecta partidos en ~90 min
 // Envía mensaje divertido antes de cada partido del Mundial
 
-import { sendWATemplate } from "./wa-send.js";
+import { sendWA } from "./wa-send.js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -88,9 +88,13 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < unicos.length; i++) {
       const p = unicos[i];
-      const r = await sendWATemplate(p.whatsapp, "prepartido_hype", [
-        homeTeam, horaStr, homeTeam, awayTeam,
-      ]);
+      const opciones = [
+        `🔥 ¡ATENCIÓN ${p.nombre}! En menos de 90 min arranca *${homeTeam} vs ${awayTeam}* (${horaStr} CDMX) ⚽\n\nEste es el momento. La gloria o el drama. ¿Ya tienes tu pronóstico?\n👉 https://quienvaaganar.vercel.app`,
+        `⚽ ¡Ya mero, ${p.nombre}! Faltan menos de 90 minutos para *${homeTeam} vs ${awayTeam}* a las ${horaStr} CDMX.\n\n¿Nervios? ¿Emoción? Normal. Así es el Mundial 🌍🏆\n👉 https://quienvaaganar.vercel.app`,
+        `🏆 *${homeTeam} VS ${awayTeam}* — HOY ${horaStr} CDMX\n\n${p.nombre}, este partido puede cambiar todo en tu quiniela. O confirmarte que eres un genio. O que no. 😂\n👉 https://quienvaaganar.vercel.app`,
+      ];
+      const msg = opciones[i % opciones.length];
+      const r = await sendWA(p.whatsapp, msg);
       resultados.push({ nombre: p.nombre, partido: `${homeTeam} vs ${awayTeam}`, ok: r.ok });
 
       if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
