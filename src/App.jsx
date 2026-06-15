@@ -2187,50 +2187,70 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
 }
 
 function ProyeccionQuiniela({ misProns, matches }) {
+  // Solo partidos de fase de grupos (antes del 28 jun)
   const grupoMatches = matches.filter(ev => new Date(ev.date) <= new Date("2026-06-27T23:59:59Z"));
-  const conPred = grupoMatches.filter(ev => misProns[String(ev.id)]);
-  if (conPred.length < 6) return null; // necesita al menos 6 predicciones de grupos
 
-  // Construir standings por grupo
-  const grupos = {};
-  for (const ev of conPred) {
+  // Extraer info de equipos de TODOS los partidos de grupo (no solo los pronosticados)
+  const teamInfo = {}; // { name: { logo } }
+  const matchPairs = []; // [{ home, away, homeLog, awayLogo }]
+
+  for (const ev of grupoMatches) {
     const comp = ev.competitions?.[0];
-    const pred = misProns[String(ev.id)];
-    // Intentar obtener nombre del grupo desde las notas del evento
-    const nota = comp?.notes?.[0]?.headline || ev.season?.name || ev.name || "";
-    const grupoMatch = nota.match(/group\s+([A-L])/i) || nota.match(/grupo\s+([A-L])/i);
-    const grupoNombre = grupoMatch ? `Grupo ${grupoMatch[1].toUpperCase()}` : null;
-    if (!grupoNombre) continue;
-
     const home = comp?.competitors?.find(c => c.homeAway === "home");
     const away = comp?.competitors?.find(c => c.homeAway === "away");
-    const homeName = home?.team?.shortDisplayName || home?.team?.location || "?";
-    const awayName = away?.team?.shortDisplayName || away?.team?.location || "?";
-    const homeLogo = home?.team?.logo;
-    const awayLogo = away?.team?.logo;
-    if (homeName === "?" || awayName === "?") continue;
+    const h = home?.team?.shortDisplayName || home?.team?.location || "";
+    const a = away?.team?.shortDisplayName || away?.team?.location || "";
+    if (!h || !a || h.length < 2 || a.length < 2) continue;
+    if (/^(RD|QF|SF|W\d|\d[A-Z]|3RD|TBD)/i.test(h) || /^(RD|QF|SF|W\d|\d[A-Z]|3RD|TBD)/i.test(a)) continue;
+    teamInfo[h] = { logo: home?.team?.logo };
+    teamInfo[a] = { logo: away?.team?.logo };
+    matchPairs.push({ id: String(ev.id), home: h, away: a });
+  }
 
-    if (!grupos[grupoNombre]) grupos[grupoNombre] = {};
-    if (!grupos[grupoNombre][homeName]) grupos[grupoNombre][homeName] = { pts:0, gf:0, ga:0, logo:homeLogo };
-    if (!grupos[grupoNombre][awayName]) grupos[grupoNombre][awayName] = { pts:0, gf:0, ga:0, logo:awayLogo };
+  const conPred = matchPairs.filter(m => misProns[m.id]);
+  if (conPred.length < 6) return null;
 
+  // Union-Find para agrupar equipos que juegan entre sí
+  const parent = {};
+  const find = t => { if (parent[t] === undefined) parent[t] = t; if (parent[t] !== t) parent[t] = find(parent[t]); return parent[t]; };
+  const union = (a, b) => { const ra = find(a), rb = find(b); if (ra !== rb) parent[rb] = ra; };
+
+  // Conectar todos los pares de grupo (incluso sin predicción) para detectar grupos correctamente
+  for (const m of matchPairs) union(m.home, m.away);
+
+  // Calcular standings solo con los partidos pronosticados
+  const standings = {}; // { teamName: { pts, gf, ga } }
+  const init = t => { if (!standings[t]) standings[t] = { pts:0, gf:0, ga:0 }; };
+
+  for (const m of conPred) {
+    const pred = misProns[m.id];
+    init(m.home); init(m.away);
     if (pred === "local") {
-      grupos[grupoNombre][homeName].pts += 3; grupos[grupoNombre][homeName].gf += 2; grupos[grupoNombre][awayName].ga += 2;
+      standings[m.home].pts += 3; standings[m.home].gf += 2; standings[m.away].ga += 2;
     } else if (pred === "visitante") {
-      grupos[grupoNombre][awayName].pts += 3; grupos[grupoNombre][awayName].gf += 2; grupos[grupoNombre][homeName].ga += 2;
+      standings[m.away].pts += 3; standings[m.away].gf += 2; standings[m.home].ga += 2;
     } else {
-      grupos[grupoNombre][homeName].pts += 1; grupos[grupoNombre][homeName].gf += 1; grupos[grupoNombre][homeName].ga += 1;
-      grupos[grupoNombre][awayName].pts += 1; grupos[grupoNombre][awayName].gf += 1; grupos[grupoNombre][awayName].ga += 1;
+      standings[m.home].pts += 1; standings[m.home].gf += 1; standings[m.home].ga += 1;
+      standings[m.away].pts += 1; standings[m.away].gf += 1; standings[m.away].ga += 1;
     }
   }
 
-  const sortTeams = teams => Object.entries(teams)
-    .map(([name, s]) => ({ name, ...s, dg: s.gf - s.ga }))
+  // Agrupar equipos por su raíz (union-find)
+  const grupos = {};
+  for (const team of Object.keys(teamInfo)) {
+    const root = find(team);
+    if (!grupos[root]) grupos[root] = [];
+    grupos[root].push(team);
+  }
+
+  // Ordenar grupos de ≥3 equipos por standings
+  const sortTeams = teams => teams
+    .map(name => ({ name, logo: teamInfo[name]?.logo, ...(standings[name] || { pts:0, gf:0, ga:0 }), dg: (standings[name]?.gf||0) - (standings[name]?.ga||0) }))
     .sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
 
   const gruposList = Object.entries(grupos)
-    .map(([nombre, teams]) => ({ nombre, equipos: sortTeams(teams) }))
-    .filter(g => g.equipos.length >= 3)
+    .filter(([, teams]) => teams.length >= 3)
+    .map(([, teams], i) => ({ nombre: `Grupo ${String.fromCharCode(65 + i)}`, equipos: sortTeams(teams) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   if (!gruposList.length) return null;
@@ -2241,14 +2261,14 @@ function ProyeccionQuiniela({ misProns, matches }) {
         🔮 Según tu quiniela, así sería la siguiente ronda
       </div>
       <div style={{ color:C.muted, fontSize:11, marginBottom:12 }}>
-        Proyección basada en tus {conPred.length} pronósticos de fase de grupos
+        Proyección de clasificados — fase de grupos · {conPred.length} partidos pronosticados
       </div>
       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
         {gruposList.map(({ nombre, equipos }) => (
           <div key={nombre} style={{ background:"#0a1628", border:"1px solid #1d4ed822", borderRadius:10, padding:"10px 12px" }}>
             <div style={{ color:"#3b82f6", fontSize:10, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.06em" }}>{nombre}</div>
             {equipos.map((t, i) => (
-              <div key={t.name} style={{ display:"flex", alignItems:"center", gap:5, marginBottom:i<equipos.length-1?4:0, opacity: i >= 2 ? 0.4 : 1 }}>
+              <div key={t.name} style={{ display:"flex", alignItems:"center", gap:5, marginBottom:i<equipos.length-1?4:0, opacity: i >= 2 ? 0.38 : 1 }}>
                 <span style={{ fontSize:9, fontWeight:700, width:10, color: i===0?"#fbbf24": i===1?"#9ca3af":"#4b5563" }}>{i+1}</span>
                 {t.logo
                   ? <img src={t.logo} style={{ width:14, height:14, objectFit:"contain", flexShrink:0 }} onError={e=>e.target.style.display="none"} />
@@ -2259,10 +2279,10 @@ function ProyeccionQuiniela({ misProns, matches }) {
                 <span style={{ fontSize:9, color:"#6b7280", flexShrink:0 }}>{t.pts}p</span>
               </div>
             ))}
-            <div style={{ marginTop:6, borderTop:"0.5px solid #1d4ed822", paddingTop:5, display:"flex", gap:4 }}>
-              <span style={{ fontSize:9, color:"#4ade80", fontWeight:600 }}>✓ Clasifica:</span>
+            <div style={{ marginTop:6, borderTop:"0.5px solid #1d4ed822", paddingTop:5, display:"flex", gap:4, flexWrap:"wrap" }}>
+              <span style={{ fontSize:9, color:"#4ade80", fontWeight:600 }}>✓</span>
               <span style={{ fontSize:9, color:"#86efac" }}>{equipos[0]?.name}</span>
-              {equipos[1] && <><span style={{ fontSize:9, color:"#6b7280" }}>·</span><span style={{ fontSize:9, color:"#86efac" }}>{equipos[1]?.name}</span></>}
+              {equipos[1] && <><span style={{ fontSize:9, color:"#4b5563" }}>·</span><span style={{ fontSize:9, color:"#86efac" }}>{equipos[1]?.name}</span></>}
             </div>
           </div>
         ))}
