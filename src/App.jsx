@@ -2287,6 +2287,47 @@ function ProyeccionQuiniela({ misProns, matches }) {
           </div>
         ))}
       </div>
+
+      {/* Cruces Ronda de 32 */}
+      {gruposList.length >= 2 && (() => {
+        // Bracket: 1A vs 2B, 1C vs 2D... y 1B vs 2A, 1D vs 2C...
+        const cruces = [];
+        for (let i = 0; i < gruposList.length; i += 2) {
+          const g1 = gruposList[i];
+          const g2 = gruposList[i + 1];
+          if (!g2) break;
+          const w1 = g1.equipos[0], r1 = g1.equipos[1];
+          const w2 = g2.equipos[0], r2 = g2.equipos[1];
+          if (w1 && r2) cruces.push({ local: w1, visit: r2, label: `1${g1.nombre.slice(-1)} vs 2${g2.nombre.slice(-1)}` });
+          if (w2 && r1) cruces.push({ local: w2, visit: r1, label: `1${g2.nombre.slice(-1)} vs 2${g1.nombre.slice(-1)}` });
+        }
+        if (!cruces.length) return null;
+        return (
+          <div style={{ marginTop:16 }}>
+            <div style={{ color:"#a78bfa", fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>
+              ⚔️ Ronda de 32 · cruces proyectados
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {cruces.map((c, i) => (
+                <div key={i} style={{ background:"#0f1423", border:"1px solid #312e5533", borderRadius:9, padding:"8px 12px", display:"grid", gridTemplateColumns:"1fr auto 1fr", alignItems:"center", gap:8 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:5, justifyContent:"flex-end" }}>
+                    <span style={{ fontSize:11, color:C.text, fontWeight:600, textAlign:"right", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.local.name}</span>
+                    {c.local.logo ? <img src={c.local.logo} style={{ width:16, height:16, objectFit:"contain", flexShrink:0 }} onError={e=>e.target.style.display="none"} /> : <span>🏳️</span>}
+                  </div>
+                  <span style={{ color:"#6b7280", fontSize:10, fontWeight:700, flexShrink:0 }}>vs</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                    {c.visit.logo ? <img src={c.visit.logo} style={{ width:16, height:16, objectFit:"contain", flexShrink:0 }} onError={e=>e.target.style.display="none"} /> : <span>🏳️</span>}
+                    <span style={{ fontSize:11, color:C.text, fontWeight:600, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.visit.name}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ color:"#4b5563", fontSize:10, marginTop:8, textAlign:"center" }}>
+              + 4 partidos con los mejores 3ros de grupo (por definirse)
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
