@@ -1184,7 +1184,7 @@ function mkteriaPredict(localName, awayName) {
 }
 
 // ── MARKETERIA: PÁGINA COMPLETA ───────────────
-function MarketerIA({ onClose, matches }) {
+function MarketerIA({ onClose, matches, asTab, onTabOpen }) {
   const [seccion, setSeccion] = useState("ranking");
   const [chat, setChat] = useState([
     { role:"assistant", content:"Hola, soy MarketerIA 🤖 Pregúntame lo que quieras sobre los equipos, jugadores o partidos del Mundial 2026. Analizo con datos reales de FIFA." }
@@ -1196,6 +1196,8 @@ function MarketerIA({ onClose, matches }) {
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior:"smooth" });
   }, [chat]);
+
+  useEffect(() => { onTabOpen?.(); }, []);
 
   const maxScore = Math.max(...MARKETERIA_TEAMS.map(t => t.score));
 
@@ -1223,9 +1225,9 @@ function MarketerIA({ onClose, matches }) {
   const pills = [["ranking","Rankings"],["metodo","Metodología"],["predicciones","Predicciones"],["chat","Chat"]];
 
   return (
-    <div style={{ position:"fixed", inset:0, background:C.bg, zIndex:900, display:"flex", flexDirection:"column", overflowY:"auto" }}>
-      {/* Header */}
-      <div style={{ padding:"12px 16px", borderBottom:`0.5px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
+    <div style={asTab ? {} : { position:"fixed", inset:0, background:C.bg, zIndex:900, display:"flex", flexDirection:"column", overflowY:"auto" }}>
+      {/* Header — solo en overlay */}
+      {!asTab && <div style={{ padding:"12px 16px", borderBottom:`0.5px solid ${C.border}`, display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
         <button onClick={onClose} style={{ ...Btn(), padding:"6px 10px", fontSize:13 }}>← Volver</button>
         <div style={{ flex:1 }}>
           <div style={{ color:C.text, fontWeight:700, fontSize:15, display:"flex", alignItems:"center", gap:8 }}>
@@ -1235,7 +1237,7 @@ function MarketerIA({ onClose, matches }) {
           <div style={{ color:C.muted, fontSize:11 }}>Análisis FIFA · 1,248 jugadores · 48 selecciones</div>
         </div>
         <div style={{ fontSize:26 }}>🤖</div>
-      </div>
+      </div>}
 
       {/* Perfil */}
       <div style={{ padding:"16px 16px 0", maxWidth:600, margin:"0 auto", width:"100%" }}>
@@ -1646,7 +1648,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:10, overflowX:"auto" }}>
-          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["quiniela","Quiniela 🎯"]].map(([k,l])=>(
+          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["marketeria","MarketerIA 🤖"],["quiniela","Quiniela 🎯"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>cambiarTab(k)}>{l}</button>
           ))}
         </div>
@@ -1933,6 +1935,19 @@ function Sala({ sala, miId, onFirstTabChange }) {
         {tab==="noticias" && <Noticias />}
 
         {tab==="tips" && <TipsInfo />}
+
+        {tab==="marketeria" && <MarketerIA asTab matches={marketeriaMatches} onTabOpen={async () => {
+          if (!marketeriaMatches.length) {
+            try {
+              const today = new Date();
+              const pad = n => String(n).padStart(2,"0");
+              const dateStr = `${today.getFullYear()}${pad(today.getMonth()+1)}${pad(today.getDate())}`;
+              const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=${dateStr}`);
+              const d = await r.json();
+              setMarketeriaMatches(d.events || []);
+            } catch {}
+          }
+        }} />}
 
       </div>
     </div>
