@@ -1207,7 +1207,7 @@ function MarketerIA({ onClose, matches }) {
     setInput("");
     setCargando(true);
     try {
-      const r = await fetch("/api/marketeria-chat", {
+      const r = await fetch("/api/ai?type=marketeria", {
         method:"POST",
         headers:{ "content-type":"application/json" },
         body: JSON.stringify({ pregunta: q, historial }),
@@ -1995,7 +1995,7 @@ function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPla
       const sugerencias = {};
       for (let i = 0; i < objetivo.length; i += 30) {
         const lote = objetivo.slice(i, i + 30);
-        const r = await fetch("/api/recomendar-quiniela", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ partidos: lote }) });
+        const r = await fetch("/api/ai?type=recomendar", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ partidos: lote }) });
         const data = await r.json();
         if (!data.predicciones) continue;
         for (const p of data.predicciones) {
@@ -2071,7 +2071,7 @@ function AnalisisIA({ misProns, matches, nombre }) {
     }).filter(p => p.local !== "?");
 
     try {
-      const r = await fetch("/api/analizar-quiniela", {
+      const r = await fetch("/api/ai?type=analizar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ nombre, predicciones }),
@@ -2276,7 +2276,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
     }
 
     try {
-      const r = await fetch("/api/recomendar-quiniela", {
+      const r = await fetch("/api/ai?type=recomendar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ partidos: [{ id: matchId, local, away: awayName }] }),
