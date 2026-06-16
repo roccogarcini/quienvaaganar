@@ -2537,13 +2537,12 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
                           </span>
                         </div>
                       );
-                      if (!miPred) return (
+                      return (
                         <button onClick={() => pedirTipIA(ev)}
                           style={{ marginTop:5, fontSize:10, color:"#a78bfa", background:"none", border:"0.5px solid #7c3aed44", borderRadius:6, padding:"3px 8px", cursor:"pointer", fontFamily:"inherit" }}>
                           💡 Pedir tip IA
                         </button>
                       );
-                      return null;
                     })()}
                   </>
                 }
@@ -2839,9 +2838,8 @@ function AdminBonusPanel({ salaId, participantes }) {
         if (!prons?.length) continue;
 
         for (const pr of prons) {
-          // win=2, draw=1, lose=0 — si usó IA: máximo 1pt por ese partido
           const ptsBase = pr.prediccion === result ? (result === "empate" ? 1 : 2) : 0;
-          const ptsReal = pr.usa_ia ? Math.min(1, ptsBase) : ptsBase;
+          const ptsReal = ptsBase;
           await supabase.from("pronosticos_partidos").update({ resultado: result, pts_obtenidos: ptsReal }).eq("id", pr.id);
           const p = participantes.find(x => x.id === pr.participante_id);
           if (p && ptsReal > 0) {
