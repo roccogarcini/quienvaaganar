@@ -2019,11 +2019,6 @@ function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPla
     if (!objetivo.length) { setLlenando(false); return; }
     const soloRevision = !pendientes.length;
 
-    // Descuenta 1pt por usar la ayuda IA
-    if (miId) {
-      const { data: yo } = await supabase.from("participantes").select("pts_quiniela").eq("id", miId).single();
-      await supabase.from("participantes").update({ pts_quiniela: Math.max(0, (yo?.pts_quiniela||0) - 1) }).eq("id", miId);
-    }
     try {
       let nuevasProns = { ...misProns };
       const sugerencias = {};
@@ -2078,8 +2073,8 @@ function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPla
       {llenando
         ? <><span style={{display:"inline-block",animation:"spin 1s linear infinite"}}>⚙️</span> {pendientesCount > 0 ? `Llenando ${pendientesCount} partidos…` : "Cargando sugerencias…"}</>
         : pendientesCount > 0
-          ? <>🤖 Llenar {pendientesCount} partidos con IA <span style={{color:C.red,fontSize:11}}>(-1pt por partido lleno)</span></>
-          : <>🤖 Pedir ayuda de MarketerIA <span style={{color:C.red,fontSize:11}}>(-1pt)</span></>}
+          ? <>🤖 Llenar {pendientesCount} partidos con IA</>
+          : <>🤖 Pedir ayuda de MarketerIA</>}
     </button>
   );
 }
@@ -2424,7 +2419,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
         <>
           <div style={{ ...cardStyle, fontSize:11, color:C.muted, display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
             <span style={{ fontSize:16 }}>💡</span>
-            <span>Puedes pedir un <strong style={{color:"#a78bfa"}}>tip de IA</strong> por partido. Cuesta <strong style={{color:C.red}}>-1pt</strong> y si aciertas con el tip solo ganas <strong style={{color:C.gold}}>1pt</strong> en lugar de 2.</span>
+            <span>Puedes pedir un <strong style={{color:"#a78bfa"}}>tip de IA</strong> por partido para que MarketerIA llene tu pronóstico.</span>
           </div>
           <LlenarConIA miId={miId} salaId={salaId} matches={matches} misProns={misProns} lsKey={lsKey}
             tipsUsados={tipsUsados} isPlaceholder={isPlaceholder}
@@ -2540,13 +2535,12 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
                           <span style={{ fontSize:10, color:C.muted }}>
                             {tip.pred === "local" ? homeName : tip.pred === "visitante" ? awayName : "Empate"} — {tip.razon}
                           </span>
-                          <span style={{ fontSize:9, color:C.red, marginLeft:6 }}>(-1pt descontado)</span>
                         </div>
                       );
                       if (!miPred) return (
                         <button onClick={() => pedirTipIA(ev)}
                           style={{ marginTop:5, fontSize:10, color:"#a78bfa", background:"none", border:"0.5px solid #7c3aed44", borderRadius:6, padding:"3px 8px", cursor:"pointer", fontFamily:"inherit" }}>
-                          💡 Pedir tip IA <span style={{ color:C.red }}>-1pt</span>
+                          💡 Pedir tip IA
                         </button>
                       );
                       return null;
