@@ -1,7 +1,7 @@
 // GET /api/marketeria-sync?secret=...
 // 1. Llena predicciones de MarketerIA para todos los partidos del Mundial
-// 2. Calcula puntos basado en resultados reales de ESPN
-// Corre via cron-job.org cada hora
+// 2. Calcula puntos de TODOS los jugadores basado en resultados reales de ESPN
+// Corre cada 30 min via cron-job.org
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
@@ -11,14 +11,16 @@ import { createClient } from "@supabase/supabase-js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MARKETERIA_ID = "1b3d7ee1-c448-426e-8f22-7d2724f713db";
 const SALA_ID = "mundial2026";
-const PTS_ACIERTO = 3;
+
+// Puntos por etapa (igual que STAGES en App.jsx)
+const PTS_ETAPA = { grupos: 3, octavos: 2, cuartos: 3, semis: 5, final: 10 };
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.VITE_SUPABASE_ANON_KEY
 );
 
-// ── Ranking FIFA (mismo algoritmo que ai.js) ──────────────────
+// ── Ranking FIFA ──────────────────────────────────────────────
 let cachedTeams = null;
 function loadTeams() {
   if (cachedTeams) return cachedTeams;
@@ -42,7 +44,6 @@ function loadTeams() {
   return cachedTeams;
 }
 
-// Aliases ESPN → código FIFA
 const ALIASES = {
   "united states":"usa","estados unidos":"usa","brazil":"bra","brasil":"bra",
   "germany":"ger","alemania":"ger","france":"fra","francia":"fra",
@@ -54,18 +55,17 @@ const ALIASES = {
   "saudi arabia":"ksa","switzerland":"sui","suiza":"sui","canada":"can","canadá":"can",
   "czechia":"cze","czech republic":"cze","new zealand":"nzl","cabo verde":"cpv","cape verde":"cpv",
   "curaçao":"cuw","curacao":"cuw","senegal":"sen","norway":"nor","noruega":"nor",
-  "south africa":"rsa","corea del sur":"kor","bosnia & herzegovina":"bih","bosnia and herzegovina":"bih",
+  "south africa":"rsa","bosnia & herzegovina":"bih","bosnia and herzegovina":"bih",
 };
 
 function lookup(name) {
   if (!name) return null;
   const low = name.toLowerCase().trim();
   const teams = loadTeams();
-  const alias = ALIASES[low];
-  return teams[alias || low] || null;
+  return teams[ALIASES[low] || low] || null;
 }
 
-function predict(homeName, awayName) {
+function mkteriaPredict(homeName, awayName) {
   const home = lookup(homeName);
   const away = lookup(awayName);
   if (!home || !away) return null;
@@ -75,19 +75,29 @@ function predict(homeName, awayName) {
   return "empate";
 }
 
-// Interpreta resultado ESPN → "local" | "empate" | "visitante"
+// Determina etapa del partido por fecha (aprox)
+function etapaPts(dateStr) {
+  const d = new Date(dateStr);
+  const mes = d.getUTCMonth() + 1;
+  const dia = d.getUTCDate();
+  if (mes === 6 && dia <= 30) return PTS_ETAPA.grupos;
+  if (mes === 7 && dia <= 5)  return PTS_ETAPA.octavos;
+  if (mes === 7 && dia <= 12) return PTS_ETAPA.cuartos;
+  if (mes === 7 && dia <= 16) return PTS_ETAPA.semis;
+  return PTS_ETAPA.final;
+}
+
+// Resultado real del evento ESPN
 function parseResult(event) {
   const comp = event.competitions?.[0];
-  const status = comp?.status?.type?.completed;
-  if (!status) return null; // partido no terminado
-  const teams = comp?.competitors || [];
-  const home = teams.find(t => t.homeAway === "home");
-  const away = teams.find(t => t.homeAway === "away");
+  if (!comp?.status?.type?.completed) return null;
+  const home = comp.competitors?.find(t => t.homeAway === "home");
+  const away = comp.competitors?.find(t => t.homeAway === "away");
   if (!home || !away) return null;
-  const hScore = parseInt(home.score || "0");
-  const aScore = parseInt(away.score || "0");
-  if (hScore > aScore) return "local";
-  if (aScore > hScore) return "visitante";
+  const h = parseInt(home.score || "0");
+  const a = parseInt(away.score || "0");
+  if (h > a) return "local";
+  if (a > h) return "visitante";
   return "empate";
 }
 
@@ -96,55 +106,77 @@ export default async function handler(req, res) {
   if (secret !== process.env.CRON_SECRET) return res.status(401).json({ error: "unauthorized" });
 
   try {
-    // 1. Cargar todos los partidos fase de grupos
+    // 1. Cargar todos los partidos
     const r = await fetch("https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=20260611-20260720");
     const data = await r.json();
-    const events = (data.events || []).filter(e => {
-      const comps = e.competitions?.[0]?.competitors || [];
-      return comps.length === 2;
-    });
+    const events = (data.events || []).filter(e => (e.competitions?.[0]?.competitors || []).length === 2);
 
     // 2. Upsert predicciones de MarketerIA
-    const rows = [];
+    const mkRows = [];
     for (const ev of events) {
       const comps = ev.competitions?.[0]?.competitors || [];
-      const home = comps.find(c => c.homeAway === "home")?.team?.displayName || "";
-      const away = comps.find(c => c.homeAway === "away")?.team?.displayName || "";
-      const pred = predict(home, away);
+      const homeName = comps.find(c => c.homeAway === "home")?.team?.displayName || "";
+      const awayName = comps.find(c => c.homeAway === "away")?.team?.displayName || "";
+      const pred = mkteriaPredict(homeName, awayName);
       if (!pred) continue;
-      rows.push({ participante_id: MARKETERIA_ID, sala_id: SALA_ID, match_id: ev.id, prediccion: pred, usa_ia: true });
+      mkRows.push({ participante_id: MARKETERIA_ID, sala_id: SALA_ID, match_id: ev.id, prediccion: pred, usa_ia: true });
+    }
+    if (mkRows.length > 0) {
+      await supabase.from("pronosticos_partidos").upsert(mkRows, { onConflict: "participante_id,match_id" });
     }
 
-    if (rows.length > 0) {
-      await supabase.from("pronosticos_partidos").upsert(rows, { onConflict: "participante_id,match_id" });
+    // 3. Partidos terminados con resultado
+    const terminados = events
+      .map(ev => {
+        const resultado = parseResult(ev);
+        if (!resultado) return null;
+        return { id: ev.id, resultado, pts: etapaPts(ev.date) };
+      })
+      .filter(Boolean);
+
+    if (terminados.length === 0) {
+      return res.json({ ok: true, msg: "sin partidos terminados aún", mkPrediccionesUpserted: mkRows.length });
     }
 
-    // 3. Calcular puntos: comparar predicciones vs resultados reales
-    let puntos = 0;
-    let aciertos = 0;
-    let revisados = 0;
+    const matchIds = terminados.map(m => m.id);
+    const resultMap = Object.fromEntries(terminados.map(m => [m.id, m]));
 
-    for (const ev of events) {
-      const resultado = parseResult(ev);
-      if (!resultado) continue; // no terminado aún
-      revisados++;
+    // 4. Cargar predicciones de todos los jugadores para esos partidos
+    const { data: prons } = await supabase
+      .from("pronosticos_partidos")
+      .select("participante_id, match_id, prediccion")
+      .in("match_id", matchIds)
+      .eq("sala_id", SALA_ID);
 
-      const comps = ev.competitions?.[0]?.competitors || [];
-      const home = comps.find(c => c.homeAway === "home")?.team?.displayName || "";
-      const away = comps.find(c => c.homeAway === "away")?.team?.displayName || "";
-      const pred = predict(home, away);
-      if (!pred) continue;
+    if (!prons?.length) {
+      return res.json({ ok: true, msg: "nadie tiene predicciones para partidos terminados", terminados: terminados.length });
+    }
 
-      if (pred === resultado) {
-        puntos += PTS_ACIERTO;
-        aciertos++;
+    // 5. Agrupar puntos por jugador
+    const puntosMap = {};
+    for (const pron of prons) {
+      const match = resultMap[pron.match_id];
+      if (!match) continue;
+      if (!puntosMap[pron.participante_id]) puntosMap[pron.participante_id] = 0;
+      if (pron.prediccion === match.resultado) {
+        puntosMap[pron.participante_id] += match.pts;
       }
     }
 
-    // 4. Actualizar puntos en DB
-    await supabase.from("participantes").update({ points: puntos }).eq("id", MARKETERIA_ID);
+    // 6. Actualizar puntos en DB para todos los jugadores
+    const updates = [];
+    for (const [pid, pts] of Object.entries(puntosMap)) {
+      const { error } = await supabase.from("participantes").update({ points: pts }).eq("id", pid);
+      updates.push({ id: pid, pts, error: error?.message });
+    }
 
-    res.json({ ok: true, predicciones: rows.length, revisados, aciertos, puntos });
+    res.json({
+      ok: true,
+      terminados: terminados.length,
+      jugadoresActualizados: updates.length,
+      mkPrediccionesUpserted: mkRows.length,
+      resumen: updates,
+    });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
