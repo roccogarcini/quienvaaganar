@@ -1683,7 +1683,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
                       {esMktIA && <span style={{ background:"#7c3aed33",color:"#a78bfa",fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6,fontWeight:600 }}>IA</span>}
                       {!esMktIA && p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
                       {!esMktIA && (sala.modo==="hibrido"||sala.modo==="dinero") && p.modo_jugador==="dinero" && <span style={{ fontSize:11, marginLeft:5, color:"#fbbf24" }}>💰${p.apuesta||0}</span>}
-                      {!esMktIA && sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:12, marginLeft:5 }}>🎲</span>}
+                      {!esMktIA && sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:10, marginLeft:5, background:"#ffffff15", color:C.muted, padding:"2px 7px", borderRadius:10, border:`0.5px solid ${C.border}` }}>🎲 Sin apuesta</span>}
                       {!esMktIA && p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
                       {!esMktIA && !p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
                     </div>
