@@ -214,43 +214,74 @@ async function handleSync() {
     await supabase.from("pronosticos_partidos").upsert(mkRows, { onConflict: "participante_id,match_id" });
   }
 
-  // Partidos terminados
-  const terminados = events.map(ev => {
+  // Partidos terminados — construir mapa por ID y por clave home-away
+  const terminados = [];
+  for (const ev of events) {
     const resultado = parseMatchResult(ev);
-    if (!resultado) return null;
-    return { id: ev.id, resultado, pts: etapaPts(ev.date) };
-  }).filter(Boolean);
+    if (!resultado) continue;
+    const comps = ev.competitions?.[0]?.competitors || [];
+    const h = (comps.find(c => c.homeAway === "home")?.team?.displayName || "").toLowerCase();
+    const a = (comps.find(c => c.homeAway === "away")?.team?.displayName || "").toLowerCase();
+    terminados.push({ id: ev.id, resultado, pts: etapaPts(ev.date), key: `${h}|${a}` });
+  }
 
   if (!terminados.length) return { ok: true, msg: "sin partidos terminados", mkUpserted: mkRows.length };
 
-  const matchIds = terminados.map(m => m.id);
-  const resultMap = Object.fromEntries(terminados.map(m => [m.id, m]));
+  // Mapa por ESPN id Y por clave de equipos (para match IDs alternativos)
+  const resultById = Object.fromEntries(terminados.map(m => [m.id, m]));
+  const resultByKey = Object.fromEntries(terminados.map(m => [m.key, m]));
 
+  // Cargar TODAS las predicciones de la sala (sin filtrar por match_id)
   const { data: prons } = await supabase
     .from("pronosticos_partidos")
     .select("participante_id, match_id, prediccion")
-    .in("match_id", matchIds)
     .eq("sala_id", SALA_ID);
 
-  if (!prons?.length) return { ok: true, msg: "sin predicciones para partidos terminados", terminados: terminados.length };
+  if (!prons?.length) return { ok: true, msg: "sin predicciones registradas", terminados: terminados.length };
+
+  // Construir mapa de match_id → partido terminado (incluyendo IDs alternativos)
+  // Para IDs que no están en resultById, buscar por posición relativa al rango conocido
+  const allDbIds = [...new Set(prons.map(p => p.match_id))].sort();
+  const espnIds = terminados.map(m => m.id).sort();
+
+  // Intentar mapear IDs de DB a IDs de ESPN por posición si los rangos difieren
+  const idRemap = {};
+  // Solo remapear si hay desface claro y mismo número de partidos
+  const dbOnlyIds = allDbIds.filter(id => !resultById[id]);
+  if (dbOnlyIds.length > 0 && dbOnlyIds.length <= espnIds.length) {
+    // Alinear por offset: buscar el offset más común
+    const offsets = {};
+    for (let i = 0; i < Math.min(dbOnlyIds.length, espnIds.length); i++) {
+      const off = parseInt(espnIds[i]) - parseInt(dbOnlyIds[i]);
+      offsets[off] = (offsets[off] || 0) + 1;
+    }
+    const bestOffset = Object.entries(offsets).sort((a,b) => b[1]-a[1])[0]?.[0];
+    if (bestOffset !== undefined) {
+      for (const dbId of dbOnlyIds) {
+        const espnId = String(parseInt(dbId) + parseInt(bestOffset));
+        if (resultById[espnId]) idRemap[dbId] = espnId;
+      }
+    }
+  }
 
   // Sumar puntos por jugador
   const puntosMap = {};
   for (const pron of prons) {
-    const match = resultMap[pron.match_id];
+    const espnId = idRemap[pron.match_id] || pron.match_id;
+    const match = resultById[espnId];
     if (!match) continue;
     if (!puntosMap[pron.participante_id]) puntosMap[pron.participante_id] = 0;
     if (pron.prediccion === match.resultado) puntosMap[pron.participante_id] += match.pts;
   }
 
-  // Actualizar puntos en DB
+  // Actualizar puntos en DB para todos los jugadores con predicciones
   const updates = [];
   for (const [pid, pts] of Object.entries(puntosMap)) {
     await supabase.from("participantes").update({ points: pts }).eq("id", pid);
     updates.push({ id: pid, pts });
   }
 
-  return { ok: true, terminados: terminados.length, jugadores: updates.length, mkUpserted: mkRows.length, resumen: updates };
+  return { ok: true, terminados: terminados.length, jugadores: updates.length, mkUpserted: mkRows.length, idRemapCount: Object.keys(idRemap).length, resumen: updates };
 }
 
 // ── Main handler ──────────────────────────────
