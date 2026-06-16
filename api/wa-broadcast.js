@@ -1,7 +1,8 @@
 // Broadcast diario — llama 2x/día via Vercel Cron
 // Envía resumen de noticias + partidos del día a todos los participantes activos
 
-import { sendWA } from "./wa-send.js";
+import { sendWA, sendWAImage } from "./wa-send.js";
+import { datoDia } from "./data/datos-curiosos.js";
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY  = process.env.VITE_SUPABASE_ANON_KEY;
@@ -120,6 +121,12 @@ export default async function handler(req, res) {
     getNoticiasDestacadas(),
   ]);
 
+  const dato = datoDia();
+  // Índice del dato para construir la URL de imagen
+  const INICIO = new Date("2026-06-11T00:00:00-06:00");
+  const datoIdx = Math.max(0, Math.floor((new Date() - INICIO) / 86400000)) % 13;
+  const datoImgUrl = `https://quienvaaganar.vercel.app/api/og?dato=${datoIdx}`;
+
   if (!Array.isArray(participantes) || participantes.length === 0) {
     return res.json({ ok: true, enviados: 0, msg: "sin participantes" });
   }
@@ -137,6 +144,11 @@ export default async function handler(req, res) {
   for (let i = 0; i < unicos.length; i++) {
     const p = unicos[i];
     const nombre = p.nombre || "crack";
+    // En turno mañana: primero imagen con dato curioso, luego texto con partidos y noticias
+    if (esMañana) {
+      await sendWAImage(p.whatsapp, datoImgUrl, `📌 Dato curioso del día · ${dato.tag}`);
+      await new Promise(ok => setTimeout(ok, 300));
+    }
     const msg = mensajeManana(nombre, partidos, noticias);
     const r = await sendWA(p.whatsapp, msg);
     resultados.push({ nombre: p.nombre, wa: p.whatsapp, ok: r.ok, error: r.ok ? undefined : r.data });

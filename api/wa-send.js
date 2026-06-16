@@ -74,6 +74,30 @@ export async function sendWATemplate(to, templateName, params = []) {
   return { ok: r.ok, status: r.status, data };
 }
 
+export async function sendWAImage(to, imageUrl, caption = "") {
+  const phone = normalizePhone(to);
+  if (!phone) return { ok: false, error: "número inválido: " + to };
+
+  const body = {
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "image",
+    image: { link: imageUrl, ...(caption && { caption }) },
+  };
+
+  const r = await fetch(WA_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  const data = await r.json();
+  return { ok: r.ok, status: r.status, data };
+}
+
 // Handler HTTP directo (para pruebas manuales)
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
