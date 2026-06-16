@@ -1,11 +1,16 @@
 // POST /api/ai?type=analizar|recomendar|marketeria
-// Unifica los tres endpoints de IA en uno solo (límite 12 functions en Vercel Hobby)
+// GET  /api/ai?type=sync&secret=... — sincroniza puntos de todos los jugadores
+// Unifica endpoints de IA en uno solo (límite 12 functions en Vercel Hobby)
 
 import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { createClient } from "@supabase/supabase-js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const supabase = createClient(process.env.VITE_SUPABASE_URL, process.env.VITE_SUPABASE_ANON_KEY);
+const MARKETERIA_ID = "1b3d7ee1-c448-426e-8f22-7d2724f713db";
+const SALA_ID = "mundial2026";
 
 let cachedRanking = null;
 
@@ -133,15 +138,144 @@ Ranking FIFA (fuente principal para fuerza de plantilla):\n${rankingText}`;
   return { ok: true, respuesta };
 }
 
+// ── Sync: calcular puntos de todos los jugadores ──────────────
+
+const SYNC_ALIASES = {
+  "united states":"usa","estados unidos":"usa","brazil":"bra","brasil":"bra",
+  "germany":"ger","france":"fra","spain":"esp","españa":"esp","england":"eng",
+  "mexico":"mex","méxico":"mex","netherlands":"ned","holland":"ned",
+  "turkey":"tur","türkiye":"tur","south korea":"kor","korea republic":"kor",
+  "ivory coast":"civ","côte d'ivoire":"civ","cote d'ivoire":"civ",
+  "dr congo":"cod","iran":"irn","ir iran":"irn","saudi arabia":"ksa",
+  "switzerland":"sui","canada":"can","canadá":"can","czechia":"cze","czech republic":"cze",
+  "new zealand":"nzl","cabo verde":"cpv","cape verde":"cpv",
+  "curaçao":"cuw","curacao":"cuw","senegal":"sen","norway":"nor","noruega":"nor",
+  "south africa":"rsa","bosnia & herzegovina":"bih","bosnia and herzegovina":"bih",
+  "bosnia-herzegovina":"bih",
+};
+
+function syncLookup(name) {
+  const low = (name || "").toLowerCase().trim();
+  const r = loadRanking();
+  const alias = SYNC_ALIASES[low];
+  return r.find(t => t.code.toLowerCase() === (alias || low) || t.name.toLowerCase() === (alias || low)) || null;
+}
+
+function syncPredict(homeName, awayName) {
+  const home = syncLookup(homeName);
+  const away = syncLookup(awayName);
+  if (!home || !away) return null;
+  const diff = home.finalScore - away.finalScore;
+  if (diff > 2)  return "local";
+  if (diff < -2) return "visitante";
+  return "empate";
+}
+
+function parseMatchResult(event) {
+  const comp = event.competitions?.[0];
+  if (!comp?.status?.type?.completed) return null;
+  const home = comp.competitors?.find(t => t.homeAway === "home");
+  const away = comp.competitors?.find(t => t.homeAway === "away");
+  if (!home || !away) return null;
+  const h = parseInt(home.score || "0");
+  const a = parseInt(away.score || "0");
+  if (h > a) return "local";
+  if (a > h) return "visitante";
+  return "empate";
+}
+
+function etapaPts(dateStr) {
+  const d = new Date(dateStr);
+  const mes = d.getUTCMonth() + 1;
+  const dia = d.getUTCDate();
+  if (mes === 6) return 3;           // Grupos
+  if (mes === 7 && dia <= 5)  return 2; // Octavos
+  if (mes === 7 && dia <= 12) return 3; // Cuartos
+  if (mes === 7 && dia <= 16) return 5; // Semis
+  return 10;                         // Final
+}
+
+async function handleSync() {
+  const r = await fetch("https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=20260611-20260720");
+  const data = await r.json();
+  const events = (data.events || []).filter(e => (e.competitions?.[0]?.competitors || []).length === 2);
+
+  // Upsert predicciones MarketerIA
+  const mkRows = [];
+  for (const ev of events) {
+    const comps = ev.competitions?.[0]?.competitors || [];
+    const h = comps.find(c => c.homeAway === "home")?.team?.displayName || "";
+    const a = comps.find(c => c.homeAway === "away")?.team?.displayName || "";
+    const pred = syncPredict(h, a);
+    if (!pred) continue;
+    mkRows.push({ participante_id: MARKETERIA_ID, sala_id: SALA_ID, match_id: ev.id, prediccion: pred, usa_ia: true });
+  }
+  if (mkRows.length > 0) {
+    await supabase.from("pronosticos_partidos").upsert(mkRows, { onConflict: "participante_id,match_id" });
+  }
+
+  // Partidos terminados
+  const terminados = events.map(ev => {
+    const resultado = parseMatchResult(ev);
+    if (!resultado) return null;
+    return { id: ev.id, resultado, pts: etapaPts(ev.date) };
+  }).filter(Boolean);
+
+  if (!terminados.length) return { ok: true, msg: "sin partidos terminados", mkUpserted: mkRows.length };
+
+  const matchIds = terminados.map(m => m.id);
+  const resultMap = Object.fromEntries(terminados.map(m => [m.id, m]));
+
+  const { data: prons } = await supabase
+    .from("pronosticos_partidos")
+    .select("participante_id, match_id, prediccion")
+    .in("match_id", matchIds)
+    .eq("sala_id", SALA_ID);
+
+  if (!prons?.length) return { ok: true, msg: "sin predicciones para partidos terminados", terminados: terminados.length };
+
+  // Sumar puntos por jugador
+  const puntosMap = {};
+  for (const pron of prons) {
+    const match = resultMap[pron.match_id];
+    if (!match) continue;
+    if (!puntosMap[pron.participante_id]) puntosMap[pron.participante_id] = 0;
+    if (pron.prediccion === match.resultado) puntosMap[pron.participante_id] += match.pts;
+  }
+
+  // Actualizar puntos en DB
+  const updates = [];
+  for (const [pid, pts] of Object.entries(puntosMap)) {
+    await supabase.from("participantes").update({ points: pts }).eq("id", pid);
+    updates.push({ id: pid, pts });
+  }
+
+  return { ok: true, terminados: terminados.length, jugadores: updates.length, mkUpserted: mkRows.length, resumen: updates };
+}
+
 // ── Main handler ──────────────────────────────
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Headers", "content-type");
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
-  if (req.method !== "POST") return res.status(405).json({ error: "método no permitido" });
 
   const type = req.query.type;
+
+  // Sync no requiere POST
+  if (type === "sync") {
+    const secret = req.query.secret || req.headers["x-cron-secret"];
+    if (secret !== process.env.CRON_SECRET) return res.status(401).json({ error: "unauthorized" });
+    try {
+      const result = await handleSync();
+      return res.json(result);
+    } catch (e) {
+      return res.status(500).json({ error: e.message });
+    }
+  }
+
+  if (req.method !== "POST") return res.status(405).json({ error: "método no permitido" });
+
   try {
     let result;
     if      (type === "analizar")    result = await handleAnalizar(req.body || {});
