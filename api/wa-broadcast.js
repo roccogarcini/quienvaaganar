@@ -2,7 +2,7 @@
 // Envía resumen de noticias + partidos del día a todos los participantes activos
 
 import { sendWA, sendWAImage } from "./wa-send.js";
-import { datoDia } from "./data/datos-curiosos.js";
+import { datoDia, datoIdx } from "./data/datos-curiosos.js";
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY  = process.env.VITE_SUPABASE_ANON_KEY;
@@ -122,10 +122,8 @@ export default async function handler(req, res) {
   ]);
 
   const dato = datoDia();
-  // Índice del dato para construir la URL de imagen
-  const INICIO = new Date("2026-06-11T00:00:00-06:00");
-  const datoIdx = Math.max(0, Math.floor((new Date() - INICIO) / 86400000)) % 13;
-  const datoImgUrl = `https://quienvaaganar.vercel.app/api/og?dato=${datoIdx}`;
+  const idx = datoIdx();
+  const datoImgUrl = `https://quienvaaganar.vercel.app/datos/v6_story_${String(idx + 1).padStart(2, "0")}.png`;
 
   if (!Array.isArray(participantes) || participantes.length === 0) {
     return res.json({ ok: true, enviados: 0, msg: "sin participantes" });

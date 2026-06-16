@@ -1,0 +1,154 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans)}
+.container{padding:1.5rem 0;display:flex;flex-direction:column;gap:16px}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem 1.5rem;position:relative;overflow:hidden}
+.tag{display:inline-block;font-size:11px;font-weight:500;letter-spacing:.04em;padding:3px 10px;border-radius:20px;margin-bottom:10px;text-transform:uppercase}
+.tag-pop{background:#EEE DFE;background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.tag-record{background:#EEEDFE;color:#3C3489}
+.tag-geo{background:#E1F5EE;color:#085041}
+.tag-drama{background:#FAECE7;color:#993C1D}
+.tag-stat{background:#E6F1FB;color:#0C447C}
+.dato-num{font-size:36px;font-weight:500;color:var(--color-text-primary);line-height:1;margin-bottom:6px}
+.dato-titulo{font-size:17px;font-weight:500;color:var(--color-text-primary);margin-bottom:6px;line-height:1.3}
+.dato-cuerpo{font-size:14px;color:var(--color-text-secondary);line-height:1.6}
+.dato-cuerpo strong{color:var(--color-text-primary);font-weight:500}
+.acento{position:absolute;top:0;right:0;width:4px;height:100%;background:#7F77DD}
+.acento-teal{background:#1D9E75}
+.acento-coral{background:#D85A30}
+.acento-blue{background:#378ADD}
+.acento-amber{background:#BA7517}
+.acento-pink{background:#D4537E}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.footer-tag{margin-top:10px;font-size:12px;color:var(--color-text-tertiary);font-weight:500}
+.separador{border:none;border-top:0.5px solid var(--color-border-tertiary);margin:4px 0 12px}
+@media(max-width:560px){.grid2{grid-template-columns:1fr}}
+</style>
+<div class="container">
+
+<div style="font-size:13px;color:var(--color-text-secondary);font-weight:500;padding:0 0 4px;letter-spacing:.03em">MUNDIAL 2026 · DATOS QUE NO VAS A VER EN NINGÚN OTRO LADO</div>
+
+<div class="card">
+  <div class="acento"></div>
+  <span class="tag tag-record">🏆 Récord histórico</span>
+  <div class="dato-num">6</div>
+  <div class="dato-titulo">Messi, Cristiano y Ochoa. Seis Mundiales cada uno.</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Nadie en la historia del fútbol lo había hecho antes. Tres generaciones distintas, el mismo escenario, por sexta vez.</div>
+  <div class="footer-tag">#Mundial2026 #Messi #Cristiano #Ochoa</div>
+</div>
+
+<div class="card">
+  <div class="acento acento-teal"></div>
+  <span class="tag tag-geo">🌍 Geopolítica del fútbol</span>
+  <div class="dato-titulo">Curazao: 185,000 habitantes, 26 jugadores convocados.</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Solo <strong>uno nació en la isla</strong>. Los otros 25 nacieron en Países Bajos. El país tiene casi los mismos habitantes que Badajoz, España. Y está en el Mundial.</div>
+  <div class="footer-tag">#Curazao #Mundial2026 #CuriositiesFutbol</div>
+</div>
+
+<div class="grid2">
+  <div class="card">
+    <div class="acento acento-coral"></div>
+    <span class="tag tag-drama">⚡ Extremos</span>
+    <div class="dato-num">43 vs 17</div>
+    <div class="dato-titulo">El mayor y el menor del torneo</div>
+    <hr class="separador">
+    <div class="dato-cuerpo">Craig Gordon (Escocia) y Gilberto Mora (México). <strong>25 años de diferencia</strong> en el mismo Mundial.</div>
+    <div class="footer-tag">#México #Escocia</div>
+  </div>
+  <div class="card">
+    <div class="acento acento-coral"></div>
+    <span class="tag tag-drama">📏 Extremos</span>
+    <div class="dato-num">2.05 vs 1.60</div>
+    <div class="dato-titulo">Casi medio metro de diferencia</div>
+    <hr class="separador">
+    <div class="dato-cuerpo">Wiegele (Austria) vs Yanis (Panamá). Los dos extremos de altura del torneo.</div>
+    <div class="footer-tag">#Datos #Mundial2026</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="acento acento-blue"></div>
+  <span class="tag tag-stat">📊 Estadística</span>
+  <div class="dato-num">891 / 1,248</div>
+  <div class="dato-titulo">Casi 3 de cada 4 jugadores debutan en un Mundial</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">El torneo más grande de la historia (48 equipos) también es el más virgen. <strong>71% de los jugadores</strong> nunca habían pisado este escenario.</div>
+  <div class="footer-tag">#Mundial2026 #Futbol</div>
+</div>
+
+<div class="card">
+  <div class="acento acento-amber"></div>
+  <span class="tag tag-drama">🟡 El drama</span>
+  <div class="dato-titulo">Senegal quedó eliminado... por tarjetas amarillas</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">En 2018, Senegal y Japón estaban <strong>empatados en todo</strong>: puntos, goles, diferencia. El desempate fue la disciplina. Senegal tenía más amarillas. Afuera.</div>
+  <div class="footer-tag">#Senegal #RusiaWorldCup #CuriositiesFutbol</div>
+</div>
+
+<div class="card">
+  <div class="acento" style="background:#1D9E75"></div>
+  <span class="tag tag-geo">🏟 Icono</span>
+  <div class="dato-titulo">El Estadio Azteca es único en la historia del mundo</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Es el único estadio que ha albergado <strong>tres partidos inaugurales de Copa del Mundo</strong>: 1970, 1986 y 2026. No existe otro caso igual.</div>
+  <div class="footer-tag">#Azteca #México #Mundial2026</div>
+</div>
+
+<div class="card">
+  <div class="acento acento-pink"></div>
+  <span class="tag tag-drama">👨‍👦 Familia</span>
+  <div class="dato-titulo">8 pares de hermanos. 4 de ellos en selecciones distintas.</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Los Timber en Holanda, los Duarte en Cabo Verde, los Bacuna en Curazao. Y el caso más extremo: los hermanos Xhaka, uno con Suiza y otro con Albania, <strong>enfrentándose en la Eurocopa anterior</strong>.</div>
+  <div class="footer-tag">#Hermanos #Mundial2026 #Futbol</div>
+</div>
+
+<div class="card">
+  <div class="acento" style="background:#378ADD"></div>
+  <span class="tag tag-stat">🏴󠁧󠁢󠁮󠁬󠁳󠁿 Racha</span>
+  <div class="dato-titulo">Países Bajos no pierde un partido mundialista desde 2010</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">La última derrota fue la final de Sudáfrica: España 1-0. Desde entonces, <strong>16 años sin perder</strong> en fase de grupos o eliminatorias mundialistas.</div>
+  <div class="footer-tag">#Holanda #PaísesBajos #Mundial2026</div>
+</div>
+
+<div class="card">
+  <div class="acento acento-coral"></div>
+  <span class="tag tag-drama">🔴 La más violenta</span>
+  <div class="dato-titulo">La Batalla de Núremberg, 2006</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Portugal vs Países Bajos: <strong>16 amarillas, 4 rojas</strong>, cuatro expulsados en un solo partido. Portugal ganó 1-0 en octavos. Fue fútbol... en el sentido más amplio de la palabra.</div>
+  <div class="footer-tag">#Historia #Mundial2006 #Futbol</div>
+</div>
+
+<div class="card">
+  <div class="acento" style="background:#BA7517"></div>
+  <span class="tag tag-stat">⏳ Sequía</span>
+  <div class="dato-titulo">Brasil lleva 24 años sin ganar un Mundial</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Es el único país presente en todos los Mundiales de la historia. Tiene 5 títulos. Pero el último fue en <strong>2002, en Corea-Japón</strong>. La espera se alarga.</div>
+  <div class="footer-tag">#Brasil #Mundial2026 #Futbol</div>
+</div>
+
+<div class="card">
+  <div class="acento" style="background:#7F77DD"></div>
+  <span class="tag tag-record">🔴 Maldición</span>
+  <div class="dato-titulo">Suiza pasa la fase de grupos. Y ahí se queda.</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Tres Mundiales seguidos clasificando. Tres veces eliminada en octavos. <strong>No llegan a cuartos de final desde 1954</strong>. 72 años de frustración puntual.</div>
+  <div class="footer-tag">#Suiza #Mundial2026 #Futbol</div>
+</div>
+
+<div class="card" style="border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary)">
+  <span class="tag tag-geo">📡 Tecnología</span>
+  <div class="dato-titulo">El Mundial 2026 tiene IA integrada en el arbitraje</div>
+  <hr class="separador">
+  <div class="dato-cuerpo">Sensores en los balones, cámaras especiales, avatares 3D hiperrealistas y sistemas automatizados de decisión. La FIFA apostó todo a eliminar el error humano. O intentarlo.</div>
+  <div class="footer-tag">#IA #TecnologíaDeportiva #Mundial2026</div>
+</div>
+
+<div style="font-size:12px;color:var(--color-text-tertiary);text-align:center;padding-top:4px">Haz clic en cualquier tarjeta para compartirla · @Marketeria</div>
+</div>

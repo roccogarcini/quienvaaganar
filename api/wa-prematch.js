@@ -1,6 +1,7 @@
 // Pre-match — corre cada 30 min via cron-job.org, avisa 30 min antes del partido
 
-import { sendWA } from "./wa-send.js";
+import { sendWA, sendWAImage } from "./wa-send.js";
+import { datoIdx } from "./data/datos-curiosos.js";
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = process.env.VITE_SUPABASE_ANON_KEY;
@@ -76,6 +77,8 @@ export default async function handler(req, res) {
   });
 
   const resultados = [];
+  const idx = datoIdx();
+  const datoImgUrl = `https://quienvaaganar.vercel.app/datos/v6_story_${String(idx + 1).padStart(2, "0")}.png`;
 
   for (const ev of proximos) {
     const comps = ev.competitions?.[0]?.competitors || [];
@@ -88,6 +91,9 @@ export default async function handler(req, res) {
 
     for (let i = 0; i < unicos.length; i++) {
       const r = await sendWA(unicos[i].whatsapp, msg);
+      // Segundos después: dato curioso del día
+      await new Promise(ok => setTimeout(ok, 3000));
+      await sendWAImage(unicos[i].whatsapp, datoImgUrl, "📌 Dato curioso del día · #Mundial2026");
       resultados.push({ nombre: unicos[i].nombre, partido: `${local} vs ${visit}`, ok: r.ok });
       if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
     }

@@ -3062,6 +3062,28 @@ function TipCard({ t, accent }) {
 }
 
 // ── TAB: TIPS ──────────────────────────────────
+const DATOS_CURIOSOS = [
+  { img:"/datos/v6_story_01.png", tag:"🏆 Récord", titulo:"Messi, Cristiano y Ochoa. Seis Mundiales cada uno.", texto:"Nadie en la historia lo había hecho. Tres generaciones distintas, el mismo escenario, por sexta vez." },
+  { img:"/datos/v6_story_02.png", tag:"🌍 Geopolítica", titulo:"Curazao: 185,000 habitantes, 26 jugadores convocados.", texto:"Solo 1 nació en la isla. Los otros 25 nacieron en Países Bajos. El fútbol moderno ya no tiene fronteras." },
+  { img:"/datos/v6_story_03.png", tag:"⚡ Edades", titulo:"43 vs 17. El mayor y el menor del torneo.", texto:"Craig Gordon (Escocia) y Gilberto Mora (México). 25 años de diferencia en el mismo Mundial." },
+  { img:"/datos/v6_story_04.png", tag:"📏 Alturas", titulo:"2.05 vs 1.60. Casi medio metro de diferencia.", texto:"Wiegele (Austria) vs Yanis (Panamá). El mismo balón. El mismo torneo." },
+  { img:"/datos/v6_story_05.png", tag:"📊 Estadística", titulo:"891 de 1,248 jugadores debutan en un Mundial.", texto:"El torneo más grande de la historia también es el más virgen. Casi 3 de cada 4 jugadores nunca habían pisado este escenario." },
+  { img:"/datos/v6_story_06.png", tag:"🟡 Drama", titulo:"Senegal eliminado… por tarjetas amarillas.", texto:"En 2018, Senegal y Japón estaban empatados en todo. El desempate fue la disciplina. Afuera." },
+  { img:"/datos/v6_story_07.png", tag:"🏟 Icono", titulo:"El Azteca: el único estadio con 3 inaugurales mundiales.", texto:"1970, 1986 y 2026. Tres veces. Tres generaciones. Un solo estadio." },
+  { img:"/datos/v6_story_08.png", tag:"👨‍👦 Familia", titulo:"8 pares de hermanos. 4 en selecciones distintas.", texto:"Los Xhaka: Granit con Suiza, Taulant con Albania. Se enfrentaron en la Eurocopa anterior." },
+  { img:"/datos/v6_story_09.png", tag:"🏴 Racha", titulo:"Países Bajos no pierde en un Mundial desde 2010.", texto:"16 años sin perder. La final de Sudáfrica fue la última derrota: España 1-0." },
+  { img:"/datos/v6_story_10.png", tag:"🔴 Violencia", titulo:"La Batalla de Núremberg, 2006.", texto:"Portugal vs Países Bajos: 16 amarillas, 4 rojas, 4 expulsados en un solo partido." },
+  { img:"/datos/v6_story_11.png", tag:"⏳ Sequía", titulo:"Brasil: 5 títulos y 24 años sin ganar.", texto:"El único país en todos los Mundiales de la historia. Pero el último título fue en 2002." },
+  { img:"/datos/v6_story_12.png", tag:"🧤 Viral", titulo:"Vozinha: de 50K a 5.7M seguidores en 90 minutos.", texto:"Atajó todo ante España. Cabo Verde empató. Y el mundo entero lo descubrió en vivo." },
+  { img:"/datos/v6_story_13.png", tag:"📱 Viral", titulo:"Tim Payne: de 4,715 a 5.8M seguidores sin jugar un minuto.", texto:"Un influencer argentino lanzó una campaña para hacerlo famoso. Resultó." },
+  { img:"/datos/v6_story_14.png", tag:"👀 Dato", titulo:"España al Mundial sin ningún jugador del Real Madrid.", texto:"Por primera vez en la historia. Mientras el Madrid manda 10 jugadores a 9 selecciones distintas." },
+  { img:"/datos/v6_story_15.png", tag:"📊 Formato", titulo:"104 partidos vs 64 de Qatar. Un 60% más de fútbol.", texto:"Si crees que ya viste todo en un Mundial, este torneo vino a contradecirte." },
+  { img:"/datos/v6_story_16.png", tag:"🇺🇸 Anfitrión", titulo:"EE.UU. 4-1 Paraguay. El anfitrión avisó.", texto:"Balogun anotó dos. El país que inventó el Super Bowl descubrió que también sabe jugar fútbol." },
+  { img:"/datos/v6_story_17.png", tag:"🇶🇦 Sorpresa", titulo:"Qatar empató con Suiza. Nadie lo vio venir.", texto:"En 2022 perdió todo en casa. En 2026 debutó empatando con Suiza. El fútbol no tiene memoria." },
+  { img:"/datos/v6_story_18.png", tag:"🆕 Histórico", titulo:"Dieciseisavos: la ronda que nunca existió.", texto:"Por primera vez en la historia del Mundial hay una ronda de dieciseisavos. El formato que todos criticaron… está funcionando." },
+  { img:"/datos/v6_story_19.png", tag:"💸 Precios", titulo:"Boletos del Mundial: de 7 a 200 millones de pesos.", texto:"35% más caros que Qatar 2022. Los estadios están llenos. Porque hay cosas que simplemente las pagas sin chistar." },
+];
+
 function TipsInfo() {
   const TIPS_REGLAS = [
     {emoji:"🚩",titulo:"Fuera de juego (Offside)",texto:"Si un atacante está más cerca del arco rival que el último defensa en el momento del pase, el árbitro marca offside. El VAR lo confirma con una línea.",
@@ -3115,6 +3137,20 @@ function TipsInfo() {
       </div>
       {TIPS_QUINIELA.map((t,i)=>(
         <TipCard key={i} t={t} accent />
+      ))}
+
+      <div style={{color:C.muted,fontSize:10,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.07em",paddingTop:4}}>
+        Datos curiosos del Mundial 🌍
+      </div>
+      {DATOS_CURIOSOS.map((d,i)=>(
+        <div key={i} style={{background:C.card,border:`0.5px solid ${C.border}`,borderRadius:14,overflow:"hidden"}}>
+          <img src={d.img} alt={d.titulo} style={{width:"100%",display:"block",borderRadius:"14px 14px 0 0"}} loading="lazy" />
+          <div style={{padding:"10px 14px 12px"}}>
+            <div style={{fontSize:10,fontWeight:600,color:"#a78bfa",marginBottom:4,textTransform:"uppercase",letterSpacing:"0.05em"}}>{d.tag}</div>
+            <div style={{fontSize:14,fontWeight:600,color:C.text,marginBottom:4,lineHeight:1.3}}>{d.titulo}</div>
+            <div style={{fontSize:12,color:C.muted,lineHeight:1.5}}>{d.texto}</div>
+          </div>
+        </div>
       ))}
 
       <p style={{color:"#7c3aed",fontSize:11,textAlign:"center",padding:"4px 0 8px"}}>
