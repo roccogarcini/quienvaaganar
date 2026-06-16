@@ -1466,6 +1466,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showMarketerIA, setShowMarketerIA] = useState(false);
   const [marketeriaMatches, setMarketeriaMatches] = useState([]);
+  const [playerModal, setPlayerModal] = useState(null); // jugador seleccionado para ver detalle
 
   const salaLink = `${APP_URL}/sala/${sala.id}`;
   const yo = participantes.find(p => p.id === miId);
@@ -1668,9 +1669,9 @@ function Sala({ sala, miId, onFirstTabChange }) {
           {sorted.map((p,i)=>{
             const esMktIA = p.id === MARKETERIA_ID;
             return (
-            <div key={p.id} style={{ ...cardStyle, opacity:p.eliminado?0.55:1,
+            <div key={p.id} onClick={()=>setPlayerModal(p)} style={{ ...cardStyle, opacity:p.eliminado?0.55:1,
               border:`0.5px solid ${esMktIA?"#7c3aed66":p.id===miId?C.blue:C.border}`,
-              background: esMktIA?"#0d0a1f":C.card }}>
+              background: esMktIA?"#0d0a1f":C.card, cursor:"pointer" }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                 <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                   <span style={{ fontSize:14, minWidth:22 }}>{medals[i]||i+1}</span>
@@ -1703,7 +1704,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
                 </div>
               </div>
               {esAdmin && showAdminPanel && !esMktIA && (
-                <div style={{ display:"flex", gap:6, marginTop:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
+                <div onClick={e=>e.stopPropagation()} style={{ display:"flex", gap:6, marginTop:10, justifyContent:"flex-end", flexWrap:"wrap" }}>
                   <button style={{...BtnG,fontSize:12}} onClick={()=>modPts(p.id,curPts)}>+{curPts}</button>
                   <button style={{...BtnR,fontSize:12}} onClick={()=>modPts(p.id,-curPts)}>−{curPts}</button>
                   <button style={{...Btn(),fontSize:12}} onClick={()=>toggleElim(p.id)}>{p.eliminado?"Reactivar":"Elim. equipo"}</button>
@@ -1955,6 +1956,23 @@ function Sala({ sala, miId, onFirstTabChange }) {
 
         {tab==="noticias" && <Noticias />}
 
+        {playerModal && (
+          <PlayerModal
+            jugador={playerModal}
+            salaId={sala.id}
+            matches={marketeriaMatches}
+            onClose={()=>setPlayerModal(null)}
+            loadMatches={async () => {
+              if (!marketeriaMatches.length) {
+                try {
+                  const r = await fetch(`/api/fotmob?endpoint=scoreboard&dates=20260611-20260701`);
+                  const d = await r.json();
+                  setMarketeriaMatches(d.events || []);
+                } catch {}
+              }
+            }}
+          />
+        )}
         {tab==="tips" && <TipsInfo />}
 
         {tab==="marketeria" && <MarketerIA asTab matches={marketeriaMatches} onTabOpen={async () => {
@@ -3062,6 +3080,124 @@ function TipCard({ t, accent }) {
 }
 
 // ── TAB: TIPS ──────────────────────────────────
+// ── MODAL: DETALLE DE PUNTOS DE UN JUGADOR ──────────
+function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
+  const [prons, setProns] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const esMktIA = jugador.id === MARKETERIA_ID;
+
+  useEffect(() => {
+    if (loadMatches) loadMatches();
+    supabase
+      .from("pronosticos_partidos")
+      .select("match_id, prediccion, resultado, pts_obtenidos")
+      .eq("participante_id", jugador.id)
+      .eq("sala_id", salaId)
+      .then(({ data }) => { setProns(data || []); setLoading(false); });
+  }, [jugador.id, salaId]);
+
+  const terminados = prons.filter(p => p.resultado != null).sort((a,b)=>String(a.match_id).localeCompare(String(b.match_id)));
+  const pendientes = prons.filter(p => p.resultado == null);
+  const totalPts = terminados.reduce((s,p) => s + (p.pts_obtenidos||0), 0);
+  const aciertos = terminados.filter(p => p.pts_obtenidos > 0).length;
+
+  function getMatch(mid) {
+    return matches.find(m => String(m.id) === String(mid));
+  }
+  function teamName(ev, side) {
+    const comp = ev?.competitions?.[0]?.competitors?.find(c => c.homeAway === side);
+    return comp?.team?.shortDisplayName || comp?.team?.displayName || (side === "home" ? "Local" : "Visit.");
+  }
+  function predLabel(pred, ev) {
+    if (!ev) return pred;
+    if (pred === "local") return teamName(ev, "home");
+    if (pred === "visitante") return teamName(ev, "away");
+    return "Empate";
+  }
+  function resLabel(res, ev) {
+    if (!ev) return res;
+    if (res === "local") return teamName(ev, "home");
+    if (res === "visitante") return teamName(ev, "away");
+    return "Empate";
+  }
+
+  return (
+    <div onClick={onClose} style={{ position:"fixed", inset:0, background:"#000000bb", zIndex:200, display:"flex", alignItems:"flex-end", justifyContent:"center" }}>
+      <div onClick={e=>e.stopPropagation()} style={{ background:C.bg, borderRadius:"20px 20px 0 0", width:"100%", maxWidth:480, maxHeight:"85vh", overflowY:"auto", padding:"20px 16px 36px" }}>
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+            {esMktIA
+              ? <div style={{ width:40,height:40,borderRadius:"50%",background:"#7c3aed33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22 }}>🤖</div>
+              : <Avatar p={jugador} size={40} />}
+            <div>
+              <div style={{ color:C.text, fontWeight:600, fontSize:16 }}>{jugador.nombre}</div>
+              <div style={{ color:C.muted, fontSize:12 }}>{jugador.equipo}</div>
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, fontSize:22, cursor:"pointer", padding:"4px 8px" }}>✕</button>
+        </div>
+
+        {/* Resumen */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:20 }}>
+          {[
+            { label:"Puntos", val: jugador.points, color: C.gold },
+            { label:"Acertados", val: loading ? "…" : aciertos, color: C.green },
+            { label:"Jugados", val: loading ? "…" : terminados.length, color: C.text },
+          ].map(({ label, val, color }) => (
+            <div key={label} style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
+              <div style={{ fontSize:22, fontWeight:700, color }}>{val}</div>
+              <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {loading && <div style={{ textAlign:"center", color:C.muted, padding:24 }}>Cargando pronósticos…</div>}
+
+        {!loading && terminados.length === 0 && (
+          <div style={{ textAlign:"center", color:C.muted, padding:24 }}>Aún no hay partidos terminados con pronóstico.</div>
+        )}
+
+        {!loading && terminados.length > 0 && (
+          <>
+            <div style={{ color:C.muted, fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Partidos jugados</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+              {terminados.map(pr => {
+                const ev = getMatch(pr.match_id);
+                const acierto = pr.pts_obtenidos > 0;
+                const home = ev ? teamName(ev, "home") : "Local";
+                const away = ev ? teamName(ev, "away") : "Visit.";
+                return (
+                  <div key={pr.match_id} style={{ background:C.card, border:`0.5px solid ${acierto ? C.green+"55" : C.border}`, borderRadius:10, padding:"10px 12px", display:"flex", alignItems:"center", gap:10 }}>
+                    <span style={{ fontSize:18, flexShrink:0 }}>{acierto ? "✅" : "❌"}</span>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:500, color:C.text, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{home} vs {away}</div>
+                      <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>
+                        Pronóstico: <span style={{ color: acierto ? C.green : C.red }}>{predLabel(pr.prediccion, ev)}</span>
+                        {" · "}Resultado: <span style={{ color:C.text }}>{resLabel(pr.resultado, ev)}</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign:"right", flexShrink:0 }}>
+                      <span style={{ fontSize:15, fontWeight:700, color: acierto ? C.green : C.muted }}>{acierto ? `+${pr.pts_obtenidos}` : "0"}</span>
+                      <span style={{ fontSize:10, color:C.muted }}> pts</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {!loading && pendientes.length > 0 && (
+          <div style={{ marginTop:14, color:C.muted, fontSize:12, textAlign:"center" }}>
+            {pendientes.length} pronóstico{pendientes.length > 1 ? "s" : ""} pendiente{pendientes.length > 1 ? "s" : ""} por jugarse
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const DATOS_CURIOSOS = [
   { img:"/datos/v6_story_01.png", tag:"🏆 Récord", titulo:"Messi, Cristiano y Ochoa. Seis Mundiales cada uno.", texto:"Nadie en la historia lo había hecho. Tres generaciones distintas, el mismo escenario, por sexta vez." },
   { img:"/datos/v6_story_02.png", tag:"🌍 Geopolítica", titulo:"Curazao: 185,000 habitantes, 26 jugadores convocados.", texto:"Solo 1 nació en la isla. Los otros 25 nacieron en Países Bajos. El fútbol moderno ya no tiene fronteras." },
