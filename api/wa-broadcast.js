@@ -1,7 +1,7 @@
 // Broadcast diario — llama 2x/día via Vercel Cron
 // Envía resumen de noticias + partidos del día a todos los participantes activos
 
-import { sendWATemplate } from "./wa-send.js";
+import { sendWA } from "./wa-send.js";
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY  = process.env.VITE_SUPABASE_ANON_KEY;
@@ -82,60 +82,23 @@ async function getNoticiasDestacadas() {
 
 // ── Mensajes con tono divertido ──────────────────────
 
-function mensajeManana(nombre, partidos, noticias, turno) {
-  const saludos = [
-    `☀️ ¡Buenos días, ${nombre}! El Mundial no se detiene y tu quiniela tampoco.`,
-    `🌅 ¡Despierta, ${nombre}! El fútbol no espera ni el café.`,
-    `⚽ ¡Arriba ${nombre}! Otro día, otra oportunidad de presumir tu quiniela.`,
-  ];
-  const saludo = saludos[turno % saludos.length];
-
-  let msg = `${saludo}\n\n`;
+function mensajeManana(nombre, partidos, noticias) {
+  let msg = `☀️ ¡Buenos días, ${nombre}!\n\n`;
 
   if (partidos.length > 0) {
     msg += `🗓️ *PARTIDOS DE HOY*\n`;
     partidos.forEach(p => { msg += `▸ ${p}\n`; });
-    msg += `\n`;
   } else {
-    msg += `😴 Hoy no hay partidos del Mundial. Descansa... o ponle drama de todas formas.\n\n`;
+    msg += `😴 Hoy no hay partidos del Mundial.\n`;
   }
 
   if (noticias.length > 0) {
-    msg += `🔥 *LO QUE SE ESTÁ HABLANDO*\n`;
+    msg += `\n📰 *NOTICIAS DE AYER*\n`;
     noticias.forEach(n => { msg += `${n}\n`; });
-    msg += `\n`;
   }
 
-  msg += `👉 Checa tu sala: https://quienvaaganar.vercel.app\n`;
-  msg += `_QuiénVaAGanar 🏆 · Powered by MarketerIA_`;
-  return msg;
-}
-
-function mensajeNoche(nombre, partidos, noticias, turno) {
-  const saludos = [
-    `🌙 ¡Buenas noches, ${nombre}! Resumen del día mundialero:`,
-    `⭐ ${nombre}, el día futbolero ya terminó. Aquí el recap:`,
-    `🌛 Hora del resumen nocturno, ${nombre}. No te lo pierdas:`,
-  ];
-  const saludo = saludos[turno % saludos.length];
-
-  let msg = `${saludo}\n\n`;
-
-  if (partidos.length > 0) {
-    msg += `⚽ *PARTIDOS DE HOY*\n`;
-    partidos.forEach(p => { msg += `▸ ${p}\n`; });
-    msg += `\n`;
-  }
-
-  if (noticias.length > 0) {
-    msg += `📰 *TITULARES*\n`;
-    noticias.forEach(n => { msg += `${n}\n`; });
-    msg += `\n`;
-  }
-
-  msg += `Mañana más fútbol, más drama, más quiniela. 💪\n`;
-  msg += `👉 https://quienvaaganar.vercel.app\n`;
-  msg += `_QuiénVaAGanar 🏆 · Powered by MarketerIA_`;
+  msg += `\n👉 quienvaaganar.vercel.app\n`;
+  msg += `_QuiénVaAGanar 🏆_`;
   return msg;
 }
 
@@ -174,13 +137,10 @@ export default async function handler(req, res) {
   for (let i = 0; i < unicos.length; i++) {
     const p = unicos[i];
     const nombre = p.nombre || "crack";
-    const partidosTxt = partidos.length > 0 ? partidos.join(" · ") : "Sin partidos hoy 😴";
-    const noticiasTxt = noticias.length > 0 ? noticias.join(" · ") : "Sin noticias destacadas.";
-
-    const r = await sendWATemplate(p.whatsapp, "resumen_diario", [nombre, partidosTxt, noticiasTxt]);
+    const msg = mensajeManana(nombre, partidos, noticias);
+    const r = await sendWA(p.whatsapp, msg);
     resultados.push({ nombre: p.nombre, wa: p.whatsapp, ok: r.ok, error: r.ok ? undefined : r.data });
 
-    // Pequeña pausa para no saturar la API (max 80 msg/seg en Meta)
     if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
   }
 
