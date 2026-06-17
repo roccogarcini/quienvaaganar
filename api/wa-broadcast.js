@@ -1,7 +1,7 @@
 // Broadcast diario — llama 2x/día via Vercel Cron
 // Envía resumen de noticias + partidos del día a todos los participantes activos
 
-import { sendWA, sendWAImage } from "./wa-send.js";
+import { sendWA, sendWAImage, sendWATemplate } from "./wa-send.js";
 import { datoDia, datoIdx } from "./data/datos-curiosos.js";
 
 const SUPABASE_URL  = process.env.VITE_SUPABASE_URL;
@@ -110,6 +110,26 @@ export default async function handler(req, res) {
   const expected = process.env.CRON_SECRET;
   if (!expected || secret !== expected) {
     return res.status(401).json({ error: "unauthorized" });
+  }
+
+  // Modo reactivar: manda template resumen_diario a todos para abrir ventana 24h
+  if (req.query.tipo === "reactivar" || req.body?.tipo === "reactivar") {
+    const [participantes, partidos, noticias] = await Promise.all([
+      getParticipantes(), getPartidosHoy(), getNoticiasDestacadas(),
+    ]);
+    if (!Array.isArray(participantes) || !participantes.length) return res.json({ ok: true, enviados: 0 });
+    const vistos = new Set();
+    const unicos = participantes.filter(p => {
+      const key = (p.whatsapp || "").replace(/\D/g, "").slice(-10);
+      if (!key || vistos.has(key)) return false;
+      vistos.add(key); return true;
+    });
+    const partidosTxt = partidos.length ? partidos.join("\n") : "Sin partidos hoy";
+    const noticiasTxt = noticias.length ? noticias.map(n => n.replace(/^📰 /,"")).join("\n") : "Sin noticias";
+    const resultados = await Promise.all(unicos.map(p =>
+      sendWATemplate(p.whatsapp, "resumen_diario", [p.nombre || "crack", partidosTxt, noticiasTxt])
+    ));
+    return res.json({ ok: true, enviados: resultados.filter(r => r.ok).length, total: unicos.length });
   }
 
   // Modo bonus: manda aviso de pregunta bonus a todos
