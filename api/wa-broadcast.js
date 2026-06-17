@@ -124,8 +124,8 @@ export default async function handler(req, res) {
       if (!key || vistos.has(key)) return false;
       vistos.add(key); return true;
     });
-    const partidosTxt = partidos.length ? partidos.join("\n") : "Sin partidos hoy";
-    const noticiasTxt = noticias.length ? noticias.map(n => n.replace(/^📰 /,"")).join("\n") : "Sin noticias";
+    const partidosTxt = partidos.length ? partidos.join(" · ") : "Sin partidos hoy";
+    const noticiasTxt = noticias.length ? noticias.map(n => n.replace(/^📰 /,"")).join(" · ") : "Sin noticias";
     const resultados = await Promise.all(unicos.map(p =>
       sendWATemplate(p.whatsapp, "resumen_diario", [p.nombre || "crack", partidosTxt, noticiasTxt])
     ));
