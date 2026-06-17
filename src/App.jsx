@@ -1758,6 +1758,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
                       {!esMktIA && p.id===miId && <span style={{ background:C.blue+"33",color:C.blue,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Tú</span>}
                       {!esMktIA && (sala.modo==="hibrido"||sala.modo==="dinero") && p.modo_jugador==="dinero" && <span style={{ fontSize:11, marginLeft:5, color:"#fbbf24" }}>💰${p.apuesta||0}</span>}
                       {!esMktIA && sala.modo==="hibrido" && p.modo_jugador!=="dinero" && <span style={{ fontSize:10, marginLeft:5, background:"#ffffff15", color:C.muted, padding:"2px 7px", borderRadius:10, border:`0.5px solid ${C.border}` }}>🎲 Sin apuesta</span>}
+                      {!esMktIA && p.sellada && <span style={{ background:"#5b21b622",color:"#a78bfa",fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>🔐 Sellada</span>}
                       {!esMktIA && p.eliminado && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>Eliminado</span>}
                       {!esMktIA && !p.eliminado&&p.penalties>0 && <span style={{ background:C.red+"22",color:C.red,fontSize:10,padding:"2px 6px",borderRadius:10,marginLeft:6 }}>{p.penalties} castigo{p.penalties>1?"s":""}</span>}
                     </div>
@@ -2337,7 +2338,13 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
     return "Final";
   }
 
+  // Lock global: arrancan partidos de Ronda de 32 el 27 jun CDMX = 05:00 UTC
+  const LOCK_RONDA32 = new Date("2026-06-27T05:00:00Z");
+  const globalLock = new Date() >= LOCK_RONDA32;
+  const sellada = !!yo?.sellada;
+
   function isLocked(ev) {
+    if (globalLock || sellada) return true;
     if (quinielaPublicada) return true;
     const state = ev.competitions?.[0]?.status?.type?.state;
     return state === "in" || state === "post" || new Date(ev.date) <= new Date();
@@ -2389,7 +2396,8 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>📋 Reglas</div>
         {[
           { icon:"🎯", text:"Llenar tu quiniela te da 5 puntos automáticamente." },
-          { icon:"✏️", text:"Puedes editar tus pronósticos hasta 15 minutos antes de cada partido." },
+          { icon:"✏️", text:"Puedes editar tus pronósticos hasta que arranque la Ronda de 32 (27 jun)." },
+          { icon:"🔐", text:"Sella tu quiniela voluntariamente antes del 27 jun y gana +5 pts extra. Ya no podrás editarla." },
           { icon:"⭐", text:"Responder las preguntas bonus te da puntos extra y más posibilidades de ganar." },
         ].map(({ icon, text }) => (
           <div key={text} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:6 }}>
@@ -2572,47 +2580,73 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
       {/* Proyección siguiente ronda */}
       <ProyeccionQuiniela misProns={misProns} matches={matches} />
 
-      {/* Botón publicar quiniela */}
+      {/* Botón publicar / sellar quiniela */}
       <div style={{ marginTop:24, textAlign:"center" }}>
-          {quinielaPublicada ? (
-            <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:"center", flexWrap:"wrap" }}>
-              <div style={{ background:"#052e16", border:"1px solid #16a34a44", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
-                <span style={{ fontSize:20 }}>🔒</span>
-                <div style={{ textAlign:"left" }}>
-                  <div style={{ color:"#4ade80", fontWeight:700, fontSize:13 }}>Quiniela publicada</div>
-                  <div style={{ color:"#86efac", fontSize:11 }}>Tus pronósticos quedaron guardados al 100</div>
-                </div>
+        {globalLock && !sellada && (
+          <div style={{ background:"#1a0a00", border:"1px solid #f97316aa", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:20 }}>🔒</span>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ color:"#fb923c", fontWeight:700, fontSize:13 }}>Quiniela bloqueada</div>
+              <div style={{ color:"#fdba74", fontSize:11 }}>Arrancó la Ronda de 32 — ya no se puede editar</div>
+            </div>
+          </div>
+        )}
+        {sellada && (
+          <div style={{ background:"#0c0a1e", border:"1px solid #7c3aedaa", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
+            <span style={{ fontSize:20 }}>🔐</span>
+            <div style={{ textAlign:"left" }}>
+              <div style={{ color:"#a78bfa", fontWeight:700, fontSize:13 }}>Quiniela sellada · +5 pts ganados</div>
+              <div style={{ color:"#c4b5fd", fontSize:11 }}>Tu quiniela está sellada permanentemente</div>
+            </div>
+          </div>
+        )}
+        {!globalLock && !sellada && quinielaPublicada && (
+          <div style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:10 }}>
+            <div style={{ background:"#052e16", border:"1px solid #16a34a44", borderRadius:12, padding:"14px 20px", display:"inline-flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:20 }}>🔒</span>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ color:"#4ade80", fontWeight:700, fontSize:13 }}>Quiniela publicada</div>
+                <div style={{ color:"#86efac", fontSize:11 }}>Tus pronósticos quedaron guardados al 100</div>
               </div>
+            </div>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"center" }}>
               <button
-                style={{ background:"#1f2937", border:"1px solid #374151", borderRadius:12, padding:"14px 18px", color:"#d1d5db", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
+                style={{ background:"#1f2937", border:"1px solid #374151", borderRadius:12, padding:"12px 18px", color:"#d1d5db", fontSize:13, fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}
                 onClick={async () => {
                   if (!window.confirm("¿Editar tu quiniela? Los partidos ya iniciados seguirán bloqueados.")) return;
                   await supabase.from("participantes").update({ quiniela_publicada: false }).eq("id", miId);
                   setQuinielaPublicada(false);
                 }}
-              >
-                ✏️ Editar
-              </button>
-            </div>
-          ) : (
-            <div>
+              >✏️ Editar</button>
               <button
-                style={{ background: publicando ? "#374151" : "linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:12, padding:"14px 28px", fontSize:15, fontWeight:700, cursor: publicando ? "default" : "pointer", opacity: publicando ? 0.7 : 1, fontFamily:"inherit", boxShadow:"0 4px 16px #16a34a44" }}
-                disabled={publicando}
+                style={{ background:"linear-gradient(135deg,#5b21b6,#7c3aed)", border:"none", borderRadius:12, padding:"12px 18px", color:"#fff", fontSize:13, fontWeight:700, cursor:"pointer", fontFamily:"inherit", boxShadow:"0 4px 16px #7c3aed44" }}
                 onClick={async () => {
-                  if (!window.confirm("Recuerda que podrás editar tu quiniela hasta 15 minutos antes del inicio de cada partido. ¿Publicar ahora?")) return;
-                  setPublicando(true);
-                  await supabase.from("participantes").update({ quiniela_publicada: true }).eq("id", miId);
-                  setQuinielaPublicada(true);
-                  setPublicando(false);
+                  if (!window.confirm("¿Sellar tu quiniela? Ganarás +5 pts extra pero ya no podrás editarla nunca. ¿Confirmar?")) return;
+                  const p = participantes.find(x => x.id === miId);
+                  await supabase.from("participantes").update({ sellada: true, sellada_at: new Date().toISOString(), points: (p?.points||0)+5 }).eq("id", miId);
                 }}
-              >
-                {publicando ? "Publicando…" : "🔒 Publicar mi quiniela"}
-              </button>
-              <div style={{ color:"#6b7280", fontSize:11, marginTop:6 }}>Una vez publicada no podrás editar tus pronósticos</div>
+              >🔐 Sellar · +5 pts</button>
             </div>
-          )}
-        </div>
+            <div style={{ color:"#6b7280", fontSize:10 }}>Sellar = bloqueo permanente a cambio de 5 pts extra</div>
+          </div>
+        )}
+        {!globalLock && !sellada && !quinielaPublicada && (
+          <div>
+            <button
+              style={{ background: publicando ? "#374151" : "linear-gradient(135deg,#16a34a,#15803d)", color:"#fff", border:"none", borderRadius:12, padding:"14px 28px", fontSize:15, fontWeight:700, cursor: publicando ? "default" : "pointer", opacity: publicando ? 0.7 : 1, fontFamily:"inherit", boxShadow:"0 4px 16px #16a34a44" }}
+              disabled={publicando}
+              onClick={async () => {
+                if (!window.confirm("Recuerda que podrás editar tu quiniela hasta que empiece la Ronda de 32 (27 jun). ¿Publicar ahora?")) return;
+                setPublicando(true);
+                await supabase.from("participantes").update({ quiniela_publicada: true }).eq("id", miId);
+                setQuinielaPublicada(true);
+                setPublicando(false);
+              }}
+            >{publicando ? "Publicando…" : "🔒 Publicar mi quiniela"}</button>
+            <div style={{ color:"#6b7280", fontSize:11, marginTop:6 }}>Sella antes del 27 jun para ganar +5 pts extra</div>
+          </div>
+        )}
+      </div>
 
       {/* Pronósticos de campeón */}
       {participantes.some(p => p.pron_camp) && <>
