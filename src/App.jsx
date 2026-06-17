@@ -3185,6 +3185,18 @@ function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
             {pendientes.length} pronóstico{pendientes.length > 1 ? "s" : ""} pendiente{pendientes.length > 1 ? "s" : ""} por jugarse
           </div>
         )}
+
+        {/* Análisis IA de la quiniela de este jugador */}
+        {!loading && prons.length > 0 && (
+          <div style={{ marginTop:16 }}>
+            <div style={{ color:C.muted, fontSize:10, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>Análisis IA de su quiniela</div>
+            <AnalisisIA
+              misProns={Object.fromEntries(prons.map(p => [p.match_id, p.prediccion]))}
+              matches={matches}
+              nombre={jugador.nombre}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
