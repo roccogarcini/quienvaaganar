@@ -2342,6 +2342,21 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
 
   return (
     <div>
+      {/* Reglas de la quiniela */}
+      <div style={{ background:"#0a0e1a", border:"1px solid #7c3aed44", borderRadius:14, padding:"12px 14px", marginBottom:14 }}>
+        <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>📋 Reglas</div>
+        {[
+          { icon:"🎯", text:"Llenar tu quiniela te da 5 puntos automáticamente." },
+          { icon:"✏️", text:"Puedes editar tus pronósticos hasta 15 minutos antes de cada partido." },
+          { icon:"⭐", text:"Responder las preguntas bonus te da puntos extra y más posibilidades de ganar." },
+        ].map(({ icon, text }) => (
+          <div key={text} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:6 }}>
+            <span style={{ fontSize:14, flexShrink:0 }}>{icon}</span>
+            <span style={{ color:C.muted, fontSize:12, lineHeight:1.4 }}>{text}</span>
+          </div>
+        ))}
+      </div>
+
       {/* Acumulado */}
       <div style={{ background:"linear-gradient(135deg,#7c3aed,#db2777)", borderRadius:16, padding:"18px 16px", textAlign:"center", marginBottom:16 }}>
         <div style={{ fontSize:12, color:"#f9a8d4", textTransform:"uppercase", letterSpacing:"0.12em", marginBottom:2 }}>🎰 Acumulado</div>
