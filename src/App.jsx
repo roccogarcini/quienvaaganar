@@ -2483,6 +2483,19 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
 
   return (
     <div>
+      {/* Tarjeta jersey México vs Korea */}
+      {jerseyActivo && !jerseyResp && (
+        <JerseyCard onGuardar={guardarJersey} saving={jerseySaving} />
+      )}
+      {jerseyActivo && jerseyResp && (
+        <div style={{ ...cardStyle, marginBottom:16, border:"1px solid #16a34a44", background:"#052e1666", textAlign:"center", padding:"14px 16px" }}>
+          <div style={{ fontSize:24, marginBottom:4 }}>🎽</div>
+          <div style={{ color:"#4ade80", fontWeight:700, fontSize:14 }}>¡Marcador registrado!</div>
+          <div style={{ color:"#86efac", fontSize:22, fontWeight:800, margin:"6px 0" }}>México {jerseyResp.local} - {jerseyResp.visitante} Korea</div>
+          <div style={{ color:"#4ade8099", fontSize:11 }}>Si aciertas, participas en la rifa del jersey 🏆</div>
+        </div>
+      )}
+
       {/* Reglas de la quiniela */}
       <div style={{ background:"#0a0e1a", border:"1px solid #7c3aed44", borderRadius:14, padding:"12px 14px", marginBottom:14 }}>
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>📋 Reglas</div>
@@ -2551,19 +2564,6 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
       {pronosticados >= 5 && (
         <div style={{ marginTop:8 }}>
           <AnalisisIA misProns={misProns} matches={matches} nombre={yo?.nombre} cacheKey={miId} />
-        </div>
-      )}
-
-      {/* Tarjeta jersey México vs Korea */}
-      {jerseyActivo && !jerseyResp && (
-        <JerseyCard onGuardar={guardarJersey} saving={jerseySaving} />
-      )}
-      {jerseyActivo && jerseyResp && (
-        <div style={{ ...cardStyle, marginBottom:16, border:"1px solid #16a34a44", background:"#052e1666", textAlign:"center", padding:"14px 16px" }}>
-          <div style={{ fontSize:24, marginBottom:4 }}>🎽</div>
-          <div style={{ color:"#4ade80", fontWeight:700, fontSize:14 }}>¡Marcador registrado!</div>
-          <div style={{ color:"#86efac", fontSize:22, fontWeight:800, margin:"6px 0" }}>México {jerseyResp.local} - {jerseyResp.visitante} Korea</div>
-          <div style={{ color:"#4ade8099", fontSize:11 }}>Si aciertas, participas en la rifa del jersey 🏆</div>
         </div>
       )}
 
