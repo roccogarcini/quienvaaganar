@@ -97,8 +97,9 @@ export default async function handler(req, res) {
     const awayRaw = comps.find(c => c.homeAway === "away")?.team?.displayName || "Visitante";
     const local = tradEquipo(homeRaw);
     const visit = tradEquipo(awayRaw);
+    const hora = ev.date ? new Date(ev.date).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit", timeZone:"America/Mexico_City", hour12:true }) : "";
 
-    const msg = `⚽ *${local} vs ${visit}*\n\n¡No te lo pierdas! Y si no puedes verlo, los marcadores finales en:\n👉 quienvaaganar.vercel.app\n\n¡Mucha suerte en tu quiniela! 🏆`;
+    const msg = `⚽ *${local} vs ${visit}*\n🕐 Hoy a las *${hora}* (hora CDMX)\n\n✏️ Recuerda que aún puedes editar tu quiniela para este partido y aumentar tus probabilidades de ganar:\n👉 quienvaaganar.vercel.app\n\n¡Mucha suerte! 🏆`;
 
     // Paso 1: texto a todos en paralelo
     const envios = await Promise.all(unicos.map(p => sendWA(p.whatsapp, msg)));
