@@ -6,7 +6,8 @@ export const config = { runtime: "edge" };
 export default function handler(req) {
   const { searchParams } = new URL(req.url);
   const idx = searchParams.get("dato");
-  const dato = idx !== null ? DATOS[Number(idx) % DATOS.length] : datoDia();
+  const n = parseInt(idx, 10);
+  const dato = (!isNaN(n) && n >= 0) ? DATOS[n % DATOS.length] : datoDia();
 
   return new ImageResponse(
     {

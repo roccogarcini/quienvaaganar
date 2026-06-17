@@ -100,11 +100,11 @@ export async function sendWAImage(to, imageUrl, caption = "") {
 
 // Handler HTTP directo (para pruebas manuales)
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
   if (req.method === "OPTIONS") { res.status(200).end(); return; }
 
   const secret = req.headers["x-cron-secret"] || req.query.secret;
-  if (secret !== process.env.CRON_SECRET) {
+  const expected = process.env.CRON_SECRET;
+  if (!expected || secret !== expected) {
     return res.status(401).json({ error: "unauthorized" });
   }
 

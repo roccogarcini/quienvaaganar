@@ -62,7 +62,8 @@ async function getPartidosHoy() {
 
 export default async function handler(req, res) {
   const secret = req.headers["x-cron-secret"] || req.query.secret;
-  if (secret !== process.env.CRON_SECRET) return res.status(401).json({ error: "unauthorized" });
+  const expected = process.env.CRON_SECRET;
+  if (!expected || secret !== expected) return res.status(401).json({ error: "unauthorized" });
 
   const ahora = Date.now();
   const en20min = ahora + 20 * 60 * 1000;

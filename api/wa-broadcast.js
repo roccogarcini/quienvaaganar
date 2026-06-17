@@ -108,7 +108,8 @@ function mensajeManana(nombre, partidos, noticias) {
 export default async function handler(req, res) {
   // Seguridad: solo Vercel Cron o llamada manual con secret
   const secret = req.headers["x-cron-secret"] || req.query.secret;
-  if (secret !== process.env.CRON_SECRET) {
+  const expected = process.env.CRON_SECRET;
+  if (!expected || secret !== expected) {
     return res.status(401).json({ error: "unauthorized" });
   }
 
@@ -138,21 +139,18 @@ export default async function handler(req, res) {
     return true;
   });
 
-  const resultados = [];
-  for (let i = 0; i < unicos.length; i++) {
-    const p = unicos[i];
+  // Paso 1: imágenes en paralelo (solo turno mañana)
+  if (esMañana) {
+    await Promise.all(unicos.map(p => sendWAImage(p.whatsapp, datoImgUrl, `📌 Dato curioso del día · ${dato.tag}`)));
+  }
+
+  // Paso 2: textos en paralelo
+  const resultados = await Promise.all(unicos.map(async p => {
     const nombre = p.nombre || "crack";
-    // En turno mañana: primero imagen con dato curioso, luego texto con partidos y noticias
-    if (esMañana) {
-      await sendWAImage(p.whatsapp, datoImgUrl, `📌 Dato curioso del día · ${dato.tag}`);
-      await new Promise(ok => setTimeout(ok, 300));
-    }
     const msg = mensajeManana(nombre, partidos, noticias);
     const r = await sendWA(p.whatsapp, msg);
-    resultados.push({ nombre: p.nombre, wa: p.whatsapp, ok: r.ok, error: r.ok ? undefined : r.data });
-
-    if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
-  }
+    return { nombre: p.nombre, wa: p.whatsapp, ok: r.ok, error: r.ok ? undefined : r.data };
+  }));
 
   const enviados = resultados.filter(r => r.ok).length;
   res.json({ ok: true, enviados, total: unicos.length, turno: esMañana ? "mañana" : "noche", resultados });

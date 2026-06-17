@@ -234,7 +234,7 @@ async function handleSync() {
   // Cargar TODAS las predicciones de la sala (sin filtrar por match_id)
   const { data: prons } = await supabase
     .from("pronosticos_partidos")
-    .select("participante_id, match_id, prediccion")
+    .select("id, participante_id, match_id, prediccion")
     .eq("sala_id", SALA_ID);
 
   if (!prons?.length) return { ok: true, msg: "sin predicciones registradas", terminados: terminados.length };
@@ -264,17 +264,30 @@ async function handleSync() {
     }
   }
 
-  // Sumar puntos por jugador
+  // Sumar puntos por jugador y actualizar pts_obtenidos por pronóstico
   const puntosMap = {};
+  const pronUpdates = [];
   for (const pron of prons) {
     const espnId = idRemap[pron.match_id] || pron.match_id;
     const match = resultById[espnId];
     if (!match) continue;
+    const pts = pron.prediccion === match.resultado ? match.pts : 0;
+    pronUpdates.push({ id: pron.id, resultado: match.resultado, pts_obtenidos: pts });
     if (!puntosMap[pron.participante_id]) puntosMap[pron.participante_id] = 0;
-    if (pron.prediccion === match.resultado) puntosMap[pron.participante_id] += match.pts;
+    puntosMap[pron.participante_id] += pts;
   }
 
-  // Actualizar puntos en DB para todos los jugadores con predicciones
+  // Actualizar pts_obtenidos y resultado en cada pronóstico (batch de 50)
+  for (let i = 0; i < pronUpdates.length; i += 50) {
+    const batch = pronUpdates.slice(i, i + 50);
+    await Promise.all(batch.map(u =>
+      supabase.from("pronosticos_partidos")
+        .update({ resultado: u.resultado, pts_obtenidos: u.pts_obtenidos })
+        .eq("id", u.id)
+    ));
+  }
+
+  // Actualizar puntos totales en participantes
   const updates = [];
   for (const [pid, pts] of Object.entries(puntosMap)) {
     await supabase.from("participantes").update({ points: pts }).eq("id", pid);
@@ -296,7 +309,8 @@ export default async function handler(req, res) {
   // Sync no requiere POST
   if (type === "sync") {
     const secret = req.query.secret || req.headers["x-cron-secret"];
-    if (secret !== process.env.CRON_SECRET) return res.status(401).json({ error: "unauthorized" });
+    const expected = process.env.CRON_SECRET;
+    if (!expected || secret !== expected) return res.status(401).json({ error: "unauthorized" });
     try {
       const result = await handleSync();
       return res.json(result);
@@ -306,6 +320,13 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== "POST") return res.status(405).json({ error: "método no permitido" });
+
+  // analizar y recomendar solo desde la misma app (Origin check)
+  const origin = req.headers.origin || "";
+  const allowed = ["https://quienvaaganar.vercel.app", "http://localhost:5173"];
+  if ((type === "analizar" || type === "recomendar") && !allowed.includes(origin)) {
+    return res.status(403).json({ error: "forbidden" });
+  }
 
   try {
     let result;
