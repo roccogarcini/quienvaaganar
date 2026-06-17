@@ -99,13 +99,14 @@ export default async function handler(req, res) {
 
     const msg = `⚽ *${local} vs ${visit}*\n\n¡No te lo pierdas! Y si no puedes verlo, los marcadores finales en:\n👉 quienvaaganar.vercel.app\n\n¡Mucha suerte en tu quiniela! 🏆`;
 
+    // Paso 1: texto a todos en paralelo
+    const envios = await Promise.all(unicos.map(p => sendWA(p.whatsapp, msg)));
+    envios.forEach((r, i) => resultados.push({ nombre: unicos[i].nombre, partido: `${local} vs ${visit}`, ok: r.ok }));
+
+    // Paso 2: imagen a todos en paralelo (250ms entre cada una para no saturar Meta)
     for (let i = 0; i < unicos.length; i++) {
-      const r = await sendWA(unicos[i].whatsapp, msg);
-      // Segundos después: dato curioso del día
-      await new Promise(ok => setTimeout(ok, 3000));
       await sendWAImage(unicos[i].whatsapp, datoImgUrl, "📌 Dato curioso del día · #Mundial2026");
-      resultados.push({ nombre: unicos[i].nombre, partido: `${local} vs ${visit}`, ok: r.ok });
-      if (i % 10 === 9) await new Promise(ok => setTimeout(ok, 500));
+      if (i < unicos.length - 1) await new Promise(ok => setTimeout(ok, 250));
     }
   }
 
