@@ -1650,9 +1650,30 @@ function Sala({ sala, miId, onFirstTabChange }) {
           </div>
         </div>
         <div style={{ display:"flex", gap:0, marginTop:10, overflowX:"auto" }}>
-          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["marketeria","MarketerIA 🤖"],["quiniela","Quiniela 🎯"]].map(([k,l])=>(
+          {[["calendario","⚽ Mundial"],["noticias","Noticias 📰"],["tips","Tips 🧠"],["tabla","Tabla"],["marketeria","MarketerIA 🤖"]].map(([k,l])=>(
             <button key={k} style={tabStyle(tab===k)} onClick={()=>cambiarTab(k)}>{l}</button>
           ))}
+        </div>
+        {/* Botón Quiniela flotante */}
+        <div style={{ padding:"10px 16px 4px" }}>
+          <button onClick={()=>cambiarTab("quiniela")} style={{
+            width:"100%", padding:"13px 16px",
+            background: tab==="quiniela"
+              ? "linear-gradient(135deg,#7c3aed,#a855f7)"
+              : "linear-gradient(135deg,#4f46e5,#7c3aed)",
+            border: tab==="quiniela" ? "2px solid #a78bfa" : "2px solid #6d28d9",
+            borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+            display:"flex", alignItems:"center", justifyContent:"space-between",
+          }}>
+            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <span style={{ fontSize:24 }}>🎯</span>
+              <div style={{ textAlign:"left" }}>
+                <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Mi Quiniela</div>
+                <div style={{ color:"#c4b5fd", fontSize:11 }}>Llena tus pronósticos aquí</div>
+              </div>
+            </div>
+            <span style={{ color:"#a78bfa", fontSize:18, fontWeight:700 }}>→</span>
+          </button>
         </div>
       </div>
 
