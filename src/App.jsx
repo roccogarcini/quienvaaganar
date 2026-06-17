@@ -490,6 +490,11 @@ const ONBOARDING_CARDS = [
     detalle: "💵 $250 por jugador · Entre más jueguen, más crece el acumulado · 🏆 ¡El 1er lugar gana todo!",
     detalle2: null,
   },
+  {
+    imagen: "/deposito.png",
+    titulo: null,
+    color1: "#059669", color2: "#7c3aed",
+  },
 ];
 
 function Onboarding({ onTerminar }) {
@@ -508,7 +513,7 @@ function Onboarding({ onTerminar }) {
     touchStart.current = null;
   }
 
-  const STEP_LABELS = ["Bienvenida","Tu equipo","Calendario","El acumulado"];
+  const STEP_LABELS = ["Bienvenida","Tu equipo","Calendario","El acumulado","Depósito"];
 
   return (
     <div style={{ minHeight:"100vh", background:C.bg, fontFamily:"Inter,sans-serif", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", padding:"24px 20px" }}
@@ -521,43 +526,39 @@ function Onboarding({ onTerminar }) {
         </div>
 
         {/* Card */}
-        <div style={{
-          background:`linear-gradient(145deg, ${card.color1}44, ${card.color2}22, #0a0e1a)`,
-          border:`1.5px solid ${card.color1}77`,
-          borderRadius:24, padding:"32px 24px 26px", textAlign:"center",
-          marginBottom:20, minHeight:340, display:"flex", flexDirection:"column", justifyContent:"space-between",
-          boxShadow:`0 8px 40px ${card.color1}33`,
-          transition:"all 0.3s",
-        }}>
-          {/* Emoji en círculo */}
-          <div>
-            <div style={{
-              width:90, height:90, borderRadius:"50%", margin:"0 auto 18px",
-              background:`radial-gradient(circle, ${card.color1}55, ${card.color2}22)`,
-              border:`2px solid ${card.color1}88`,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              fontSize:48, boxShadow:`0 0 24px ${card.color1}55`,
-            }}>{card.emoji}</div>
-
-            {/* Título */}
-            <div style={{ color:"#fff", fontSize:20, fontWeight:800, marginBottom:12, lineHeight:1.3, letterSpacing:"-0.01em" }}>
-              {card.titulo}
+        {card.imagen
+          ? <img src={card.imagen} alt="Depósito" style={{ width:"100%", borderRadius:20, marginBottom:20, display:"block" }} />
+          : <div style={{
+              background:`linear-gradient(145deg, ${card.color1}44, ${card.color2}22, #0a0e1a)`,
+              border:`1.5px solid ${card.color1}77`,
+              borderRadius:24, padding:"32px 24px 26px", textAlign:"center",
+              marginBottom:20, minHeight:340, display:"flex", flexDirection:"column", justifyContent:"space-between",
+              boxShadow:`0 8px 40px ${card.color1}33`,
+              transition:"all 0.3s",
+            }}>
+              <div>
+                <div style={{
+                  width:90, height:90, borderRadius:"50%", margin:"0 auto 18px",
+                  background:`radial-gradient(circle, ${card.color1}55, ${card.color2}22)`,
+                  border:`2px solid ${card.color1}88`,
+                  display:"flex", alignItems:"center", justifyContent:"center",
+                  fontSize:48, boxShadow:`0 0 24px ${card.color1}55`,
+                }}>{card.emoji}</div>
+                <div style={{ color:"#fff", fontSize:20, fontWeight:800, marginBottom:12, lineHeight:1.3, letterSpacing:"-0.01em" }}>
+                  {card.titulo}
+                </div>
+                <div style={{ color:"#94a3b8", fontSize:13.5, lineHeight:1.7, marginBottom:18 }}>
+                  {card.desc}
+                </div>
+              </div>
+              <div style={{
+                background:"#ffffff0d", border:`1px solid ${card.color1}33`,
+                borderRadius:12, padding:"10px 14px", fontSize:12, color:"#64748b", lineHeight:1.5,
+              }}>
+                {card.detalle}
+              </div>
             </div>
-
-            {/* Desc */}
-            <div style={{ color:"#94a3b8", fontSize:13.5, lineHeight:1.7, marginBottom:18 }}>
-              {card.desc}
-            </div>
-          </div>
-
-          {/* Detalle pill */}
-          <div style={{
-            background:"#ffffff0d", border:`1px solid ${card.color1}33`,
-            borderRadius:12, padding:"10px 14px", fontSize:12, color:"#64748b", lineHeight:1.5,
-          }}>
-            {card.detalle}
-          </div>
-        </div>
+        }
 
         {/* Dots */}
         <div style={{ display:"flex", justifyContent:"center", gap:8, marginBottom:20 }}>
@@ -4125,6 +4126,7 @@ export default function App() {
   }
 
   const [vioIntro, setVioIntro] = useState(() => !!localStorage.getItem("vioIntro"));
+  const [showDepositoModal, setShowDepositoModal] = useState(() => !localStorage.getItem("vioDeposito"));
 
   // Prompt quiniela — aparece si el usuario tiene 0 pronósticos después de 5s
   const [showQuinielaPrompt, setShowQuinielaPrompt] = useState(false);
@@ -4527,5 +4529,18 @@ export default function App() {
     );
   };
 
-  return <><Sala sala={sala} miId={miId} onFirstTabChange={() => setCalTabReady(true)} /><Footer /><InstallBanner /><CalendarioPopup /><PasswordPrompt /><QuinielaPrompt /><AvisoApuesta /></>;
+  return <><Sala sala={sala} miId={miId} onFirstTabChange={() => setCalTabReady(true)} /><Footer /><InstallBanner /><CalendarioPopup /><PasswordPrompt /><QuinielaPrompt /><AvisoApuesta />
+    {showDepositoModal && (
+      <div style={{ position:"fixed", inset:0, background:"#000c", zIndex:9100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+        <div style={{ maxWidth:420, width:"100%", position:"relative" }}>
+          <img src="/deposito.png" alt="Depósito" style={{ width:"100%", borderRadius:20, display:"block" }} />
+          <button onClick={() => { localStorage.setItem("vioDeposito","1"); setShowDepositoModal(false); }}
+            style={{ marginTop:14, width:"100%", padding:"13px", borderRadius:14, border:"none", background:"#7c3aed", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+            Entendido ✓
+          </button>
+        </div>
+      </div>
+    )}
+  </>;
+
 }
