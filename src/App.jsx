@@ -2272,6 +2272,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
   const [bonusPreguntas, setBonusPreguntas] = useState([]);
   const [misRespBonus, setMisRespBonus] = useState({});
   const [bonusPopup, setBonusPopup] = useState(false);
+  const [respBonusLoaded, setRespBonusLoaded] = useState(false);
   const JERSEY_CIERRE = new Date("2026-06-18T23:45:00Z");
   const jerseyActivo = new Date() < JERSEY_CIERRE;
   const [jerseyResp, setJerseyResp] = useState(() => { try { return JSON.parse(localStorage.getItem("jersey_resp_"+miId)||"null"); } catch { return null; } });
@@ -2335,18 +2336,19 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
         .then(({ data }) => {
           if (!data) return;
           const m = {};
-          data.forEach(r => { m[r.pregunta_id] = r; });
+          (data || []).forEach(r => { m[r.pregunta_id] = r; });
           setMisRespBonus(m);
+          setRespBonusLoaded(true);
         });
     }
   }, [salaId, miId]);
 
   useEffect(() => {
-    if (!bonusPreguntas.length) return;
+    if (!bonusPreguntas.length || !respBonusLoaded) return;
     const now = new Date();
     const sinResponder = bonusPreguntas.filter(q => q.activa && !q.respuesta_correcta && (!q.fecha_cierre || new Date(q.fecha_cierre) > now) && !misRespBonus[q.id]);
     if (sinResponder.length > 0) setBonusPopup(true);
-  }, [bonusPreguntas, misRespBonus]);
+  }, [bonusPreguntas, misRespBonus, respBonusLoaded]);
 
   function isPlaceholder(name) {
     if (!name) return true;
@@ -2486,8 +2488,9 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
         <div style={{ color:"#a78bfa", fontSize:12, fontWeight:700, marginBottom:8, textTransform:"uppercase", letterSpacing:"0.08em" }}>📋 Reglas</div>
         {[
           { icon:"🎯", text:"Llenar tu quiniela te da 5 puntos automáticamente." },
-          { icon:"✏️", text:"Puedes editar tus pronósticos hasta que arranque la Ronda de 32 (27 jun)." },
-          { icon:"🔐", text:"Sella tu quiniela voluntariamente antes del 27 jun y gana +5 pts extra. Ya no podrás editarla." },
+          { icon:"✏️", text:"Puedes editar tus pronósticos hasta 15 minutos antes de cada inicio de partido y hasta que arranque la Ronda de 32 (27 jun)." },
+          { icon:"🔐", text:"Si publicas tu quiniela y no la editas en ningún momento, serás acreedor de 5 pts extra. También puedes sellarla voluntariamente antes del 27 jun para asegurarlos." },
+          { icon:"⚽", text:"Acertar un partido vale 3 pts (Grupos, Octavos y Cuartos), 5 pts en Semis y 10 pts en la Final." },
           { icon:"⭐", text:"Responder las preguntas bonus te da puntos extra y más posibilidades de ganar." },
         ].map(({ icon, text }) => (
           <div key={text} style={{ display:"flex", gap:8, alignItems:"flex-start", marginBottom:6 }}>

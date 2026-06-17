@@ -189,7 +189,7 @@ function etapaPts(dateStr) {
   const mes = d.getUTCMonth() + 1;
   const dia = d.getUTCDate();
   if (mes === 6) return 3;           // Grupos
-  if (mes === 7 && dia <= 5)  return 2; // Octavos
+  if (mes === 7 && dia <= 5)  return 3; // Octavos
   if (mes === 7 && dia <= 12) return 3; // Cuartos
   if (mes === 7 && dia <= 16) return 5; // Semis
   return 10;                         // Final
