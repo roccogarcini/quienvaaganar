@@ -1920,27 +1920,12 @@ function Sala({ sala, miId, onFirstTabChange }) {
 
         {tab==="noticias" && <Noticias />}
 
-        {bonusPopup && (() => {
-            const now = new Date();
-            const sinResponder = bonusPreguntas.filter(q => q.activa && !q.respuesta_correcta && (!q.fecha_cierre || new Date(q.fecha_cierre) > now) && !misRespBonus[q.id]);
-            if (!sinResponder.length) return null;
-            return (
-              <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
-                <div style={{ background:C.card, borderRadius:20, padding:24, width:"100%", maxWidth:400, border:`1px solid #7c3aed55` }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                    <span style={{ fontWeight:700, fontSize:16, color:C.text }}>⭐ Pregunta bonus</span>
-                    <button onClick={() => setBonusPopup(false)} style={{ background:"none", border:"none", color:C.muted, fontSize:22, cursor:"pointer", lineHeight:1 }}>×</button>
-                  </div>
-                  {sinResponder.map(q => (
-                    <BonusCard key={q.id} q={q} yaRespondida={misRespBonus[q.id]} onGuardar={async (id, resp) => {
-                      await guardarRespBonus(id, resp);
-                      setBonusPopup(false);
-                    }} />
-                  ))}
-                </div>
-              </div>
-            );
-          })()}
+        {bonusPopup && <BonusPopupModal
+            bonusPreguntas={bonusPreguntas}
+            misRespBonus={misRespBonus}
+            onGuardar={async (id, resp) => { await guardarRespBonus(id, resp); setBonusPopup(false); }}
+            onClose={() => setBonusPopup(false)}
+          />}
 
         {playerModal && (
           <PlayerModal
@@ -2163,6 +2148,25 @@ function AnalisisIA({ misProns, matches, nombre, cacheKey }) {
             }
           </div>
       }
+    </div>
+  );
+}
+
+function BonusPopupModal({ bonusPreguntas, misRespBonus, onGuardar, onClose }) {
+  const now = new Date();
+  const sinResponder = bonusPreguntas.filter(q => q.activa && !q.respuesta_correcta && (!q.fecha_cierre || new Date(q.fecha_cierre) > now) && !misRespBonus[q.id]);
+  if (!sinResponder.length) return null;
+  return (
+    <div style={{ position:"fixed", inset:0, background:"#000a", zIndex:9000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
+      <div style={{ background:C.card, borderRadius:20, padding:24, width:"100%", maxWidth:400, border:`1px solid #7c3aed55` }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+          <span style={{ fontWeight:700, fontSize:16, color:C.text }}>⭐ Pregunta bonus</span>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:C.muted, fontSize:22, cursor:"pointer", lineHeight:1 }}>×</button>
+        </div>
+        {sinResponder.map(q => (
+          <BonusCard key={q.id} q={q} yaRespondida={misRespBonus[q.id]} onGuardar={onGuardar} />
+        ))}
+      </div>
     </div>
   );
 }
