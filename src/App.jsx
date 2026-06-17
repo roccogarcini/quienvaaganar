@@ -1920,8 +1920,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
 
         {tab==="noticias" && <Noticias />}
 
-        {playerModal && (
-          {bonusPopup && (() => {
+        {bonusPopup && (() => {
             const now = new Date();
             const sinResponder = bonusPreguntas.filter(q => q.activa && !q.respuesta_correcta && (!q.fecha_cierre || new Date(q.fecha_cierre) > now) && !misRespBonus[q.id]);
             if (!sinResponder.length) return null;
@@ -1942,6 +1941,8 @@ function Sala({ sala, miId, onFirstTabChange }) {
               </div>
             );
           })()}
+
+        {playerModal && (
           <PlayerModal
             jugador={playerModal}
             salaId={sala.id}
