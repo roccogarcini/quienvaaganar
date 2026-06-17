@@ -2166,6 +2166,39 @@ function AnalisisIA({ misProns, matches, nombre, cacheKey }) {
   );
 }
 
+function JerseyCard({ onGuardar, saving }) {
+  const [gLocal, setGLocal] = useState("");
+  const [gVisit, setGVisit] = useState("");
+  return (
+    <div style={{ marginBottom:16, borderRadius:20, overflow:"hidden", border:"2px solid #16a34a88", background:"#052e16" }}>
+      <img src="/jersey.png" alt="Jersey" style={{ width:"100%", display:"block" }} />
+      <div style={{ padding:"14px 16px" }}>
+        <div style={{ color:"#86efac", fontSize:11, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>🏆 Concurso · Gana un Jersey</div>
+        <div style={{ color:"#fff", fontSize:13, fontWeight:600, marginBottom:12 }}>¿Cuál será el marcador exacto de México vs Korea? Acierta y participas en la rifa de un jersey de la Selección Mexicana.</div>
+        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+          <div style={{ flex:1, textAlign:"center" }}>
+            <div style={{ color:"#86efac", fontSize:11, marginBottom:4 }}>México</div>
+            <input type="number" min="0" max="20" value={gLocal} onChange={e=>setGLocal(e.target.value)}
+              style={{ ...inp, textAlign:"center", fontSize:22, fontWeight:800, padding:"8px", color:"#fff", background:"#0f3a1f" }} placeholder="0" />
+          </div>
+          <span style={{ color:"#4ade80", fontSize:22, fontWeight:800 }}>-</span>
+          <div style={{ flex:1, textAlign:"center" }}>
+            <div style={{ color:"#86efac", fontSize:11, marginBottom:4 }}>Korea</div>
+            <input type="number" min="0" max="20" value={gVisit} onChange={e=>setGVisit(e.target.value)}
+              style={{ ...inp, textAlign:"center", fontSize:22, fontWeight:800, padding:"8px", color:"#fff", background:"#0f3a1f" }} placeholder="0" />
+          </div>
+        </div>
+        <button onClick={() => { if(gLocal===""||gVisit==="") return; onGuardar(gLocal,gVisit); }}
+          disabled={saving || gLocal==="" || gVisit===""}
+          style={{ width:"100%", padding:"12px", borderRadius:12, border:"none", background:"linear-gradient(90deg,#16a34a,#15803d)", color:"#fff", fontWeight:700, fontSize:14, cursor:"pointer", opacity:(saving||gLocal===""||gVisit==="")?0.6:1 }}>
+          {saving ? "Guardando…" : "⚽ Confirmar marcador"}
+        </button>
+        <div style={{ color:"#4ade8066", fontSize:10, textAlign:"center", marginTop:8 }}>Cierra 15 min antes del partido · Jue 18 jun 6:45pm</div>
+      </div>
+    </div>
+  );
+}
+
 function BonusCard({ q, yaRespondida, onGuardar }) {
   const initResp = () => {
     if (yaRespondida?.respuesta) return typeof yaRespondida.respuesta === "object" ? yaRespondida.respuesta : { texto: String(yaRespondida.respuesta) };
@@ -2239,6 +2272,10 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
   const [bonusPreguntas, setBonusPreguntas] = useState([]);
   const [misRespBonus, setMisRespBonus] = useState({});
   const [bonusPopup, setBonusPopup] = useState(false);
+  const JERSEY_CIERRE = new Date("2026-06-18T23:45:00Z");
+  const jerseyActivo = new Date() < JERSEY_CIERRE;
+  const [jerseyResp, setJerseyResp] = useState(() => { try { return JSON.parse(localStorage.getItem("jersey_resp_"+miId)||"null"); } catch { return null; } });
+  const [jerseySaving, setJerseySaving] = useState(false);
   const [savingPron, setSavingPron] = useState(null);
   const [tipsIA, setTipsIA] = useState({});   // { matchId: { loading, pred, razon } }
   const [tipsUsados, setTipsUsados] = useState({}); // { matchId: true } — tip visto
@@ -2361,6 +2398,17 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
     } catch {
       setTipsIA(prev => ({ ...prev, [matchId]: { loading: false, razon: "Error al obtener tip" } }));
     }
+  }
+
+  async function guardarJersey(local, visitante) {
+    if (!miId || jerseySaving) return;
+    setJerseySaving(true);
+    const resp = { local, visitante };
+    setJerseyResp(resp);
+    localStorage.setItem("jersey_resp_"+miId, JSON.stringify(resp));
+    await supabase.from("respuestas_bonus")
+      .upsert({ participante_id: miId, pregunta_id: "jersey_mexico_korea", respuesta: resp, sala_id: salaId }, { onConflict: "participante_id,pregunta_id" });
+    setJerseySaving(false);
   }
 
   async function guardarRespBonus(preguntaId, respuesta) {
@@ -2500,6 +2548,19 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
       {pronosticados >= 5 && (
         <div style={{ marginTop:8 }}>
           <AnalisisIA misProns={misProns} matches={matches} nombre={yo?.nombre} cacheKey={miId} />
+        </div>
+      )}
+
+      {/* Tarjeta jersey México vs Korea */}
+      {jerseyActivo && !jerseyResp && (
+        <JerseyCard onGuardar={guardarJersey} saving={jerseySaving} />
+      )}
+      {jerseyActivo && jerseyResp && (
+        <div style={{ ...cardStyle, marginBottom:16, border:"1px solid #16a34a44", background:"#052e1666", textAlign:"center", padding:"14px 16px" }}>
+          <div style={{ fontSize:24, marginBottom:4 }}>🎽</div>
+          <div style={{ color:"#4ade80", fontWeight:700, fontSize:14 }}>¡Marcador registrado!</div>
+          <div style={{ color:"#86efac", fontSize:22, fontWeight:800, margin:"6px 0" }}>México {jerseyResp.local} - {jerseyResp.visitante} Korea</div>
+          <div style={{ color:"#4ade8099", fontSize:11 }}>Si aciertas, participas en la rifa del jersey 🏆</div>
         </div>
       )}
 
@@ -4127,6 +4188,14 @@ export default function App() {
 
   const [vioIntro, setVioIntro] = useState(() => !!localStorage.getItem("vioIntro"));
   const [showDepositoModal, setShowDepositoModal] = useState(() => !localStorage.getItem("vioDeposito"));
+  const JERSEY_CIERRE = new Date("2026-06-18T23:45:00Z");
+  const [showJerseyPopup, setShowJerseyPopup] = useState(false);
+  useEffect(() => {
+    if (new Date() >= JERSEY_CIERRE) return;
+    if (sessionStorage.getItem("vioJerseyPopup")) return;
+    const t = setTimeout(() => { setShowJerseyPopup(true); sessionStorage.setItem("vioJerseyPopup","1"); }, 8000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Prompt quiniela — aparece si el usuario tiene 0 pronósticos después de 5s
   const [showQuinielaPrompt, setShowQuinielaPrompt] = useState(false);
@@ -4530,6 +4599,18 @@ export default function App() {
   };
 
   return <><Sala sala={sala} miId={miId} onFirstTabChange={() => setCalTabReady(true)} /><Footer /><InstallBanner /><CalendarioPopup /><PasswordPrompt /><QuinielaPrompt /><AvisoApuesta />
+    {showJerseyPopup && (
+      <div style={{ position:"fixed", inset:0, background:"#000d", zIndex:9200, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }} onClick={() => setShowJerseyPopup(false)}>
+        <div style={{ maxWidth:400, width:"100%", position:"relative" }} onClick={e=>e.stopPropagation()}>
+          <button onClick={() => setShowJerseyPopup(false)} style={{ position:"absolute", top:10, right:10, background:"#000a", border:"none", color:"#fff", borderRadius:"50%", width:32, height:32, fontSize:18, cursor:"pointer", zIndex:1 }}>×</button>
+          <img src="/jersey.png" alt="Jersey" style={{ width:"100%", borderRadius:20, display:"block" }} />
+          <button onClick={() => setShowJerseyPopup(false)}
+            style={{ marginTop:12, width:"100%", padding:"13px", borderRadius:14, border:"none", background:"linear-gradient(90deg,#16a34a,#15803d)", color:"#fff", fontWeight:700, fontSize:15, cursor:"pointer" }}>
+            ⚽ Ir a mi quiniela y participar
+          </button>
+        </div>
+      </div>
+    )}
     {showDepositoModal && (
       <div style={{ position:"fixed", inset:0, background:"#000c", zIndex:9100, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}>
         <div style={{ maxWidth:420, width:"100%", position:"relative" }}>
