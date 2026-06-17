@@ -106,11 +106,27 @@ function mensajeManana(nombre, partidos, noticias) {
 // ── Handler principal ────────────────────────────────
 
 export default async function handler(req, res) {
-  // Seguridad: solo Vercel Cron o llamada manual con secret
   const secret = req.headers["x-cron-secret"] || req.query.secret;
   const expected = process.env.CRON_SECRET;
   if (!expected || secret !== expected) {
     return res.status(401).json({ error: "unauthorized" });
+  }
+
+  // Modo bonus: manda aviso de pregunta bonus a todos
+  if (req.query.tipo === "bonus" || req.body?.tipo === "bonus") {
+    const { pregunta, pts } = req.method === "POST" ? (req.body || {}) : req.query;
+    if (!pregunta) return res.status(400).json({ error: "Falta pregunta" });
+    const participantes = await getParticipantes();
+    if (!Array.isArray(participantes) || !participantes.length) return res.json({ ok: true, enviados: 0 });
+    const vistos = new Set();
+    const unicos = participantes.filter(p => {
+      const key = (p.whatsapp || "").replace(/\D/g, "").slice(-10);
+      if (!key || vistos.has(key)) return false;
+      vistos.add(key); return true;
+    });
+    const msg = `⭐ *¡Nueva pregunta bonus!*\n\n${pregunta}\n\n💰 Vale *+${pts || 3} pts* si aciertas\n\n👉 Entra a responder:\n${process.env.APP_URL || "https://quienvaaganar.vercel.app"}`;
+    const resultados = await Promise.all(unicos.map(p => sendWA(p.whatsapp, msg)));
+    return res.json({ ok: true, enviados: resultados.filter(r => r.ok).length });
   }
 
   const hora = new Date().toLocaleString("es-MX", { timeZone:"America/Mexico_City", hour:"numeric", hour12:false });

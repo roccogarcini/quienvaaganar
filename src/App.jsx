@@ -2849,7 +2849,7 @@ function AdminBonusPanel({ salaId, participantes }) {
       activa: true,
     }).select().single();
     if (data) setPreguntas(prev => [...prev, data]);
-    fetch("/api/wa-bonus", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ pregunta: form.pregunta.trim(), pts: Number(form.pts) }) }).catch(()=>{});
+    fetch("/api/wa-broadcast", { method:"POST", headers:{"Content-Type":"application/json","x-cron-secret": import.meta.env.VITE_CRON_SECRET||""}, body: JSON.stringify({ tipo:"bonus", pregunta: form.pregunta.trim(), pts: Number(form.pts) }) }).catch(()=>{});
     setForm({ pregunta:"", tipo:"texto", pts:3, fecha_apertura:"", fecha_cierre:"" });
     setShowForm(false);
     setSaving(false);
