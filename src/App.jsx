@@ -1711,19 +1711,7 @@ function Sala({ sala, miId, onFirstTabChange }) {
       <div style={{ padding:"20px 16px", maxWidth:600, margin:"0 auto" }}>
 
         {tab==="tabla" && <>
-          {/* Panel admin al inicio */}
-          {esAdmin && (
-            <div style={{ marginBottom:12 }}>
-              <button onClick={() => setShowAdminPanel(v => !v)}
-                style={{ background:"#0a0e1a", border:`1px solid #374151`, borderRadius:10, padding:"8px 14px", color:"#6b7280", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>
-                <span>⚙️ Admin</span>
-                <span style={{ fontSize:10 }}>{showAdminPanel ? "▲" : "▼"}</span>
-              </button>
-            </div>
-          )}
-          {esAdmin && showAdminPanel && (
-            <AdminBonusPanel salaId={sala.id} participantes={participantes} />
-          )}
+          {esAdmin && <AdminBonusPanel salaId={sala.id} participantes={participantes} />}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
             {STAGES.map(s=>(
               <button key={s.n} style={stage===s.n?{...BtnP,fontSize:12}:{...Btn(),fontSize:12}} onClick={()=>updateStage(s.n)}>
@@ -1826,105 +1814,6 @@ function Sala({ sala, miId, onFirstTabChange }) {
             );
           })()}
 
-          {esAdmin && showAdminPanel && <>
-          {/* Botón admin: llenar predicciones MarketerIA */}
-          {(() => {
-            const [mkLoading, setMkLoading] = useState(false);
-            const [mkDone, setMkDone] = useState(null);
-            async function llenarMarketerIA() {
-              setMkLoading(true);
-              setMkDone(null);
-              try {
-                const r = await fetch("/api/fotmob?endpoint=scoreboard&dates=20260611-20260720");
-                const d = await r.json();
-                const events = (d.events || []).filter(ev => {
-                  const comp = ev.competitions?.[0];
-                  const ln = comp?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
-                  const an = comp?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
-                  return ln && an && !ln.startsWith("RD") && !an.startsWith("RD") && !ln.startsWith("QF") && !an.startsWith("QF") && !ln.startsWith("SF") && !an.startsWith("SF");
-                });
-                const rows = [];
-                for (const ev of events) {
-                  const comp = ev.competitions?.[0];
-                  const ln = comp?.competitors?.find(c=>c.homeAway==="home")?.team?.displayName || "";
-                  const an = comp?.competitors?.find(c=>c.homeAway==="away")?.team?.displayName || "";
-                  const pred = mkteriaPredict(ln, an);
-                  if (pred) rows.push({ participante_id: MARKETERIA_ID, sala_id: sala.id, match_id: ev.id, prediccion: pred.pred, usa_ia: true });
-                }
-                if (rows.length) {
-                  await supabase.from("pronosticos_partidos").upsert(rows, { onConflict:"participante_id,match_id" });
-                }
-                setMkDone(`✅ ${rows.length} predicciones guardadas`);
-              } catch(e) { setMkDone("❌ Error: " + e.message); }
-              setMkLoading(false);
-            }
-            return (
-              <div style={{ marginTop:16, background:"#0d0a1f", border:`1px solid #7c3aed44`, borderRadius:12, padding:"12px 16px" }}>
-                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600, marginBottom:4 }}>🤖 MarketerIA — Predicciones</div>
-                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Llena las predicciones de MarketerIA para todos los partidos de la fase de grupos usando el análisis FIFA.</div>
-                {mkDone && <div style={{ fontSize:12, color:C.green, marginBottom:8 }}>{mkDone}</div>}
-                <button disabled={mkLoading} onClick={llenarMarketerIA}
-                  style={{ ...Btn({background:"#7c3aed22",color:"#a78bfa",border:`1px solid #7c3aed44`}), fontSize:12, opacity:mkLoading?0.6:1 }}>
-                  {mkLoading ? "Llenando…" : "🤖 Llenar predicciones MarketerIA"}
-                </button>
-              </div>
-            );
-          })()}
-
-          {/* Botón admin: avisar quiniela por WA */}
-          {(() => {
-            const [waQSent, setWaQSent] = useState(false);
-            const [waQLoading, setWaQLoading] = useState(false);
-            return (
-              <div style={{ marginTop:16, background:"#0a0e1a", border:`1px solid #7c3aed33`, borderRadius:12, padding:"12px 16px" }}>
-                <div style={{ color:"#a78bfa", fontSize:12, fontWeight:600, marginBottom:4 }}>🎯 Quiniela sin llenar</div>
-                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Avisa por WhatsApp a los jugadores que no han pronosticado ningún partido.</div>
-                <button
-                  disabled={waQLoading || waQSent}
-                  onClick={async () => {
-                    setWaQLoading(true);
-                    try {
-                      const r = await fetch(`/api/wa-quiniela?secret=qvag_cron_2026`);
-                      const d = await r.json();
-                      if (d.ok) { setWaQSent(true); alert(`✅ Mensajes enviados a ${d.enviados} jugadores sin quiniela`); }
-                      else alert("Error al enviar");
-                    } catch { alert("Error de conexión"); }
-                    setWaQLoading(false);
-                  }}
-                  style={{ ...Btn({ background:"#7c3aed22", color:"#a78bfa", border:`1px solid #7c3aed44` }), fontSize:12, opacity: waQSent||waQLoading ? 0.6 : 1 }}>
-                  {waQLoading ? "Enviando…" : waQSent ? "✓ Enviado" : "📲 Avisar por WhatsApp"}
-                </button>
-              </div>
-            );
-          })()}
-
-          {/* Botón admin: mandar WA de contraseña */}
-          {(() => {
-            const sinPass = participantes.filter(p => !p.password && p.whatsapp);
-            if (!sinPass.length) return null;
-            return (
-              <div style={{ marginTop:16, background:"#1a1200", border:`1px solid ${C.gold}44`, borderRadius:12, padding:"12px 16px" }}>
-                <div style={{ color:C.gold, fontSize:12, fontWeight:600, marginBottom:4 }}>🔒 {sinPass.length} jugador{sinPass.length>1?"es":""} sin contraseña</div>
-                <div style={{ color:C.muted, fontSize:12, marginBottom:10 }}>Puedes avisarles por WhatsApp para que la creen.</div>
-                <button
-                  disabled={waPasswordLoading || waPasswordSent}
-                  onClick={async () => {
-                    setWaPasswordLoading(true);
-                    try {
-                      const r = await fetch(`/api/wa-password?secret=qvag_cron_2026`);
-                      const d = await r.json();
-                      if (d.ok) { setWaPasswordSent(true); alert(`✅ Mensajes enviados a ${d.enviados} jugadores`); }
-                      else alert("Error al enviar");
-                    } catch(e) { alert("Error de conexión"); }
-                    setWaPasswordLoading(false);
-                  }}
-                  style={{ ...BtnW, fontSize:12, opacity: waPasswordSent||waPasswordLoading ? 0.6 : 1 }}>
-                  {waPasswordLoading ? "Enviando…" : waPasswordSent ? "✓ Enviado" : `📲 Avisar a ${sinPass.length} por WhatsApp`}
-                </button>
-              </div>
-            );
-          })()}
-          </>}
         </>}
 
         {tab==="flash" && <>
