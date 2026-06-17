@@ -1489,6 +1489,26 @@ function Sala({ sala, miId, onFirstTabChange }) {
     return () => supabase.removeChannel(ch);
   }, [sala.id]);
 
+  // Detectar PWA instalada y dar +3 pts una sola vez
+  useEffect(() => {
+    if (!miId || !yo) return;
+    if (yo.pwa_bonus) return; // ya se dieron los puntos
+    const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+    if (!isStandalone) return;
+    // Dar +3 pts y marcar bono
+    supabase.from("participantes")
+      .update({ pwa_bonus: true, points: (yo.points || 0) + 3 })
+      .eq("id", miId)
+      .then(() => {
+        // Notificación discreta
+        const div = document.createElement("div");
+        div.textContent = "🏠 +3 pts por agregar al inicio";
+        Object.assign(div.style, { position:"fixed", bottom:"80px", left:"50%", transform:"translateX(-50%)", background:"#7c3aed", color:"#fff", padding:"8px 16px", borderRadius:"20px", fontSize:"13px", fontWeight:"600", zIndex:"9999", pointerEvents:"none" });
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 3000);
+      });
+  }, [miId, yo?.pwa_bonus]);
+
   async function modPts(id, delta) {
     const p = participantes.find(x=>x.id===id);
     if (!p) return;
