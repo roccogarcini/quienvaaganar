@@ -2859,11 +2859,20 @@ function AdminBonusPanel({ salaId, participantes }) {
   const [form, setForm] = useState({ pregunta:"", tipo:"texto", pts:3, fecha_apertura:"", fecha_cierre:"" });
   const [saving, setSaving] = useState(false);
   const [calculando, setCalculando] = useState(false);
+  const [respuestas, setRespuestas] = useState({}); // { pregunta_id: [{ participante_id, respuesta }] }
+  const [showRespDe, setShowRespDe] = useState(null);
 
   useEffect(() => {
     supabase.from("preguntas_bonus").select("*").eq("sala_id", salaId).order("created_at")
       .then(({ data }) => { if (data) setPreguntas(data); });
   }, [salaId]);
+
+  async function cargarRespuestas(preguntaId) {
+    if (showRespDe === preguntaId) { setShowRespDe(null); return; }
+    const { data } = await supabase.from("respuestas_bonus").select("participante_id, respuesta, pts_obtenidos").eq("pregunta_id", preguntaId);
+    setRespuestas(prev => ({ ...prev, [preguntaId]: data || [] }));
+    setShowRespDe(preguntaId);
+  }
 
   async function crearPregunta() {
     if (!form.pregunta.trim()) return;
@@ -3022,6 +3031,26 @@ function AdminBonusPanel({ salaId, participantes }) {
             </div>
           )}
           {q.respuesta_correcta && <div style={{ fontSize:11, color:C.green, marginTop:6 }}>✓ Resp. correcta: {q.respuesta_correcta}</div>}
+          <button onClick={() => cargarRespuestas(q.id)} style={{ ...Btn(), fontSize:10, padding:"2px 8px", marginTop:6 }}>
+            {showRespDe === q.id ? "Ocultar respuestas" : "👁 Ver quién contestó"}
+          </button>
+          {showRespDe === q.id && (
+            <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:4 }}>
+              {(respuestas[q.id] || []).length === 0
+                ? <div style={{ fontSize:11, color:C.muted }}>Nadie ha contestado aún</div>
+                : (respuestas[q.id] || []).map(r => {
+                    const p = participantes.find(x => x.id === r.participante_id);
+                    const respTxt = typeof r.respuesta === "object" ? JSON.stringify(r.respuesta) : String(r.respuesta?.texto || r.respuesta || "—");
+                    return (
+                      <div key={r.participante_id} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.text, background:C.bg, borderRadius:6, padding:"4px 8px" }}>
+                        <span>{p?.nombre || "?"}</span>
+                        <span style={{ color: r.pts_obtenidos > 0 ? C.green : C.muted }}>{respTxt}</span>
+                      </div>
+                    );
+                  })
+              }
+            </div>
+          )}
         </div>
       ))}
 
