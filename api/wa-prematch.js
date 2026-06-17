@@ -41,12 +41,22 @@ async function getParticipantes() {
 }
 
 async function getPartidosHoy() {
-  const d = new Date();
-  const fecha = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  // Pide hoy Y ayer en UTC para cubrir partidos nocturnos CDMX (que cruzan medianoche UTC)
+  const toStr = d => `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
+  const hoy = new Date();
+  const ayer = new Date(hoy - 86400000);
   try {
-    const r = await fetch(`https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=${fecha}`);
-    const data = await r.json();
-    return data?.events || [];
+    const [r1, r2] = await Promise.all([
+      fetch(`https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=${toStr(hoy)}`),
+      fetch(`https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=${toStr(ayer)}`),
+    ]);
+    const [d1, d2] = await Promise.all([r1.json(), r2.json()]);
+    const vistos = new Set();
+    const eventos = [...(d1?.events||[]), ...(d2?.events||[])].filter(e => {
+      if (vistos.has(e.id)) return false;
+      vistos.add(e.id); return true;
+    });
+    return eventos;
   } catch { return []; }
 }
 
