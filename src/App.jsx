@@ -1721,6 +1721,9 @@ function Sala({ sala, miId, onFirstTabChange }) {
               </button>
             </div>
           )}
+          {esAdmin && showAdminPanel && (
+            <AdminBonusPanel salaId={sala.id} participantes={participantes} />
+          )}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
             {STAGES.map(s=>(
               <button key={s.n} style={stage===s.n?{...BtnP,fontSize:12}:{...Btn(),fontSize:12}} onClick={()=>updateStage(s.n)}>
@@ -1824,8 +1827,6 @@ function Sala({ sala, miId, onFirstTabChange }) {
           })()}
 
           {esAdmin && showAdminPanel && <>
-            <AdminBonusPanel salaId={sala.id} participantes={participantes} />
-
           {/* Botón admin: llenar predicciones MarketerIA */}
           {(() => {
             const [mkLoading, setMkLoading] = useState(false);
