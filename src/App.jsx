@@ -2926,11 +2926,20 @@ function AdminBonusPanel({ salaId, participantes }) {
   const [calculando, setCalculando] = useState(false);
   const [respuestas, setRespuestas] = useState({}); // { pregunta_id: [{ participante_id, respuesta }] }
   const [showRespDe, setShowRespDe] = useState(null);
+  const [jerseyResps, setJerseyResps] = useState(null);
+  const [showJersey, setShowJersey] = useState(false);
 
   useEffect(() => {
     supabase.from("preguntas_bonus").select("*").eq("sala_id", salaId).order("created_at")
       .then(({ data }) => { if (data) setPreguntas(data); });
   }, [salaId]);
+
+  async function cargarJersey() {
+    if (showJersey) { setShowJersey(false); return; }
+    const { data } = await supabase.from("respuestas_bonus").select("participante_id, respuesta").eq("pregunta_id", "jersey_mexico_korea");
+    setJerseyResps(data || []);
+    setShowJersey(true);
+  }
 
   async function cargarRespuestas(preguntaId) {
     if (showRespDe === preguntaId) { setShowRespDe(null); return; }
@@ -3118,6 +3127,37 @@ function AdminBonusPanel({ salaId, participantes }) {
           )}
         </div>
       ))}
+
+      {/* Concurso Jersey */}
+      <div style={{ ...cardStyle, marginTop:8, padding:"10px 12px", border:"1px solid #16a34a44" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:12, color:"#4ade80", fontWeight:700 }}>🎽 Concurso Jersey · Méx vs Korea</div>
+            <div style={{ fontSize:10, color:C.muted, marginTop:2 }}>Cierra 18 jun 6:45pm</div>
+          </div>
+          <button onClick={cargarJersey} style={{ ...Btn(), fontSize:11, padding:"3px 8px" }}>
+            {showJersey ? "Ocultar" : "👁 Ver respuestas"}
+          </button>
+        </div>
+        {showJersey && (
+          <div style={{ marginTop:8, display:"flex", flexDirection:"column", gap:4 }}>
+            {(jerseyResps || []).length === 0
+              ? <div style={{ fontSize:11, color:C.muted }}>Nadie ha contestado aún</div>
+              : (jerseyResps || []).map(r => {
+                  const p = participantes.find(x => x.id === r.participante_id);
+                  const resp = r.respuesta || {};
+                  return (
+                    <div key={r.participante_id} style={{ display:"flex", justifyContent:"space-between", fontSize:11, color:C.text, background:C.bg, borderRadius:6, padding:"4px 8px" }}>
+                      <span>{p?.nombre || "?"}</span>
+                      <span style={{ color:"#4ade80", fontWeight:700 }}>Méx {resp.local} - {resp.visitante} Kor</span>
+                    </div>
+                  );
+                })
+            }
+            <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>Total: {(jerseyResps||[]).length} respuestas</div>
+          </div>
+        )}
+      </div>
 
       <button style={{ ...Btn(), fontSize:12, width:"100%", marginTop:8, opacity:calculando?0.6:1 }} onClick={calcularQuiniela} disabled={calculando}>
         {calculando ? "Calculando…" : "⚽ Calcular quiniela (partidos terminados)"}

@@ -53,13 +53,20 @@ function tradEquipo(nombre) {
 }
 
 async function getPartidosHoy() {
-  const d = new Date();
+  // Usar fecha en CDMX para no incluir partidos de ayer
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone:"America/Mexico_City" }));
   const fecha = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,"0")}${String(d.getDate()).padStart(2,"0")}`;
   try {
     const r = await fetch(`https://quienvaaganar.vercel.app/api/fotmob?endpoint=scoreboard&dates=${fecha}`);
     const data = await r.json();
     const events = data?.events || [];
-    return events.slice(0, 6).map(e => {
+    // Solo partidos que aún no han terminado o empiezan hoy en CDMX
+    const ahora = new Date();
+    const hoyFuturos = events.filter(e => {
+      const estado = e.competitions?.[0]?.status?.type?.state;
+      return estado !== "post";
+    });
+    return hoyFuturos.slice(0, 6).map(e => {
       const home = e.competitions?.[0]?.competitors?.find(c => c.homeAway === "home");
       const away = e.competitions?.[0]?.competitors?.find(c => c.homeAway === "away");
       const hora = e.date ? new Date(e.date).toLocaleTimeString("es-MX", { hour:"2-digit", minute:"2-digit", timeZone:"America/Mexico_City" }) : "";
