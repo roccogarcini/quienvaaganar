@@ -2059,14 +2059,36 @@ function LlenarConIA({ miId, salaId, matches, misProns, lsKey, tipsUsados, isPla
   );
 }
 
-function AnalisisIA({ misProns, matches, nombre }) {
-  const [analisis, setAnalisis] = useState(null);
+function pronSello(misProns) {
+  // Sello único basado en las predicciones actuales — cambia si editas cualquier pronóstico
+  return Object.entries(misProns).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>`${k}:${v}`).join("|");
+}
+
+function AnalisisIA({ misProns, matches, nombre, cacheKey }) {
+  const lsKey = cacheKey ? `analisis_${cacheKey}` : null;
+
+  function leerCache() {
+    if (!lsKey) return null;
+    try {
+      const raw = localStorage.getItem(lsKey);
+      if (!raw) return null;
+      const { sello, texto } = JSON.parse(raw);
+      if (sello !== pronSello(misProns)) return null; // predicciones cambiaron
+      return texto;
+    } catch { return null; }
+  }
+
+  const cached = leerCache();
+  const [analisis, setAnalisis] = useState(cached);
   const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(false);
+
+  // Si las predicciones cambian y el cache ya no es válido, limpiar
+  useEffect(() => {
+    if (analisis && lsKey && !leerCache()) setAnalisis(null);
+  }, [pronSello(misProns)]);
 
   async function analizar() {
     setLoading(true);
-    setVisible(true);
     const predicciones = Object.entries(misProns).map(([matchId, pred]) => {
       const ev = matches.find(e => String(e.id) === String(matchId));
       const comp = ev?.competitions?.[0];
@@ -2086,7 +2108,11 @@ function AnalisisIA({ misProns, matches, nombre }) {
         body: JSON.stringify({ nombre, predicciones }),
       });
       const data = await r.json();
-      setAnalisis(data.analisis || "No se pudo generar el análisis.");
+      const texto = data.analisis || "No se pudo generar el análisis.";
+      setAnalisis(texto);
+      if (lsKey) {
+        try { localStorage.setItem(lsKey, JSON.stringify({ sello: pronSello(misProns), texto })); } catch {}
+      }
     } catch {
       setAnalisis("Hubo un error al conectar con la IA. Intenta de nuevo.");
     }
@@ -2095,7 +2121,7 @@ function AnalisisIA({ misProns, matches, nombre }) {
 
   return (
     <div style={{ marginBottom:16 }}>
-      {!visible
+      {!analisis && !loading
         ? <div>
             <button onClick={analizar}
               style={{ width:"100%", padding:"10px", borderRadius:10, border:`1px solid #7c3aed44`, background:"#7c3aed0a", color:"#a78bfa", fontFamily:"inherit", fontSize:13, fontWeight:600, cursor:"pointer" }}>
@@ -2111,10 +2137,6 @@ function AnalisisIA({ misProns, matches, nombre }) {
                 </div>
               : <p style={{ color:C.text, fontSize:13, lineHeight:1.65, margin:0 }}>{analisis}</p>
             }
-            {!loading && <button onClick={analizar}
-              style={{ marginTop:10, fontSize:11, color:C.muted, background:"none", border:"none", cursor:"pointer", fontFamily:"inherit", padding:0 }}>
-              🔄 Regenerar análisis
-            </button>}
           </div>
       }
     </div>
@@ -2427,7 +2449,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
       {/* Análisis IA (diversión, sin costo) */}
       {pronosticados >= 5 && (
         <div style={{ marginTop:8 }}>
-          <AnalisisIA misProns={misProns} matches={matches} nombre={yo?.nombre} />
+          <AnalisisIA misProns={misProns} matches={matches} nombre={yo?.nombre} cacheKey={miId} />
         </div>
       )}
 
@@ -3194,6 +3216,7 @@ function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
               misProns={Object.fromEntries(prons.map(p => [p.match_id, p.prediccion]))}
               matches={matches}
               nombre={jugador.nombre}
+              cacheKey={jugador.id}
             />
           </div>
         )}
