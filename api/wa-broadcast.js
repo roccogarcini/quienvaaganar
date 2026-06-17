@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     const resultados = await Promise.all(unicos.map(p =>
       sendWATemplate(p.whatsapp, "resumen_diario", [p.nombre || "crack", partidosTxt, noticiasTxt])
     ));
-    return res.json({ ok: true, enviados: resultados.filter(r => r.ok).length, total: unicos.length });
+    return res.json({ ok: true, enviados: resultados.filter(r => r.ok).length, total: unicos.length, debug: resultados.slice(0,2) });
   }
 
   // Modo bonus: manda aviso de pregunta bonus a todos
