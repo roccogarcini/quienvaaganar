@@ -2871,7 +2871,7 @@ function AdminBonusPanel({ salaId, participantes }) {
       await supabase.from("respuestas_bonus").update({ pts_obtenidos: ptsObtenidos }).eq("id", r.id);
       if (correcto) {
         const p = participantes.find(x => x.id === r.participante_id);
-        if (p) await supabase.from("participantes").update({ pts_quiniela: (p.pts_quiniela||0) + pts }).eq("id", p.id);
+        if (p) await supabase.from("participantes").update({ points: (p.points||0) + pts }).eq("id", p.id);
       }
     }
     alert("✅ Puntos bonus asignados");
