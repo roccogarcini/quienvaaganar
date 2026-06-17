@@ -1655,26 +1655,57 @@ function Sala({ sala, miId, onFirstTabChange }) {
           ))}
         </div>
         {/* Botón Quiniela flotante */}
-        <div style={{ padding:"10px 16px 4px" }}>
-          <button onClick={()=>cambiarTab("quiniela")} style={{
-            width:"100%", padding:"13px 16px",
-            background: tab==="quiniela"
-              ? "linear-gradient(135deg,#7c3aed,#a855f7)"
-              : "linear-gradient(135deg,#4f46e5,#7c3aed)",
-            border: tab==="quiniela" ? "2px solid #a78bfa" : "2px solid #6d28d9",
-            borderRadius:14, cursor:"pointer", fontFamily:"inherit",
-            display:"flex", alignItems:"center", justifyContent:"space-between",
-          }}>
-            <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-              <span style={{ fontSize:24 }}>🎯</span>
-              <div style={{ textAlign:"left" }}>
-                <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>Mi Quiniela</div>
-                <div style={{ color:"#c4b5fd", fontSize:11 }}>Llena tus pronósticos aquí</div>
-              </div>
+        {(() => {
+          const pronLS = miId ? (() => { try { return Object.keys(JSON.parse(localStorage.getItem(`prons_${miId}`) || "{}")); } catch { return []; } })() : [];
+          const sinLlenar = pronLS.length === 0;
+          const pocoLlenado = pronLS.length > 0 && pronLS.length < 10;
+          const pronosticados = pronLS.length;
+          const animar = sinLlenar || pocoLlenado;
+          return (
+            <div style={{ padding:"10px 16px 4px" }}>
+              <style>{`
+                @keyframes quinielaPulse {
+                  0%,100% { transform:scale(1); box-shadow:0 0 0 0 #7c3aed55; }
+                  50% { transform:scale(1.03); box-shadow:0 0 0 8px #7c3aed00; }
+                }
+                @keyframes quinielaShake {
+                  0%,100%{transform:translateX(0)}
+                  20%{transform:translateX(-4px)}
+                  40%{transform:translateX(4px)}
+                  60%{transform:translateX(-3px)}
+                  80%{transform:translateX(3px)}
+                }
+              `}</style>
+              <button onClick={()=>cambiarTab("quiniela")} style={{
+                width:"100%", padding:"13px 16px",
+                background: tab==="quiniela"
+                  ? "linear-gradient(135deg,#7c3aed,#a855f7)"
+                  : sinLlenar
+                    ? "linear-gradient(135deg,#dc2626,#7c3aed)"
+                    : "linear-gradient(135deg,#4f46e5,#7c3aed)",
+                border: tab==="quiniela" ? "2px solid #a78bfa" : sinLlenar ? "2px solid #f87171" : "2px solid #6d28d9",
+                borderRadius:14, cursor:"pointer", fontFamily:"inherit",
+                display:"flex", alignItems:"center", justifyContent:"space-between",
+                animation: animar && tab!=="quiniela" ? "quinielaPulse 1.8s ease-in-out infinite" : "none",
+              }}>
+                <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <span style={{ fontSize:24, display:"inline-block", animation: sinLlenar && tab!=="quiniela" ? "quinielaShake 2.5s ease-in-out infinite" : "none" }}>🎯</span>
+                  <div style={{ textAlign:"left" }}>
+                    <div style={{ color:"#fff", fontWeight:700, fontSize:15 }}>
+                      Mi Quiniela
+                      {sinLlenar && <span style={{ marginLeft:8, fontSize:10, background:"#f8717133", color:"#fca5a5", padding:"2px 7px", borderRadius:10, fontWeight:600 }}>¡Sin llenar!</span>}
+                      {pocoLlenado && <span style={{ marginLeft:8, fontSize:10, background:"#fbbf2433", color:"#fde68a", padding:"2px 7px", borderRadius:10, fontWeight:600 }}>{pronosticados} pronósticos</span>}
+                    </div>
+                    <div style={{ color: sinLlenar ? "#fca5a5" : "#c4b5fd", fontSize:11 }}>
+                      {sinLlenar ? "⚠️ ¡Llena tus pronósticos antes de que inicien!" : pocoLlenado ? "Tienes partidos sin pronosticar" : "Llena tus pronósticos aquí"}
+                    </div>
+                  </div>
+                </div>
+                <span style={{ color: sinLlenar ? "#f87171" : "#a78bfa", fontSize:18, fontWeight:700 }}>→</span>
+              </button>
             </div>
-            <span style={{ color:"#a78bfa", fontSize:18, fontWeight:700 }}>→</span>
-          </button>
-        </div>
+          );
+        })()}
       </div>
 
       <div style={{ padding:"20px 16px", maxWidth:600, margin:"0 auto" }}>
@@ -2880,14 +2911,23 @@ function AdminBonusPanel({ salaId, participantes }) {
           const ptsBase = pr.prediccion === result ? (result === "empate" ? 1 : 2) : 0;
           const ptsReal = ptsBase;
           await supabase.from("pronosticos_partidos").update({ resultado: result, pts_obtenidos: ptsReal }).eq("id", pr.id);
-          const p = participantes.find(x => x.id === pr.participante_id);
-          if (p && ptsReal > 0) {
-            await supabase.from("participantes").update({ pts_quiniela: (p.pts_quiniela||0) + ptsReal }).eq("id", p.id);
-          }
           updated++;
         }
       }
-      alert(`✅ Quiniela calculada: ${updated} pronósticos actualizados en ${finished.length} partidos terminados.`);
+      // Recalcular points totales para cada participante: aciertos + 5 por quiniela publicada
+      const { data: allProns } = await supabase.from("pronosticos_partidos").select("participante_id, pts_obtenidos").eq("sala_id", salaId);
+      const ptsMap = {};
+      for (const pr of (allProns || [])) {
+        if (!ptsMap[pr.participante_id]) ptsMap[pr.participante_id] = 0;
+        ptsMap[pr.participante_id] += (pr.pts_obtenidos || 0);
+      }
+      await Promise.all(participantes.map(p => {
+        const matchPts = ptsMap[p.id] || 0;
+        const quinielaPts = p.quiniela_publicada ? 5 : 0;
+        return supabase.from("participantes").update({ points: matchPts + quinielaPts }).eq("id", p.id);
+      }));
+
+      alert(`✅ Quiniela calculada: ${updated} pronósticos en ${finished.length} partidos. Puntos actualizados.`);
     } catch(e) {
       alert("Error al calcular: " + e.message);
     }

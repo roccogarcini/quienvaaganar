@@ -287,11 +287,21 @@ async function handleSync() {
     ));
   }
 
-  // Actualizar puntos totales en participantes
+  // Cargar todos los participantes para incluir bono quiniela y jugadores con 0 aciertos
+  const { data: todos } = await supabase
+    .from("participantes")
+    .select("id, quiniela_publicada")
+    .eq("sala_id", SALA_ID)
+    .eq("eliminado", false);
+
+  // Puntos totales = aciertos en partidos + 5 por quiniela publicada
   const updates = [];
-  for (const [pid, pts] of Object.entries(puntosMap)) {
-    await supabase.from("participantes").update({ points: pts }).eq("id", pid);
-    updates.push({ id: pid, pts });
+  for (const p of (todos || [])) {
+    const matchPts = puntosMap[p.id] || 0;
+    const quinielaPts = p.quiniela_publicada ? 5 : 0;
+    const total = matchPts + quinielaPts;
+    await supabase.from("participantes").update({ points: total }).eq("id", p.id);
+    updates.push({ id: p.id, pts: total, matchPts, quinielaPts });
   }
 
   return { ok: true, terminados: terminados.length, jugadores: updates.length, mkUpserted: mkRows.length, idRemapCount: Object.keys(idRemap).length, resumen: updates };
