@@ -144,8 +144,9 @@ export default async function handler(req, res) {
       if (!key || vistos.has(key)) return false;
       vistos.add(key); return true;
     });
-    const msg = `⭐ *¡Nueva pregunta bonus!*\n\n${pregunta}\n\n💰 Vale *+${pts || 3} pts* si aciertas\n\n👉 Entra a responder:\n${process.env.APP_URL || "https://quienvaaganar.vercel.app"}`;
-    const resultados = await Promise.all(unicos.map(p => sendWA(p.whatsapp, msg)));
+    const resultados = await Promise.all(unicos.map(p =>
+      sendWATemplate(p.whatsapp, "pregunta_bonus", [pregunta, String(pts || 3)])
+    ));
     return res.json({ ok: true, enviados: resultados.filter(r => r.ok).length });
   }
 
