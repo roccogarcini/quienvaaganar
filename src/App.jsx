@@ -2147,7 +2147,7 @@ function AnalisisIA({ misProns, matches, nombre, cacheKey }) {
 function BonusCard({ q, yaRespondida, onGuardar }) {
   const initResp = () => {
     if (yaRespondida?.respuesta) return typeof yaRespondida.respuesta === "object" ? yaRespondida.respuesta : { texto: String(yaRespondida.respuesta) };
-    return q.tipo === "marcador" ? { local:"", visitante:"" } : { texto:"" };
+    return q.tipo === "marcador" ? { local:"", visitante:"" } : q.tipo === "sino" ? { texto:"" } : { texto:"" };
   };
   const [resp, setResp] = useState(initResp);
   const [saving, setSaving] = useState(false);
@@ -2183,6 +2183,18 @@ function BonusCard({ q, yaRespondida, onGuardar }) {
                 <input type="number" min="0" max="20" value={resp.visitante}
                   onChange={e => setResp(p => ({...p, visitante:e.target.value}))}
                   style={{ ...inp, width:50, textAlign:"center", fontSize:18, fontWeight:700, padding:"6px" }} placeholder="0" />
+              </div>
+            : q.tipo === "numero"
+            ? <input type="number" value={resp.texto||""} onChange={e => setResp(p => ({...p, texto:e.target.value}))}
+                placeholder="Tu número…" style={{ ...inp, marginBottom:10 }} />
+            : q.tipo === "sino"
+            ? <div style={{ display:"flex", gap:10, marginBottom:10 }}>
+                {["Sí","No"].map(op => (
+                  <button key={op} onClick={() => setResp({ texto:op })}
+                    style={{ flex:1, padding:"10px", borderRadius:10, border:`2px solid ${resp.texto===op?"#7c3aed":"#333"}`, background:resp.texto===op?"#7c3aed22":"transparent", color:resp.texto===op?"#a78bfa":C.muted, fontWeight:700, fontSize:15, cursor:"pointer" }}>
+                    {op}
+                  </button>
+                ))}
               </div>
             : <input type="text" value={resp.texto||""} onChange={e => setResp(p => ({...p, texto:e.target.value}))}
                 placeholder="Tu respuesta…" style={{ ...inp, marginBottom:10 }} />
@@ -2942,6 +2954,8 @@ function AdminBonusPanel({ salaId, participantes }) {
           <div style={{ display:"flex", gap:8 }}>
             <select style={{ ...inp, flex:1 }} value={form.tipo} onChange={e => setForm(p => ({...p, tipo:e.target.value}))}>
               <option value="texto">Texto libre</option>
+              <option value="numero">Número</option>
+              <option value="sino">Sí / No</option>
               <option value="marcador">Marcador exacto</option>
             </select>
             <input type="number" min="1" max="10" style={{ ...inp, width:70 }} placeholder="pts" value={form.pts} onChange={e => setForm(p => ({...p, pts:e.target.value}))} />
