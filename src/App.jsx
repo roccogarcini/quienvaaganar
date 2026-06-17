@@ -2677,7 +2677,7 @@ function QuinielaTab({ miId, salaId, yo, participantes, esAdmin }) {
               <div style={{ color:C.text, fontWeight:600, fontSize:13 }}>{p.nombre}</div>
               <div style={{ color:C.muted, fontSize:12 }}>🏆 {p.pron_camp_flag} {p.pron_camp} · 🥈 {p.pron_sub_flag} {p.pron_sub}</div>
             </div>
-            {(p.pts_quiniela || 0) > 0 && <span style={{ background:C.blue+"22", color:C.blue, fontSize:12, fontWeight:700, padding:"3px 8px", borderRadius:16 }}>{p.pts_quiniela}pts</span>}
+            {(p.points || 0) > 0 && <span style={{ background:C.blue+"22", color:C.blue, fontSize:12, fontWeight:700, padding:"3px 8px", borderRadius:16 }}>{p.points}pts</span>}
           </div>
         ))}
       </>}
@@ -3159,8 +3159,8 @@ function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
 
   const terminados = prons.filter(p => p.resultado != null).sort((a,b)=>String(a.match_id).localeCompare(String(b.match_id)));
   const pendientes = prons.filter(p => p.resultado == null);
-  const totalPts = terminados.reduce((s,p) => s + (p.pts_obtenidos||0), 0);
   const aciertos = terminados.filter(p => p.pts_obtenidos > 0).length;
+  const sinCalcular = !loading && prons.length > 0 && terminados.length === 0;
 
   function getMatch(mid) {
     return matches.find(m => String(m.id) === String(mid));
@@ -3202,9 +3202,9 @@ function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
         {/* Resumen */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:20 }}>
           {[
-            { label:"Puntos", val: jugador.points, color: C.gold },
-            { label:"Acertados", val: loading ? "…" : aciertos, color: C.green },
-            { label:"Jugados", val: loading ? "…" : terminados.length, color: C.text },
+            { label:"Puntos", val: loading ? "…" : jugador.points, color: C.gold },
+            { label:"Pronósticos", val: loading ? "…" : prons.length, color: C.text },
+            { label:"Acertados", val: loading ? "…" : sinCalcular ? "—" : aciertos, color: C.green },
           ].map(({ label, val, color }) => (
             <div key={label} style={{ background:C.card, border:`0.5px solid ${C.border}`, borderRadius:10, padding:"10px 8px", textAlign:"center" }}>
               <div style={{ fontSize:22, fontWeight:700, color }}>{val}</div>
@@ -3215,7 +3215,13 @@ function PlayerModal({ jugador, salaId, matches, onClose, loadMatches }) {
 
         {loading && <div style={{ textAlign:"center", color:C.muted, padding:24 }}>Cargando pronósticos…</div>}
 
-        {!loading && terminados.length === 0 && (
+        {!loading && sinCalcular && (
+          <div style={{ textAlign:"center", color:C.muted, padding:24, fontSize:13 }}>
+            ⏳ Los resultados partido a partido se calculan automáticamente cada mañana.<br/>
+            <span style={{ fontSize:11 }}>El admin puede calcularlos ya desde la sección Quiniela.</span>
+          </div>
+        )}
+        {!loading && !sinCalcular && terminados.length === 0 && (
           <div style={{ textAlign:"center", color:C.muted, padding:24 }}>Aún no hay partidos terminados con pronóstico.</div>
         )}
 
