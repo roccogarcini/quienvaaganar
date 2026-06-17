@@ -1711,6 +1711,17 @@ function Sala({ sala, miId, onFirstTabChange }) {
       <div style={{ padding:"20px 16px", maxWidth:600, margin:"0 auto" }}>
 
         {tab==="tabla" && <>
+          {/* Panel admin — visible al inicio de la tabla */}
+          {esAdmin && (
+            <div style={{ marginBottom:12 }}>
+              <button onClick={() => setShowAdminPanel(v => !v)}
+                style={{ background:"#0a0e1a", border:`1px solid #374151`, borderRadius:10, padding:"8px 14px", color:"#6b7280", fontSize:12, fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", gap:6 }}>
+                <span>⚙️ Admin</span>
+                <span style={{ fontSize:10 }}>{showAdminPanel ? "▲" : "▼"}</span>
+              </button>
+            </div>
+          )}
+          {esAdmin && showAdminPanel && <AdminBonusPanel salaId={sala.id} participantes={participantes} />}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:16 }}>
             {STAGES.map(s=>(
               <button key={s.n} style={stage===s.n?{...BtnP,fontSize:12}:{...Btn(),fontSize:12}} onClick={()=>updateStage(s.n)}>
